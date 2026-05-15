@@ -224,7 +224,7 @@ export default function HomePage() {
               &ldquo;Every stitch is a promise kept to the woman who will wear it.&rdquo;
             </p>
             <p className="text-[10px] text-gold font-semibold font-body tracking-[0.15em] uppercase mt-2">
-              — Amira, Founder
+              — Maryam Mahmud, CEO
             </p>
           </div>
         </Link>

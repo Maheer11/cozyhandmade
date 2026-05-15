@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import CoziLogo from "./CoziLogo";
 
 const shopLinks = [
   { href: "/products", label: "All Pieces" },
@@ -34,12 +34,9 @@ export default function Footer() {
           {/* Brand column */}
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="block mb-4 group">
-              <Image
-                src="/cozi-logo.png"
-                alt="Cozi Handmade"
-                width={110}
-                height={52}
-                className="object-contain brightness-0 invert opacity-90 group-hover:opacity-100 transition-opacity duration-200"
+              <CoziLogo
+                className="w-28 h-10 opacity-90 group-hover:opacity-100 transition-opacity duration-200"
+                color="#D49AA8"
               />
             </Link>
             <p className="text-xs text-taupe/60 mb-4 font-body">est. 2018 · handcrafted with ♡</p>

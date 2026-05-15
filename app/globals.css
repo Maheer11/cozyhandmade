@@ -131,7 +131,7 @@ body {
 .delay-700 { animation-delay: 0.7s; }
 .delay-900 { animation-delay: 0.9s; }
 
-/* Shimmer gradient text — wine/burgundy luxury shimmer */che
+/* Shimmer gradient text — wine/burgundy luxury shimmer */
 .text-shimmer {
   background: linear-gradient(
     90deg,
