@@ -112,7 +112,7 @@ export default function ProductDetailPage({
                     style={{ touchAction: "manipulation" }}
                     aria-label={`Image ${i + 1}`}
                   >
-                    <Image src={img} alt="" fill className="object-cover" />
+                    <Image src={img} alt="" fill loading="lazy" className="object-cover" />
                   </button>
                 ))}
               </div>

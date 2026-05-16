@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "./CartContext";
 import CoziLogo from "./CoziLogo";
+import CurrencyPicker from "./CurrencyPicker";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -96,12 +97,16 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* ── Desktop right: Shop Now + Cart ── */}
+          {/* ── Desktop right: Currency + Shop Now + Cart ── */}
           <div className="flex items-center gap-3">
+            {/* Currency picker — desktop only */}
+            <div className="hidden lg:block">
+              <CurrencyPicker />
+            </div>
             {/* Shop Now pill — desktop only */}
             <Link
               href="/products"
-              className="hidden lg:inline-flex items-center px-6 py-2.5 rounded-full text-sm font-semibold
+              className="hidden lg:inline-flex items-center px-6 py-2.5 rounded-none text-sm font-semibold
                          bg-gold text-cream hover:bg-gold-dark hover:-translate-y-px
                          transition-all duration-200 shadow-sm hover:shadow-lg hover:shadow-gold/20
                          tracking-wide"
@@ -212,9 +217,13 @@ export default function Navbar() {
 
         {/* Drawer footer */}
         <div
-          className="pl-6 pr-4 py-5 border-t border-taupe/20"
+          className="pl-6 pr-4 py-5 border-t border-taupe/20 space-y-3"
           style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom, 20px))" }}
         >
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-taupe-dark font-body">Currency</p>
+            <CurrencyPicker />
+          </div>
           <p className="text-xs text-taupe-dark text-center font-body italic">
             est. 2018 · handcrafted with ♡
           </p>

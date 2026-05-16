@@ -4,11 +4,17 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 
 const slides = [
-  { src: "/images/hero-slide-1.jpg", alt: "Hand-knitted chunky blanket collection" },
+  {
+    src: "/images/backgroundpic.jpg",
+    alt: "Woven with Love — artisan craftsmanship",
+  },
+  {
+    src: "/images/hero-slide-1.jpg",
+    alt: "Hand-knitted chunky blanket collection",
+  },
   { src: "/images/hero-slide-2.jpg", alt: "Artisan wool throw — gift-wrapped" },
   { src: "/images/hero-slide-3.jpg", alt: "Premium handmade knit textures" },
-  { src: "/images/hero-slide-4.jpg", alt: "Handcrafted baby knits and accessories" },
-  { src: "/images/hero-slide-5.jpg", alt: "Woven with Love — artisan craftsmanship" },
+  { src: "/images/tbck3.jpg", alt: "Handcrafted baby knits and accessories" },
 ];
 
 const LAST = slides.length - 1;
@@ -74,9 +80,10 @@ export default function HeroSlider() {
               src={slide.src}
               alt={slide.alt}
               fill
-              sizes="(max-width: 1024px) 100vw, 50vw"
+              sizes="100vw"
               className="object-cover"
-              priority={i <= 1}
+              priority={i === 0}
+              loading={i === 0 ? undefined : "lazy"}
             />
           </div>
         ))}

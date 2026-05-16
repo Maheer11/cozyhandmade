@@ -207,3 +207,10 @@ body {
 .img-zoom:hover {
   transform: scale(1.05);
 }
+
+/* ── Print: show only the receipt card ── */
+@media print {
+  body > * { display: none !important; }
+  #order-receipt-wrapper { display: block !important; position: static !important; }
+  #order-receipt-wrapper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

@@ -3,6 +3,7 @@ import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import NewsletterForm from "@/components/NewsletterForm";
 import ScrollReveal from "@/components/ScrollReveal";
+import SocialProofSection from "@/components/SocialProofSection";
 import HeroSlider from "@/components/HeroSlider";
 import { getFeaturedProducts, categories } from "@/lib/products";
 import {
@@ -54,7 +55,7 @@ const trustItems = [
   { title: "Free UK Shipping", subtitle: "On orders over £80" },
   { title: "100% Natural Wool", subtitle: "Merino & Shetland fleece" },
   { title: "Gift Wrapped", subtitle: "Ready to give on arrival" },
-  { title: "Women Artisans", subtitle: "40+ skilled craftswomen" },
+  { title: "Handcrafted with Care", subtitle: "A skilled Creative in the world of needle and thread" },
 ];
 
 export default function HomePage() {
@@ -82,7 +83,7 @@ export default function HomePage() {
 
             <div className="relative z-10">
               <p className="text-gold text-[10px] uppercase tracking-[0.28em] font-body font-semibold mb-3 animate-fade-up">
-                ✦ Handcrafted by women artisans
+                ✦ Handcrafted by maryam and co
               </p>
               <h1 className="font-heading italic text-5xl font-300 leading-[1.1] mb-4 animate-fade-up delay-100">
                 <span className="text-deep-brown">Hand</span><span className="text-gold">crafted</span><span className="text-taupe"> with</span>
@@ -93,13 +94,13 @@ export default function HomePage() {
               </h1>
               <p className="text-deep-brown/70 text-sm font-medium leading-relaxed mb-7 animate-fade-up delay-200">
                 Every piece woven with love — duvets, baby clothes, handbags and
-                more, stitched one at a time by women artisans.
+                more, stitched one at a time by me.
               </p>
 
               <div className="flex flex-col gap-3 animate-fade-up delay-300">
                 <Link
                   href="/products"
-                  className="flex items-center justify-center h-13 px-8 rounded-full
+                  className="flex items-center justify-center h-13 px-8 rounded-none
                              bg-gold text-cream font-semibold text-sm tracking-wide
                              hover:bg-gold-dark active:bg-gold-dark active:scale-[0.98]
                              transition-all duration-200 shadow-lg shadow-gold/25"
@@ -109,7 +110,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/#about"
-                  className="flex items-center justify-center h-13 rounded-full
+                  className="flex items-center justify-center h-13 rounded-none
                              border-2 border-deep-brown/30 text-deep-brown font-medium text-sm
                              hover:border-gold hover:text-gold
                              active:text-gold transition-all duration-200"
@@ -120,7 +121,7 @@ export default function HomePage() {
               </div>
 
               <p className="text-deep-brown/35 text-[10px] tracking-wide font-body mt-6 animate-fade-up delay-400">
-                ✦ Free UK Shipping over £80 &nbsp;·&nbsp; ✦ Gift wrapped
+                ✦ We also offer Free Shipping over £300 &nbsp;·&nbsp; ✦ Gift wrapped
               </p>
             </div>
           </div>
@@ -134,17 +135,17 @@ export default function HomePage() {
 
             {/* Watermark decorations */}
             <WoolSkein
-              className="absolute -top-6 -left-6 w-52 h-52 opacity-[0.07] animate-spin-slow"
-              color="#D4A76A"
+              className="absolute -top-6 -left-6 w-52 h-52 opacity-[0.22] animate-spin-slow"
+              color="#9333EA"
             />
             <YarnBall
-              className="absolute bottom-10 -right-8 w-40 h-40 opacity-[0.05]"
-              color="#D4A76A"
+              className="absolute bottom-10 -right-8 w-40 h-40 opacity-[0.20]"
+              color="#FBBF24"
             />
 
             <div className="relative z-10 max-w-lg">
               <p className="text-gold text-xs uppercase tracking-[0.28em] font-body font-semibold mb-5 animate-fade-up">
-                ✦ Handcrafted by women artisans
+                ✦ Handcrafted by maryam and co
               </p>
               <h1 className="font-heading italic text-6xl xl:text-7xl font-300 leading-[1.07] mb-6 animate-fade-up delay-100">
                 <span className="text-deep-brown">Hand</span><span className="text-gold">crafted</span><span className="text-taupe"> with</span>
@@ -161,7 +162,7 @@ export default function HomePage() {
               <div className="flex gap-4 mb-10 animate-fade-up delay-300">
                 <Link
                   href="/products"
-                  className="inline-flex items-center justify-center px-8 py-4 rounded-full
+                  className="inline-flex items-center justify-center px-8 py-4 rounded-none
                              bg-gold text-cream font-semibold text-sm tracking-wide
                              hover:bg-gold-dark hover:-translate-y-0.5
                              hover:shadow-2xl hover:shadow-gold/30
@@ -172,7 +173,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/#about"
-                  className="inline-flex items-center justify-center px-7 py-4 rounded-full
+                  className="inline-flex items-center justify-center px-7 py-4 rounded-none
                              border-2 border-deep-brown/30 text-deep-brown font-medium text-sm tracking-wide
                              hover:border-gold hover:text-gold hover:-translate-y-0.5
                              transition-all duration-300"
@@ -181,8 +182,8 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <p className="text-deep-brown/40 text-xs tracking-wide font-body animate-fade-up delay-400">
-                ✦ Free UK Shipping over £80 &nbsp;·&nbsp; ✦ Each piece unique
+              <p className="text-deep-brown/75 text-xs tracking-wide font-body animate-fade-up delay-400">
+                ✦ Free Shipping over £150 &nbsp;·&nbsp; ✦ Each piece unique
                 &nbsp;·&nbsp; ✦ Gift wrap available
               </p>
             </div>
@@ -215,7 +216,7 @@ export default function HomePage() {
           <div className="shrink-0 ml-2 w-12 h-12 rounded-full
                           border-2 border-gold bg-cream-dark
                           flex items-center justify-center overflow-hidden">
-            <span className="font-heading italic text-gold font-semibold text-lg select-none">A</span>
+            <span className="font-heading italic text-gold font-semibold text-lg select-none">MM</span>
           </div>
 
           {/* Quote + attribution */}
@@ -232,18 +233,18 @@ export default function HomePage() {
         {/* Floating artisan badge — bridges the two panels (desktop only) */}
         <div
           className="hidden lg:flex flex-col items-center
-                     absolute left-[46%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-30
+                     absolute left-[54%] top-[35%] -translate-x-1/2 -translate-y-1/2 z-30
                      bg-gold rounded-xl px-8 py-7 shadow-2xl shadow-gold/40
                      pointer-events-none select-none"
         >
           <span className="text-cream/60 text-base mb-2 leading-none">✦</span>
-          <p className="font-heading italic text-5xl font-400 text-cream text-center leading-none">40+</p>
+          <p className="font-heading italic text-5xl font-400 text-cream text-center leading-none">2 years</p>
           <div className="w-8 h-px bg-cream/30 my-3" />
           <p className="text-[12px] text-cream/90 font-body tracking-[0.18em] uppercase text-center whitespace-nowrap">
-            Women Artisans
+              INNOVATING AND RESTOCKING 
           </p>
-          <p className="text-[10px] text-cream/55 font-body mt-1.5 text-center whitespace-nowrap">
-            Crafting since 2017
+          <p className="text-sm text-cream/70 font-body mt-1.5 text-center whitespace-nowrap">
+            Crafting since 2024
           </p>
         </div>
 
@@ -303,12 +304,12 @@ export default function HomePage() {
           aria-hidden="true"
         >
           <YarnBall
-            color="#8B2035"
-            className="absolute -top-16 -left-16 w-64 h-64 opacity-[0.07]"
+            color="#3B82F6"
+            className="absolute -top-16 -left-16 w-64 h-64 opacity-[0.20]"
           />
           <WoolSkein
-            color="#D49AA8"
-            className="absolute -bottom-8 -right-8 w-56 h-40 opacity-[0.07]"
+            color="#22C55E"
+            className="absolute -bottom-8 -right-8 w-56 h-40 opacity-[0.18]"
           />
         </div>
 
@@ -372,12 +373,12 @@ export default function HomePage() {
           aria-hidden="true"
         >
           <HandKnitting
-            color="#8B2035"
-            className="absolute -bottom-10 -left-10 w-64 h-64 opacity-[0.08]"
+            color="#FBBF24"
+            className="absolute -bottom-10 -left-10 w-64 h-64 opacity-[0.22]"
           />
           <KnittingNeedles
-            color="#D49AA8"
-            className="absolute top-10 -right-10 w-52 h-52 opacity-[0.08]"
+            color="#9333EA"
+            className="absolute top-10 -right-10 w-52 h-52 opacity-[0.20]"
           />
         </div>
 
@@ -403,7 +404,7 @@ export default function HomePage() {
                   className="absolute -bottom-5 right-4 lg:-bottom-7 lg:-right-7
                               bg-cream rounded-2xl p-5 shadow-2xl border border-taupe/20"
                 >
-                  <p className="font-heading italic text-4xl font-400 text-deep-brown">7+</p>
+                  <p className="font-heading italic text-4xl font-400 text-deep-brown">5+</p>
                   <p className="text-xs text-taupe-dark mt-1 font-body tracking-wide">Years of craft</p>
                 </div>
               </div>
@@ -460,7 +461,7 @@ export default function HomePage() {
 
               <Link
                 href="/products"
-                className="inline-flex items-center justify-center h-14 px-9 rounded-full
+                className="inline-flex items-center justify-center h-14 px-9 rounded-none
                            bg-gold text-cream font-semibold text-sm tracking-wide
                            hover:bg-gold-dark hover:-translate-y-0.5
                            hover:shadow-xl hover:shadow-gold/20
@@ -487,12 +488,12 @@ export default function HomePage() {
           aria-hidden="true"
         >
           <ThreadSpool
-            color="#8B2035"
-            className="absolute -top-8 -right-8 w-48 h-56 opacity-[0.08]"
+            color="#3B82F6"
+            className="absolute -top-8 -right-8 w-48 h-56 opacity-[0.20]"
           />
           <Scissors
-            color="#D49AA8"
-            className="absolute bottom-8 -left-6 w-36 h-36 opacity-[0.07] rotate-6"
+            color="#22C55E"
+            className="absolute bottom-8 -left-6 w-36 h-36 opacity-[0.20] rotate-6"
           />
         </div>
 
@@ -550,84 +551,9 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          TESTIMONIALS — "Words from Our Community"
+          TESTIMONIALS — Social Proof
       ══════════════════════════════════════════════ */}
-      <section
-        className="relative overflow-hidden py-14 lg:py-28"
-        style={{ backgroundColor: "#FBF0E4" }}
-      >
-        {/* Corner watermarks */}
-        <div
-          className="absolute inset-0 pointer-events-none select-none"
-          aria-hidden="true"
-        >
-          <HandKnitting
-            color="#8B2035"
-            className="absolute -top-10 -left-10 w-56 h-56 opacity-[0.08]"
-          />
-          <WoolSkein
-            color="#D49AA8"
-            className="absolute -bottom-8 -right-8 w-64 h-44 opacity-[0.07]"
-          />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ScrollReveal className="text-center mb-12 lg:mb-16">
-            <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
-              ✦ Reviews
-            </p>
-            <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown">
-              Words from Our Community
-            </h2>
-          </ScrollReveal>
-
-          <ScrollReveal>
-            <div
-              className="flex gap-5 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory
-                          lg:grid lg:grid-cols-3 lg:gap-7 lg:overflow-visible lg:pb-0 lg:mx-0 lg:px-0"
-            >
-              {testimonials.map(({ quote, name, location }) => (
-                <div
-                  key={name}
-                  className="shrink-0 w-[82vw] sm:w-[60vw] snap-start
-                             lg:w-auto bg-cream rounded-2xl p-7 lg:p-9
-                             shadow-md border border-taupe/15
-                             flex flex-col justify-between
-                             hover:shadow-xl hover:-translate-y-0.5
-                             transition-all duration-300"
-                >
-                  {/* Stars */}
-                  <div className="flex gap-0.5 mb-5" aria-label="5 out of 5 stars">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <svg key={s} className="w-4 h-4 text-gold" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-
-                  {/* Quote */}
-                  <blockquote className="font-heading italic text-lg sm:text-xl font-400 text-deep-brown leading-snug mb-6 flex-1">
-                    &ldquo;{quote}&rdquo;
-                  </blockquote>
-
-                  {/* Customer */}
-                  <div className="flex items-center gap-3 pt-5 border-t border-taupe/20">
-                    <div className="w-9 h-9 rounded-full bg-gold-light flex items-center justify-center shrink-0">
-                      <span className="text-gold-dark text-sm font-heading font-semibold">
-                        {name.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-deep-brown font-body">{name}</p>
-                      <p className="text-[11px] text-taupe-dark font-body">{location}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
+      <SocialProofSection />
 
       {/* ══════════════════════════════════════════════
           NEWSLETTER — "Join the Circle"
@@ -642,16 +568,16 @@ export default function HomePage() {
           aria-hidden="true"
         >
           <ThreadSpool
-            color="white"
-            className="absolute -top-10 -left-10 w-52 h-60 opacity-[0.06]"
+            color="#FBBF24"
+            className="absolute -top-10 -left-10 w-52 h-60 opacity-[0.22]"
           />
           <KnittingNeedles
-            color="white"
-            className="absolute -bottom-12 -right-12 w-60 h-60 opacity-[0.06]"
+            color="#60A5FA"
+            className="absolute -bottom-12 -right-12 w-60 h-60 opacity-[0.20]"
           />
           <YarnBall
             color="white"
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] opacity-[0.03]"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] opacity-[0.08]"
           />
         </div>
 
@@ -659,7 +585,7 @@ export default function HomePage() {
           <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
             ✦ Join the Circle
           </p>
-          <h2 className="font-heading italic text-3xl sm:text-4xl font-400 text-cream mb-4">
+          <h2 className="font-heading italic text-3xl sm:text-4xl font-400 mb-4" style={{ color: "#F0DFC8" }}>
             Letters from our Studio
           </h2>
           <p className="text-taupe/80 text-base leading-relaxed mb-9 font-body">

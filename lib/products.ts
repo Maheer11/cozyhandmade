@@ -41,8 +41,8 @@ export const products: Product[] = [
   {
     id: "1",
     name: "Textured square pattern Blanket",
-    price: 189,
-    originalPrice: 240,
+    price: 380000,
+    originalPrice: 480000,
     category: "Blankets",
     rating: 4.9,
     reviewCount: 87,
@@ -67,7 +67,7 @@ export const products: Product[] = [
   {
     id: "2",
     name: "Hand-Knit Baby Cardigan Set",
-    price: 58,
+    price: 115000,
     category: "baby",
     rating: 5.0,
     reviewCount: 143,
@@ -89,7 +89,7 @@ export const products: Product[] = [
   {
     id: "3",
     name: "Cozy Herringbone blanket",
-    price: 74,
+    price: 150000,
     category: "Blankets",
     rating: 4.8,
     reviewCount: 62,
@@ -115,8 +115,8 @@ export const products: Product[] = [
   {
     id: "4",
     name: " Cozy Cable blankets",
-    price: 48,
-    originalPrice: 65,
+    price: 95000,
+    originalPrice: 130000,
     category: "Blankets",
     rating: 4.7,
     reviewCount: 39,
@@ -141,7 +141,7 @@ export const products: Product[] = [
   {
     id: "5",
     name: "Chunky Knit Baby Blanket",
-    price: 65,
+    price: 130000,
     category: "blankets",
     rating: 4.9,
     reviewCount: 211,
@@ -166,7 +166,7 @@ export const products: Product[] = [
   {
     id: "6",
     name: "Fair Isle Wool Scarf",
-    price: 42,
+    price: 85000,
     category: "scarves",
     rating: 4.8,
     reviewCount: 94,
@@ -188,7 +188,7 @@ export const products: Product[] = [
   {
     id: "7",
     name: "Crochet Market Bag",
-    price: 36,
+    price: 72000,
     category: "handbags",
     rating: 4.6,
     reviewCount: 55,
@@ -210,7 +210,7 @@ export const products: Product[] = [
   {
     id: "8",
     name: "Hand-Embroidered Coin Wallet",
-    price: 28,
+    price: 55000,
     category: "wallets",
     rating: 4.9,
     reviewCount: 76,
@@ -232,8 +232,8 @@ export const products: Product[] = [
   {
     id: "9",
     name: "Merino Moses Basket Set",
-    price: 145,
-    originalPrice: 180,
+    price: 290000,
+    originalPrice: 360000,
     category: "scarves",
     rating: 4.8,
     reviewCount: 34,
@@ -258,7 +258,7 @@ export const products: Product[] = [
   {
     id: "10",
     name: "Bobble Stitch Throw Blanket",
-    price: 98,
+    price: 195000,
     category: "blankets",
     rating: 4.7,
     reviewCount: 48,
@@ -283,7 +283,7 @@ export const products: Product[] = [
   {
     id: "11",
     name: "Structured Knit Handbag",
-    price: 112,
+    price: 225000,
     category: "handbags",
     rating: 4.9,
     reviewCount: 28,
@@ -308,7 +308,7 @@ export const products: Product[] = [
   {
     id: "12",
     name: "Hand-Sewn Baby Sleeping Bag",
-    price: 78,
+    price: 155000,
     category: "scarves",
     rating: 4.8,
     reviewCount: 91,

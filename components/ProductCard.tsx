@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "./CartContext";
+import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { Product } from "@/lib/products";
 
 function StarRating({ rating }: { rating: number }) {
@@ -24,6 +25,7 @@ function StarRating({ rating }: { rating: number }) {
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
+  const { formatAmount, isLoading } = useCurrency();
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -79,9 +81,15 @@ export default function ProductCard({ product }: { product: Product }) {
         </h3>
 
         <div className="flex items-baseline gap-1.5 mt-auto mb-3">
-          <span className="text-base font-semibold text-brown">£{product.price.toFixed(2)}</span>
-          {product.originalPrice && (
-            <span className="text-xs text-taupe-dark line-through">£{product.originalPrice.toFixed(2)}</span>
+          {isLoading ? (
+            <span className="h-5 w-20 bg-taupe/20 rounded animate-pulse" />
+          ) : (
+            <>
+              <span className="text-base font-semibold text-brown">{formatAmount(product.price)}</span>
+              {product.originalPrice && (
+                <span className="text-xs text-taupe-dark line-through">{formatAmount(product.originalPrice)}</span>
+              )}
+            </>
           )}
         </div>
 

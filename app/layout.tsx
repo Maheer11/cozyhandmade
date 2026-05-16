@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Jost } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
+import { CurrencyProvider } from "@/lib/currency/CurrencyContext";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
@@ -38,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${cormorant.variable} ${jost.variable}`}>
       <body className="min-h-screen flex flex-col bg-cream text-deep-brown antialiased">
+        <CurrencyProvider>
         <CartProvider>
           {/* Top bar — always visible */}
           <Navbar />
@@ -53,6 +55,7 @@ export default function RootLayout({
           {/* Mobile / tablet bottom nav — hidden on desktop */}
           <BottomNav />
         </CartProvider>
+        </CurrencyProvider>
       </body>
     </html>
   );
