@@ -6,6 +6,8 @@ import ScrollReveal from "@/components/ScrollReveal";
 import SocialProofSection from "@/components/SocialProofSection";
 import HeroSlider from "@/components/HeroSlider";
 import { getFeaturedProducts, categories } from "@/lib/products";
+import { createClient } from "@/lib/supabase/server";
+import { mapProduct, type DbProduct } from "@/lib/db-products";
 import {
   YarnBall,
   Scissors,
@@ -58,8 +60,20 @@ const trustItems = [
   { title: "Handcrafted with Care", subtitle: "A skilled Creative in the world of needle and thread" },
 ];
 
-export default function HomePage() {
-  const featured = getFeaturedProducts();
+export default async function HomePage() {
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const { data: dbFeatured } = await db
+    .from("products")
+    .select("*")
+    .eq("featured", true)
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  const featured = dbFeatured?.length
+    ? (dbFeatured as DbProduct[]).map(mapProduct)
+    : getFeaturedProducts();
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
   return (

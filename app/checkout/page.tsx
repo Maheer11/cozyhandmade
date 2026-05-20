@@ -7,13 +7,65 @@ import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { getProduct } from "@/lib/products";
 import type { CheckoutPricing } from "@/lib/currency/types";
 
+/* ─── Paystack inline script loader ─────────────────────── */
+interface PaystackHandler {
+  setup: (config: {
+    key: string; email: string; amount: number; currency: string; ref: string;
+    callback: (response: { reference: string }) => void;
+    onClose: () => void;
+  }) => { openIframe: () => void };
+}
+function loadPaystack(): Promise<PaystackHandler> {
+  return new Promise((resolve, reject) => {
+    const win = window as unknown as { PaystackPop?: PaystackHandler };
+    if (win.PaystackPop) { resolve(win.PaystackPop); return; }
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.onload  = () => win.PaystackPop ? resolve(win.PaystackPop) : reject(new Error("PaystackPop not found"));
+    script.onerror = () => reject(new Error("Failed to load Paystack script"));
+    document.head.appendChild(script);
+  });
+}
+
 /* ─── Types ─────────────────────────────────────────────── */
-type CheckoutMode = "nigerian" | "international";
-type Step = "shipping" | "payment" | "confirmation";
+type CheckoutMode      = "nigerian" | "international";
+type Step              = "shipping" | "payment" | "confirmation";
 type NigerianPayMethod = "bank-transfer" | "card";
+type IntlPayMethod     = "bank-transfer" | "stripe-card";
 type ShipInfo = {
   firstName: string; lastName: string; email: string; phone: string;
   address: string; city: string; postcode: string; country: string; state: string;
+};
+
+/* ─── International bank account details (from env) ─────── */
+const BANK: Record<string, { label: string; network: string; fields: [string, string][] }> = {
+  EUR: {
+    label:   "EUR — SEPA Transfer",
+    network: "SEPA · arrives same/next business day · free to receive",
+    fields:  [
+      ["IBAN",     process.env.NEXT_PUBLIC_BANK_EUR_IBAN ?? "IE00WISE00000000000000"],
+      ["BIC/SWIFT",process.env.NEXT_PUBLIC_BANK_EUR_BIC  ?? "TRWTIGALXXX"],
+      ["Name",     process.env.NEXT_PUBLIC_BANK_EUR_NAME ?? "Woven With Love"],
+    ],
+  },
+  GBP: {
+    label:   "GBP — UK Bank Transfer",
+    network: "Faster Payments · arrives within hours · free to receive",
+    fields:  [
+      ["Sort Code", process.env.NEXT_PUBLIC_BANK_GBP_SORT    ?? "23-14-70"],
+      ["Account",   process.env.NEXT_PUBLIC_BANK_GBP_ACCOUNT ?? "00000000"],
+      ["Name",      process.env.NEXT_PUBLIC_BANK_GBP_NAME    ?? "Woven With Love"],
+    ],
+  },
+  USD: {
+    label:   "USD — US Bank Transfer (ACH)",
+    network: "ACH · arrives 1–2 business days · free to receive",
+    fields:  [
+      ["Routing No.", process.env.NEXT_PUBLIC_BANK_USD_ROUTING ?? "026073150"],
+      ["Account No.", process.env.NEXT_PUBLIC_BANK_USD_ACCOUNT ?? "0000000000"],
+      ["Name",        process.env.NEXT_PUBLIC_BANK_USD_NAME    ?? "Woven With Love"],
+    ],
+  },
 };
 
 const STEPS = [
@@ -681,18 +733,18 @@ function ShippingStep({ mode, ship, setShip, onNext }: {
 /* ═════════════════════════════════════════════════════════
    NIGERIAN PAYMENT STEP  — Paystack / Bank Transfer (always NGN)
 ═════════════════════════════════════════════════════════ */
-function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNigerianMethod, onBack, onConfirm, termsAccepted, setTermsAccepted, onShowTerms }: {
+function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNigerianMethod, onBack, onBankTransferConfirm, onPaystackConfirm, isSubmitting, submitError, termsAccepted, setTermsAccepted, onShowTerms }: {
   orderTotalNGN: number;
   orderRef: string;
   nigerianMethod: NigerianPayMethod; setNigerianMethod: (m: NigerianPayMethod) => void;
-  onBack: () => void; onConfirm: () => void;
+  onBack: () => void;
+  onBankTransferConfirm: () => void;
+  onPaystackConfirm: () => void;
+  isSubmitting: boolean;
+  submitError: string;
   termsAccepted: boolean; setTermsAccepted: (v: boolean) => void; onShowTerms: () => void;
 }) {
-  const [copied,   setCopied]   = useState<string | null>(null);
-  const [cardNum,  setCardNum]  = useState("");
-  const [expiry,   setExpiry]   = useState("");
-  const [cvv,      setCvv]      = useState("");
-  const [cardName, setCardName] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
 
   const formattedNGN = `₦${orderTotalNGN.toLocaleString("en-NG")}`;
 
@@ -792,13 +844,19 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNiger
 
           <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
 
-          <button onClick={onConfirm} disabled={!termsAccepted}
+          {submitError && (
+            <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+              {submitError}
+            </p>
+          )}
+
+          <button onClick={onBankTransferConfirm} disabled={!termsAccepted || isSubmitting}
             className="mt-5 inline-flex items-center gap-2 px-10 py-3 rounded-none text-white font-semibold
                        text-sm tracking-wide transition-all duration-200 shadow-sm
                        disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
                        enabled:hover:-translate-y-px enabled:shadow-sm"
             style={{ backgroundColor: "#008751" }}>
-            I&apos;ve Sent the Payment <IcoCheck />
+            {isSubmitting ? "Saving order…" : <>I&apos;ve Sent the Payment <IcoCheck /></>}
           </button>
         </div>
       )}
@@ -806,19 +864,14 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNiger
       {/* ── Card / Paystack ── */}
       {nigerianMethod === "card" && (
         <div>
+          {/* Paystack header */}
           <div className="rounded-t-xl px-4 py-3 flex items-center gap-2" style={{ backgroundColor: "#0BA4DB" }}>
             <LogoPaystack />
             <div className="ml-auto flex items-center gap-2">
-              <div className="px-2 py-0.5 bg-white/20 rounded">
-                <svg viewBox="0 0 36 12" className="h-2.5 w-auto">
-                  <text x="0" y="10" fontFamily="sans-serif" fontWeight="bold" fontSize="11" fill="#008751">Verve</text>
-                </svg>
-              </div>
-              <div className="px-2 py-0.5 bg-white/20 rounded">
-                <svg viewBox="0 0 34 12" className="h-2.5 w-auto">
-                  <text x="0" y="10" fontStyle="italic" fontWeight="800" fontSize="11" fill="white">VISA</text>
-                </svg>
-              </div>
+              <div className="px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white">Verve</div>
+              <svg viewBox="0 0 34 12" className="h-2.5 w-auto">
+                <text x="0" y="10" fontStyle="italic" fontWeight="800" fontSize="11" fill="white">VISA</text>
+              </svg>
               <div className="flex items-center">
                 <div className="w-3.5 h-3.5 rounded-full bg-red-500" />
                 <div className="w-3.5 h-3.5 rounded-full bg-amber-400 -ml-2 opacity-90" />
@@ -826,62 +879,45 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNiger
             </div>
           </div>
 
-          <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl p-5 space-y-4 mb-5">
-            <div>
-              <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Card Number</label>
-              <input type="text" placeholder="0000 0000 0000 0000" value={cardNum}
-                onChange={(e) => {
-                  const n = e.target.value.replace(/\D/g, "").slice(0, 16);
-                  setCardNum(n.replace(/(.{4})/g, "$1 ").trim());
-                }}
-                className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                           placeholder:text-stone-300 focus:outline-none focus:border-[#0BA4DB]
-                           focus:ring-2 focus:ring-[#0BA4DB]/20 transition-all duration-200" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Expiry</label>
-                <input type="text" placeholder="MM / YY" value={expiry}
-                  onChange={(e) => {
-                    const n = e.target.value.replace(/\D/g, "").slice(0, 4);
-                    setExpiry(n.length > 2 ? `${n.slice(0,2)} / ${n.slice(2)}` : n);
-                  }}
-                  className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                             placeholder:text-stone-300 focus:outline-none focus:border-[#0BA4DB]
-                             focus:ring-2 focus:ring-[#0BA4DB]/20 transition-all duration-200" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">CVV</label>
-                <input type="password" placeholder="•••" value={cvv}
-                  onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                             placeholder:text-stone-300 focus:outline-none focus:border-[#0BA4DB]
-                             focus:ring-2 focus:ring-[#0BA4DB]/20 transition-all duration-200" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Name on Card</label>
-              <input type="text" placeholder="AMAKA OKONKWO" value={cardName}
-                onChange={(e) => setCardName(e.target.value)}
-                className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                           placeholder:text-stone-300 focus:outline-none focus:border-[#0BA4DB]
-                           focus:ring-2 focus:ring-[#0BA4DB]/20 transition-all duration-200" />
+          {/* Info panel — no fake card form, Paystack handles card entry in its popup */}
+          <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl px-5 py-5 mb-5">
+            <p className="text-sm text-stone-600 leading-relaxed mb-4">
+              Clicking <strong>Pay now</strong> opens a secure Paystack popup where you enter your card details.
+              Your card information is handled entirely by Paystack and is never stored on our servers.
+            </p>
+            <div className="space-y-2">
+              {[
+                ["CBN Licensed payment processor", <IcoBadge key="b" />],
+                ["3D Secure (3DS) authentication", <IcoShield key="s" />],
+                ["Accepts Visa · Mastercard · Verve · USSD · Bank Transfer", <IcoCheck key="c" />],
+              ].map(([label, icon]) => (
+                <div key={label as string} className="flex items-center gap-2 text-xs text-stone-500">
+                  <span className="text-emerald-600 w-3.5 h-3.5 shrink-0">{icon}</span>
+                  {label}
+                </div>
+              ))}
             </div>
           </div>
 
           <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
 
-          <button onClick={onConfirm} disabled={!termsAccepted}
+          {submitError && (
+            <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+              {submitError}
+            </p>
+          )}
+
+          <button onClick={onPaystackConfirm} disabled={!termsAccepted || isSubmitting}
             className="mt-5 inline-flex items-center gap-2 px-10 py-3 rounded-none text-white font-semibold
                        text-sm tracking-wide transition-all duration-200 shadow-sm
                        disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
                        enabled:hover:-translate-y-px"
             style={{ backgroundColor: "#0BA4DB" }}>
-            Pay {formattedNGN} via Paystack <IcoArrow />
+            {isSubmitting ? "Verifying payment…" : <>Pay {formattedNGN} with Paystack <IcoArrow /></>}
           </button>
           <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-600">
             <div className="text-emerald-600"><IcoShield /></div>
-            Card details encrypted · Paystack (CBN Licensed)
+            Secured by Paystack · CBN Licensed
           </div>
         </div>
       )}
@@ -901,102 +937,244 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNiger
 }
 
 /* ═════════════════════════════════════════════════════════
-   INTERNATIONAL PAYMENT STEP  — Stripe (user's currency)
+   INTERNATIONAL PAYMENT STEP  — Bank Transfer or Stripe
 ═════════════════════════════════════════════════════════ */
-function InternationalPaymentStep({ formattedTotal, onBack, onConfirm, termsAccepted, setTermsAccepted, onShowTerms }: {
-  formattedTotal: string; onBack: () => void; onConfirm: () => void;
-  termsAccepted: boolean; setTermsAccepted: (v: boolean) => void; onShowTerms: () => void;
+function InternationalPaymentStep({
+  formattedTotal, currency, intlMethod, setIntlMethod,
+  onBack, onTransferConfirm, onStripeConfirm,
+  isSubmitting, submitError,
+  termsAccepted, setTermsAccepted, onShowTerms,
+}: {
+  formattedTotal: string;
+  currency: string;
+  intlMethod: IntlPayMethod;
+  setIntlMethod: (m: IntlPayMethod) => void;
+  onBack: () => void;
+  onTransferConfirm: () => void;
+  onStripeConfirm: () => void;
+  isSubmitting: boolean;
+  submitError: string;
+  termsAccepted: boolean;
+  setTermsAccepted: (v: boolean) => void;
+  onShowTerms: () => void;
 }) {
   const [cardNum,  setCardNum]  = useState("");
   const [expiry,   setExpiry]   = useState("");
   const [cvv,      setCvv]      = useState("");
   const [cardName, setCardName] = useState("");
+  const [copied,   setCopied]   = useState<string | null>(null);
+
+  // Pick the matching bank account, fall back to EUR for unsupported currencies
+  const bankInfo  = BANK[currency] ?? BANK.EUR;
+  const isFallback = !BANK[currency] && currency !== "EUR";
+
+  const copyText = (val: string, key: string) => {
+    navigator.clipboard.writeText(val.replace(/\s/g, ""));
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-cream-darker shadow-sm p-5 sm:p-6">
-      <h2 className="font-heading font-600 text-deep-brown text-xl mb-2">Payment Details</h2>
-      <p className="text-xs text-taupe-dark mb-4">All transactions are encrypted and PCI-DSS compliant.</p>
+      <h2 className="font-heading font-600 text-deep-brown text-xl mb-2">Payment</h2>
+      <p className="text-xs text-taupe-dark mb-5">Choose how you&apos;d like to pay.</p>
 
-      <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-5">
-        <div className="text-emerald-600 shrink-0"><IcoShield /></div>
-        <span className="text-xs text-emerald-700 font-medium">256-bit SSL encryption active</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          <span className="text-emerald-600 text-[10px] font-medium">SECURE</span>
-        </div>
-      </div>
-
-      {/* Stripe header */}
-      <div className="rounded-t-xl px-4 py-3 flex items-center gap-2" style={{ backgroundColor: "#635BFF" }}>
-        <LogoStripe />
-        <div className="ml-auto flex items-center gap-2">
-          <div className="flex items-center">
-            <div className="w-5 h-5 rounded-full bg-[#EB001B]" />
-            <div className="w-5 h-5 rounded-full bg-[#F79E1B] -ml-2.5 opacity-90" />
-          </div>
-          <svg viewBox="0 0 40 16" className="h-3 w-auto">
-            <text x="1" y="12" fontStyle="italic" fontWeight="800" fontSize="12" fill="white">VISA</text>
+      {/* ── Tabs ── */}
+      <div className="flex border border-stone-200 rounded-none overflow-hidden mb-6">
+        <button onClick={() => setIntlMethod("bank-transfer")}
+          className={`flex-1 py-3 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2
+                      ${intlMethod === "bank-transfer" ? "text-white" : "bg-white text-stone-600 hover:bg-stone-50"}`}
+          style={intlMethod === "bank-transfer" ? { backgroundColor: "#059669" } : {}}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18l2.25 2.25m0 0l2.25 2.25M6.75 5.25l-2.25 2.25M21 21l-2.25-2.25m0 0l-2.25-2.25M17.25 18.75l2.25-2.25M3 3l3.75 3.75M21 3l-3.75 3.75M3 21l3.75-3.75M12 12h.008v.008H12V12z"/>
           </svg>
-        </div>
+          Bank Transfer
+        </button>
+        <div className="w-px bg-stone-200" />
+        <button onClick={() => setIntlMethod("stripe-card")}
+          className={`flex-1 py-3 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2
+                      ${intlMethod === "stripe-card" ? "text-white" : "bg-white text-stone-600 hover:bg-stone-50"}`}
+          style={intlMethod === "stripe-card" ? { backgroundColor: "#635BFF" } : {}}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+          </svg>
+          Card / Stripe
+        </button>
       </div>
 
-      <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl p-5 space-y-4 mb-5">
+      {/* ════════ BANK TRANSFER TAB ════════ */}
+      {intlMethod === "bank-transfer" && (
         <div>
-          <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Card Number</label>
-          <input type="text" placeholder="1234 5678 9012 3456" value={cardNum}
-            onChange={(e) => {
-              const n = e.target.value.replace(/\D/g, "").slice(0, 16);
-              setCardNum(n.replace(/(.{4})/g, "$1 ").trim());
-            }}
-            className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                       placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
-                       focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Expiry</label>
-            <input type="text" placeholder="MM / YY" value={expiry}
-              onChange={(e) => {
-                const n = e.target.value.replace(/\D/g, "").slice(0, 4);
-                setExpiry(n.length > 2 ? `${n.slice(0,2)} / ${n.slice(2)}` : n);
-              }}
-              className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                         placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
-                         focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
+          {/* Currency fallback notice */}
+          {isFallback && (
+            <div className="flex gap-2.5 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4">
+              <svg className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+              </svg>
+              <p className="text-xs text-blue-800 leading-relaxed">
+                We don&apos;t have a <strong>{currency}</strong> account yet. Please convert to <strong>EUR</strong> first
+                using your bank or <a href="https://wise.com" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Wise</a>,
+                then transfer to our EUR IBAN below.
+              </p>
+            </div>
+          )}
+
+          <p className="text-sm text-stone-600 mb-4 leading-relaxed">
+            Transfer the <strong>exact amount</strong> and include your reference number so we can
+            match your payment. Orders are confirmed within 1 business day.
+          </p>
+
+          {/* Account detail card */}
+          <div className="rounded-2xl overflow-hidden shadow-sm border border-stone-200 mb-4">
+            <div className="flex items-center gap-3 px-5 py-3 bg-white border-b border-stone-100">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-emerald-100">
+                <svg className="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-stone-800 text-xs font-semibold">{bankInfo.label}</p>
+                <p className="text-stone-400 text-[10px]">{bankInfo.network}</p>
+              </div>
+            </div>
+
+            <div className="bg-white px-5 py-4 space-y-3.5">
+              {bankInfo.fields.map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
+                    <p className="text-sm font-semibold text-stone-900 truncate">{value}</p>
+                  </div>
+                  <button onClick={() => copyText(value, label)}
+                    className={`shrink-0 text-[10px] px-2.5 py-1 rounded font-medium transition-all duration-200
+                                ${copied === label ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500 hover:bg-stone-200"}`}>
+                    {copied === label ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              ))}
+
+              {/* Amount row */}
+              <div className="flex items-center justify-between gap-4 pt-1 border-t border-stone-100">
+                <div className="min-w-0">
+                  <p className="text-[10px] text-stone-400 uppercase tracking-wide">Amount</p>
+                  <p className="text-sm font-bold text-stone-900">{formattedTotal}</p>
+                </div>
+                <button onClick={() => copyText(formattedTotal.replace(/[^\d.]/g, ""), "amount")}
+                  className={`shrink-0 text-[10px] px-2.5 py-1 rounded font-medium transition-all duration-200
+                              ${copied === "amount" ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500 hover:bg-stone-200"}`}>
+                  {copied === "amount" ? "Copied" : "Copy"}
+                </button>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">CVV</label>
-            <input type="password" placeholder="•••" value={cvv}
-              onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                         placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
-                         focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
+
+          <div className="flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+            <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              Always add your <strong>order reference</strong> to the transfer note — this is how we identify your payment.
+              We&apos;ll email you once it&apos;s confirmed.
+            </p>
           </div>
+
+          <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
+
+          {submitError && (
+            <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+              {submitError}
+            </p>
+          )}
+
+          <button onClick={onTransferConfirm} disabled={!termsAccepted || isSubmitting}
+            className="mt-5 inline-flex items-center gap-2 px-10 py-3 rounded-none text-white font-semibold
+                       text-sm tracking-wide transition-all duration-200 shadow-sm
+                       disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
+                       enabled:hover:-translate-y-px"
+            style={{ backgroundColor: "#059669" }}>
+            {isSubmitting ? "Saving order…" : <>I&apos;ve Sent the Transfer <IcoCheck /></>}
+          </button>
         </div>
+      )}
+
+      {/* ════════ STRIPE CARD TAB ════════ */}
+      {intlMethod === "stripe-card" && (
         <div>
-          <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Name on Card</label>
-          <input type="text" placeholder="JANE SMITH" value={cardName}
-            onChange={(e) => setCardName(e.target.value)}
-            className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                       placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
-                       focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
+          <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-5">
+            <div className="text-emerald-600 shrink-0"><IcoShield /></div>
+            <span className="text-xs text-emerald-700 font-medium">256-bit SSL encryption active</span>
+            <div className="ml-auto flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="text-emerald-600 text-[10px] font-medium">SECURE</span>
+            </div>
+          </div>
+
+          <div className="rounded-t-xl px-4 py-3 flex items-center gap-2" style={{ backgroundColor: "#635BFF" }}>
+            <LogoStripe />
+            <div className="ml-auto flex items-center gap-2">
+              <div className="flex items-center">
+                <div className="w-5 h-5 rounded-full bg-[#EB001B]" />
+                <div className="w-5 h-5 rounded-full bg-[#F79E1B] -ml-2.5 opacity-90" />
+              </div>
+              <svg viewBox="0 0 40 16" className="h-3 w-auto">
+                <text x="1" y="12" fontStyle="italic" fontWeight="800" fontSize="12" fill="white">VISA</text>
+              </svg>
+            </div>
+          </div>
+
+          <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl p-5 space-y-4 mb-5">
+            <div>
+              <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Card Number</label>
+              <input type="text" placeholder="1234 5678 9012 3456" value={cardNum}
+                onChange={(e) => { const n = e.target.value.replace(/\D/g,"").slice(0,16); setCardNum(n.replace(/(.{4})/g,"$1 ").trim()); }}
+                className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
+                           placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
+                           focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Expiry</label>
+                <input type="text" placeholder="MM / YY" value={expiry}
+                  onChange={(e) => { const n = e.target.value.replace(/\D/g,"").slice(0,4); setExpiry(n.length>2?`${n.slice(0,2)} / ${n.slice(2)}`:n); }}
+                  className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
+                             placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
+                             focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">CVV</label>
+                <input type="password" placeholder="•••" value={cvv}
+                  onChange={(e) => setCvv(e.target.value.replace(/\D/g,"").slice(0,4))}
+                  className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
+                             placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
+                             focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Name on Card</label>
+              <input type="text" placeholder="JANE SMITH" value={cardName}
+                onChange={(e) => setCardName(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
+                           placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
+                           focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
+            </div>
+          </div>
+
+          <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
+
+          <button type="button" onClick={onStripeConfirm} disabled={!termsAccepted}
+            className="mt-5 inline-flex items-center gap-2 px-10 py-3 rounded-none text-white font-semibold
+                       text-sm tracking-wide transition-all duration-200 shadow-sm
+                       disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
+                       enabled:hover:-translate-y-px"
+            style={{ backgroundColor: "#635BFF" }}>
+            Pay {formattedTotal} with Stripe <IcoArrow />
+          </button>
+          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-600">
+            <div className="text-emerald-600"><IcoShield /></div>
+            PCI-DSS Level 1 compliant · Stripe certified
+          </div>
         </div>
-      </div>
-
-      <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
-
-      <button type="button" onClick={onConfirm} disabled={!termsAccepted}
-        className="mt-5 inline-flex items-center gap-2 px-10 py-3 rounded-none text-white font-semibold
-                   text-sm tracking-wide transition-all duration-200 shadow-sm
-                   disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
-                   enabled:hover:-translate-y-px"
-        style={{ backgroundColor: "#635BFF" }}>
-        Pay {formattedTotal} with Stripe <IcoArrow />
-      </button>
-      <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-600">
-        <div className="text-emerald-600"><IcoShield /></div>
-        PCI-DSS Level 1 compliant · Stripe certified
-      </div>
+      )}
 
       <div className="hidden lg:flex mt-6">
         <button type="button" onClick={onBack}
@@ -1146,8 +1324,12 @@ export default function CheckoutPage() {
 
   const [step,           setStep]           = useState<Step>("shipping");
   const [nigerianMethod, setNigerianMethod] = useState<NigerianPayMethod>("bank-transfer");
+  const [intlMethod,     setIntlMethod]     = useState<IntlPayMethod>("bank-transfer");
   const [termsAccepted,  setTermsAccepted]  = useState(false);
   const [showTerms,      setShowTerms]      = useState(false);
+  const [submitting,     setSubmitting]     = useState(false);
+  const [submitError,    setSubmitError]    = useState("");
+  const [savedOrderId,   setSavedOrderId]   = useState<string | null>(null);
   const [orderRef]                          = useState(() =>
     `WIL-${Math.random().toString(36).slice(2, 10).toUpperCase()}`
   );
@@ -1155,6 +1337,135 @@ export default function CheckoutPage() {
     firstName: "", lastName: "", email: "", phone: "",
     address: "", city: "", postcode: "", country: mode === "nigerian" ? "NG" : "GB", state: "",
   });
+
+  async function handleBankTransferConfirm() {
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            product_id: item.id,
+            product_name: item.name,
+            product_image: item.image,
+            quantity: item.quantity,
+            unit_price: item.price,
+          })),
+          total_amount: orderTotalNGN,
+          delivery_address: ship,
+          payment_method: "bank_transfer",
+          order_ref: orderRef,
+          currency: "NGN",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSubmitError(data.error ?? "Could not save your order. Please try again.");
+        return;
+      }
+      setSavedOrderId(data.order_id);
+      setStep("confirmation");
+    } catch {
+      setSubmitError("Network error — please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handlePaystackPayment() {
+    if (!ship.email) {
+      setSubmitError("Please enter your email in the shipping step first.");
+      return;
+    }
+    setSubmitError("");
+    try {
+      const PaystackPop = await loadPaystack();
+      const handler = PaystackPop.setup({
+        key:      process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? "",
+        email:    ship.email,
+        amount:   orderTotalNGN * 100, // Paystack works in kobo (1/100 of NGN)
+        currency: "NGN",
+        ref:      orderRef,
+        callback: async (response) => {
+          setSubmitting(true);
+          try {
+            const res = await fetch("/api/payments/paystack/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                reference:        response.reference,
+                items:            items.map((item) => ({
+                  product_id:    item.id,
+                  product_name:  item.name,
+                  product_image: item.image,
+                  quantity:      item.quantity,
+                  unit_price:    item.price,
+                })),
+                total_amount:     orderTotalNGN,
+                delivery_address: ship,
+                currency:         "NGN",
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              setSubmitError(data.error ?? `Payment went through but order save failed. Keep your ref: ${response.reference}`);
+              return;
+            }
+            setSavedOrderId(data.order_id);
+            setStep("confirmation");
+          } catch {
+            setSubmitError(`Verification failed. Payment may have gone through — contact us with ref: ${response.reference}`);
+          } finally {
+            setSubmitting(false);
+          }
+        },
+        onClose: () => {
+          // customer closed popup without paying — no action needed
+        },
+      });
+      handler.openIframe();
+    } catch {
+      setSubmitError("Could not load Paystack. Please check your connection and try again.");
+    }
+  }
+
+  async function handleInternationalTransferConfirm() {
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            product_id: item.id,
+            product_name: item.name,
+            product_image: item.image,
+            quantity: item.quantity,
+            unit_price: item.price,
+          })),
+          total_amount: pricing.totalNGN,
+          delivery_address: ship,
+          payment_method: "swift_transfer",
+          order_ref: orderRef,
+          currency,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSubmitError(data.error ?? "Could not save your order. Please try again.");
+        return;
+      }
+      setSavedOrderId(data.order_id);
+      setStep("confirmation");
+    } catch {
+      setSubmitError("Network error — please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   /* Empty cart guard */
   if (items.length === 0 && step !== "confirmation") {
@@ -1216,8 +1527,11 @@ export default function CheckoutPage() {
               <NigerianPaymentStep
                 orderTotalNGN={orderTotalNGN} orderRef={orderRef}
                 nigerianMethod={nigerianMethod} setNigerianMethod={setNigerianMethod}
-                onBack={() => { setStep("shipping"); setTermsAccepted(false); }}
-                onConfirm={() => setStep("confirmation")}
+                onBack={() => { setStep("shipping"); setTermsAccepted(false); setSubmitError(""); }}
+                onBankTransferConfirm={handleBankTransferConfirm}
+                onPaystackConfirm={handlePaystackPayment}
+                isSubmitting={submitting}
+                submitError={submitError}
                 termsAccepted={termsAccepted}
                 setTermsAccepted={setTermsAccepted}
                 onShowTerms={() => setShowTerms(true)}
@@ -1226,8 +1540,14 @@ export default function CheckoutPage() {
             {step === "payment" && mode === "international" && (
               <InternationalPaymentStep
                 formattedTotal={pricing.formattedTotal}
-                onBack={() => { setStep("shipping"); setTermsAccepted(false); }}
-                onConfirm={() => setStep("confirmation")}
+                currency={currency}
+                intlMethod={intlMethod}
+                setIntlMethod={setIntlMethod}
+                onBack={() => { setStep("shipping"); setTermsAccepted(false); setSubmitError(""); }}
+                onTransferConfirm={handleInternationalTransferConfirm}
+                onStripeConfirm={() => setStep("confirmation")}
+                isSubmitting={submitting}
+                submitError={submitError}
                 termsAccepted={termsAccepted}
                 setTermsAccepted={setTermsAccepted}
                 onShowTerms={() => setShowTerms(true)}
@@ -1269,23 +1589,34 @@ export default function CheckoutPage() {
         {step === "payment" && (
           <div className="flex gap-3">
             <button type="button"
-              onClick={() => { setStep("shipping"); setTermsAccepted(false); }}
+              onClick={() => { setStep("shipping"); setTermsAccepted(false); setSubmitError(""); }}
               className="h-12 px-5 rounded-none border-2 border-stone-200 text-stone-500
                          font-medium text-sm active:bg-stone-100 transition-all duration-150 shrink-0">
               ← Back
             </button>
             <button type="button"
-              onClick={() => setStep("confirmation")}
-              disabled={!termsAccepted}
+              onClick={
+                mode === "nigerian" && nigerianMethod === "bank-transfer"
+                  ? handleBankTransferConfirm
+                  : mode === "international" && intlMethod === "bank-transfer"
+                    ? handleInternationalTransferConfirm
+                    : () => setStep("confirmation")
+              }
+              disabled={!termsAccepted || submitting}
               className="flex-1 h-12 rounded-none text-white font-semibold text-sm
                          active:scale-[0.98] transition-all duration-150 shadow-sm
                          disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ backgroundColor: accent }}>
-              {mode === "nigerian" && nigerianMethod === "bank-transfer"
-                ? "Confirm Order"
-                : `Pay ${mode === "nigerian" ? `₦${orderTotalNGN.toLocaleString("en-NG")}` : pricing.formattedTotal}`}
+              {submitting ? "Saving…"
+                : (mode === "nigerian" && nigerianMethod === "bank-transfer") ||
+                  (mode === "international" && intlMethod === "bank-transfer")
+                  ? "Confirm Order"
+                  : `Pay ${mode === "nigerian" ? `₦${orderTotalNGN.toLocaleString("en-NG")}` : pricing.formattedTotal}`}
             </button>
           </div>
+        )}
+        {submitError && step === "payment" && (
+          <p className="text-[10px] text-red-600 text-center mt-1">{submitError}</p>
         )}
 
         <div className="flex items-center justify-center gap-1.5 mt-2 text-[10px] text-stone-500">

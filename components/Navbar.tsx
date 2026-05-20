@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "./CartContext";
+import { useAuth } from "@/lib/supabase/auth-context";
+import { createClient } from "@/lib/supabase/client";
 import CoziLogo from "./CoziLogo";
 import CurrencyPicker from "./CurrencyPicker";
 
@@ -26,9 +28,32 @@ const drawerCategories = [
 
 export default function Navbar() {
   const { itemCount } = useCart();
+  const { user } = useAuth();
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const router   = useRouter();
+  const [menuOpen,    setMenuOpen]    = useState(false);
+  const [scrolled,    setScrolled]    = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUserMenuOpen(false);
+    router.push("/");
+    router.refresh();
+  }
+
+  /* Close user menu on outside click */
+  useEffect(() => {
+    function onOutsideClick(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onOutsideClick);
+    return () => document.removeEventListener("mousedown", onOutsideClick);
+  }, []);
 
   /* Shadow navbar on scroll */
   useEffect(() => {
@@ -113,6 +138,74 @@ export default function Navbar() {
             >
               Shop Now
             </Link>
+
+            {/* User account button */}
+            <div className="relative" ref={userMenuRef}>
+              {user ? (
+                <>
+                  <button
+                    onClick={() => setUserMenuOpen((o) => !o)}
+                    className="w-10 h-10 flex items-center justify-center rounded-full text-cream
+                               text-xs font-bold font-body tracking-wide transition-all duration-200
+                               hover:opacity-90"
+                    style={{ backgroundColor: "#8B2035" }}
+                    aria-label="Account menu"
+                  >
+                    {(user.user_metadata?.full_name as string | undefined)?.[0]?.toUpperCase() ?? "U"}
+                  </button>
+
+                  {userMenuOpen && (
+                    <div className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-cream-darker z-50 overflow-hidden">
+                      <div className="px-4 py-3 border-b border-taupe/15">
+                        <p className="text-xs font-semibold text-deep-brown truncate">
+                          {(user.user_metadata?.full_name as string) ?? "My Account"}
+                        </p>
+                        <p className="text-[10px] text-taupe-dark truncate">{user.email}</p>
+                      </div>
+                      <Link
+                        href="/account"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-3 text-sm text-brown hover:bg-cream transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                        </svg>
+                        My Account
+                      </Link>
+                      <Link
+                        href="/account/orders"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-3 text-sm text-brown hover:bg-cream transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        My Orders
+                      </Link>
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-red-600
+                                   hover:bg-red-50 transition-colors border-t border-taupe/10"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                        </svg>
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 rounded-none
+                             border border-brown/30 text-sm font-medium text-brown font-body
+                             hover:border-brown/70 transition-colors duration-200"
+                >
+                  Sign In
+                </Link>
+              )}
+            </div>
 
             {/* Cart icon */}
             <Link
@@ -224,6 +317,33 @@ export default function Navbar() {
             <p className="text-xs text-taupe-dark font-body">Currency</p>
             <CurrencyPicker />
           </div>
+
+          {user ? (
+            <div className="space-y-2">
+              <Link href="/account" onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 py-2 text-sm font-medium text-brown">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+                My Account
+              </Link>
+              <button onClick={() => { setMenuOpen(false); handleSignOut(); }}
+                className="flex items-center gap-2 py-2 text-sm font-medium text-red-600 w-full">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                </svg>
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <Link href="/auth/login" onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center w-full h-11 rounded-none text-cream
+                         font-semibold text-sm tracking-wide font-body"
+              style={{ backgroundColor: "#8B2035" }}>
+              Sign In / Create Account
+            </Link>
+          )}
+
           <p className="text-xs text-taupe-dark text-center font-body italic">
             est. 2018 · handcrafted with ♡
           </p>
