@@ -71,9 +71,13 @@ export default async function HomePage() {
     .order("created_at", { ascending: false })
     .limit(6);
 
-  const featured = dbFeatured?.length
-    ? (dbFeatured as DbProduct[]).map(mapProduct)
-    : getFeaturedProducts();
+  // Local featured products take priority; DB-only featured products appended
+  const localFeatured = getFeaturedProducts();
+  const localFeaturedIds = new Set(localFeatured.map((p) => p.id));
+  const dbOnlyFeatured = (dbFeatured ?? [])
+    .filter((p: DbProduct) => !localFeaturedIds.has(p.id))
+    .map(mapProduct);
+  const featured = [...localFeatured, ...dbOnlyFeatured].slice(0, 6);
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
   return (
@@ -404,22 +408,22 @@ export default async function HomePage() {
               <div className="relative">
                 <div className="rounded-2xl lg:rounded-3xl overflow-hidden aspect-4/3 lg:aspect-[4/5] relative shadow-2xl">
                   <Image
-                    src="https://picsum.photos/seed/artisan-weave/800/1000"
-                    alt="Women artisan hand-knitting a wool piece"
+                    src="/images/our-story.jpg"
+                    alt="Chunky burgundy yarn and handmade blanket — the beginning of Woven with Love"
                     fill
                     loading="lazy"
                     sizes="(max-width: 1024px) 100vw, 50vw"
                     className="object-cover hover:scale-105 transition-transform duration-700 ease-out"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-deep-brown/35 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-deep-brown/25 to-transparent" />
                 </div>
                 {/* Floating stat card */}
                 <div
                   className="absolute -bottom-5 right-4 lg:-bottom-7 lg:-right-7
                               bg-cream rounded-2xl p-5 shadow-2xl border border-taupe/20"
                 >
-                  <p className="font-heading italic text-4xl font-400 text-deep-brown">5+</p>
-                  <p className="text-xs text-taupe-dark mt-1 font-body tracking-wide">Years of craft</p>
+                  <p className="font-heading italic text-4xl font-400 text-deep-brown">Made</p>
+                  <p className="text-xs text-taupe-dark mt-1 font-body tracking-wide">with love & intention</p>
                 </div>
               </div>
             </ScrollReveal>
@@ -430,37 +434,42 @@ export default async function HomePage() {
                 ✦ Our story
               </p>
               <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown mb-5 leading-tight">
-                Stitched with Soul
+                Where Every Stitch Began
               </h2>
               <p className="text-deep-brown/80 leading-relaxed mb-5 text-sm sm:text-base font-medium">
-                Woven with Love was born from a simple belief: that the things
-                we hold close should carry the warmth of the hands that made
-                them. Every duvet, every baby cardigan, every tote bag is
-                hand-knitted or needle-and-thread crafted by skilled women
-                artisans — women who pour patience, tradition, and love into
-                every single stitch.
+                It all began as a quiet curiosity, a ball of yarn, and a desire
+                to create something warm with my own hands. What started as a
+                simple attempt to learn crochet slowly became a comforting hobby.
+              </p>
+
+              <p className="text-deep-brown/80 leading-relaxed mb-5 text-sm sm:text-base font-medium">
+                With each stitch, I discovered more than just a craft — I found
+                patience, creativity, and joy in turning simple threads into
+                something meaningful. My early pieces were far from perfect, but
+                they carried something special: care, time, and intention.
               </p>
 
               {/* Pull-quote */}
               <blockquote className="border-l-4 border-gold pl-5 py-1 mb-6">
                 <p className="font-heading italic text-xl sm:text-2xl font-400 text-deep-brown leading-snug">
-                  &ldquo;No two pieces are alike — just like the women who make
-                  them.&rdquo;
+                  &ldquo;Every blanket I create is more than a product — it is
+                  a piece of that journey.&rdquo;
                 </p>
               </blockquote>
 
               <p className="text-deep-brown/70 leading-relaxed mb-7 text-sm sm:text-base font-medium">
-                We source only natural fibres — merino wool, Shetland fleece,
-                Corriedale — and every item ships gift-wrapped, ready to become
-                an heirloom.
+                As my skills grew, so did my love for making cozy blankets. Today,
+                every piece is made slowly and thoughtfully — soft, warm, and made
+                to be lived in — with the hope that it brings warmth and comfort
+                into someone else&apos;s home.
               </p>
 
               <div className="grid grid-cols-2 gap-5 mb-8">
                 {[
-                  { value: "40+", label: "Artisan Women" },
-                  { value: "100%", label: "Natural Wool" },
-                  { value: "12", label: "Unique Collections" },
-                  { value: "4k+", label: "Happy Customers" },
+                  { value: "100%", label: "Handmade" },
+                  { value: "Made", label: "with intention" },
+                  { value: "Soft", label: "Warm & Cozy" },
+                  { value: "Each", label: "Piece is Unique" },
                 ].map(({ value, label }) => (
                   <div key={label} className="border-l-2 border-gold pl-4">
                     <p className="font-heading italic text-2xl font-500 text-deep-brown">

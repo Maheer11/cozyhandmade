@@ -15,19 +15,30 @@ export default async function ProductDetailPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  // Try DB first, then fall back to hardcoded (for local images during transition)
-  const { data: dbProduct } = await db
-    .from("products")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  // Prefer local hardcoded data (has sizes + latest content).
+  // Fall back to Supabase only for products added via the admin panel (not in local list).
+  const localProduct = getProduct(id);
 
-  const product = dbProduct ? mapProduct(dbProduct) : getProduct(id);
+  let product;
+  let fromDb = false;
+
+  if (localProduct) {
+    product = localProduct;
+  } else {
+    const { data: dbProduct } = await db
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    product = dbProduct ? mapProduct(dbProduct) : null;
+    fromDb = !!dbProduct;
+  }
+
   if (!product) notFound();
 
   // Fetch related from same source
   let related;
-  if (dbProduct) {
+  if (fromDb) {
     const { data: dbRelated } = await db
       .from("products")
       .select("*")
@@ -37,7 +48,7 @@ export default async function ProductDetailPage({
     related = (dbRelated ?? []).map(mapProduct);
   } else {
     related = hardcodedProducts
-      .filter((p) => p.category === product.category && p.id !== id)
+      .filter((p) => p.category === product!.category && p.id !== id)
       .slice(0, 4);
   }
 

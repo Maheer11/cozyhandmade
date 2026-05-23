@@ -3,7 +3,6 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/client";
 import type { DbProduct } from "@/lib/db-products";
 import { categories } from "@/lib/products";
 
@@ -55,15 +54,27 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
 
   /* ── Image upload helpers ── */
   async function uploadFile(file: File): Promise<string | null> {
-    const supabase = createClient();
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { data, error } = await supabase.storage
-      .from("product-images")
-      .upload(path, file, { upsert: false });
-    if (error || !data) { console.error(error); return null; }
-    const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(data.path);
-    return publicUrl;
+    const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      console.error("Cloudinary env vars not set");
+      return null;
+    }
+
+    const body = new FormData();
+    body.append("file", file);
+    body.append("upload_preset", uploadPreset);
+    body.append("folder", "product-images");
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: "POST", body }
+    );
+
+    if (!res.ok) { console.error("Cloudinary upload failed", await res.text()); return null; }
+    const data = await res.json();
+    return (data.secure_url as string) ?? null;
   }
 
   async function handleMainImage(e: React.ChangeEvent<HTMLInputElement>) {

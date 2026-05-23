@@ -1,3 +1,8 @@
+export interface ProductSize {
+  label: string;
+  price: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -13,6 +18,7 @@ export interface Product {
   tags: string[];
   inStock: boolean;
   featured: boolean;
+  sizes?: ProductSize[];
 }
 
 export interface Category {
@@ -40,9 +46,8 @@ export const categories: Category[] = [
 export const products: Product[] = [
   {
     id: "1",
-    name: "Textured square pattern Blanket",
-    price: 380000,
-    originalPrice: 480000,
+    name: "Square Pattern Blanket",
+    price: 128000,
     category: "Blankets",
     rating: 4.9,
     reviewCount: 87,
@@ -52,17 +57,24 @@ export const products: Product[] = [
       "/images/TB3.jpg",
     ],
     description:
-      "Hand-stitched from premium cotton patchwork squares, each duvet takes over 40 hours to complete. Filled with 100% natural wool batting for breathable warmth all year.",
+      "Soft handcrafted throw blanket featuring a modern square pattern design, made for warmth, comfort, and stylish home décor.",
     details: [
-      "100% cotton patchwork top",
-      "Natural wool batting",
-      "Queen size: 200cm × 200cm",
-      "Wash at 30°C gentle cycle",
-      "Each piece uniquely patterned",
+      "Premium soft wool blend",
+      "Square pattern texture",
+      "Thick and cozy finish",
+      "Lightweight yet warm",
+      "Suitable for sofas, beds, and lounges",
+      "Machine washable (check label)",
+      "Available in multiple colours",
     ],
-    tags: ["duvet", "patchwork", "wool", "bedroom"],
+    tags: ["blanket", "square pattern", "wool", "cozy", "home décor"],
     inStock: true,
     featured: true,
+    sizes: [
+      { label: "Medium  45×60 in", price: 128000 },
+      { label: "Large    50×75 in", price: 145000 },
+      { label: "XL        80×100 in", price: 170000 },
+    ],
   },
   {
     id: "2",
@@ -88,8 +100,8 @@ export const products: Product[] = [
   },
   {
     id: "3",
-    name: "Cozy Herringbone blanket",
-    price: 150000,
+    name: "Broken Herringbone Pattern Blanket",
+    price: 128000,
     category: "Blankets",
     rating: 4.8,
     reviewCount: 62,
@@ -100,23 +112,29 @@ export const products: Product[] = [
       "/images/tbk4.jpg",
     ],
     description:
-      "Hand-loomed on a traditional wooden frame, this roomy tote is as sturdy as it is beautiful. Leather-reinforced handles and a cotton lining complete the craftsmanship.",
+      "Beautiful textured blanket inspired by the broken herringbone stitch pattern, offering a unique handcrafted appearance and cozy feel.",
     details: [
-      "Hand-loomed wool body",
-      "Genuine leather handles",
-      "Cotton lining with zip pocket",
-      "38cm × 32cm × 14cm",
-      "Spot clean only",
+      "Broken Herringbone stitch texture",
+      "Machine washable (check label)",
+      "Lightweight and warm",
+      "Stylish modern pattern",
+      "Perfect for gifting and home comfort",
+      "Suitable for sofas, beds, and lounges",
+      "Available in colours",
     ],
-    tags: ["tote", "woven", "handbag", "wool"],
+    tags: ["blanket", "herringbone", "textured", "cozy", "home décor"],
     inStock: true,
     featured: true,
+    sizes: [
+      { label: "Medium  45×60 in", price: 128000 },
+      { label: "Large    50×75 in", price: 145000 },
+      { label: "XL        80×100 in", price: 170000 },
+    ],
   },
   {
     id: "4",
-    name: " Cozy Cable blankets",
-    price: 95000,
-    originalPrice: 130000,
+    name: "Cozy Cable Blanket",
+    price: 128000,
     category: "Blankets",
     rating: 4.7,
     reviewCount: 39,
@@ -126,17 +144,24 @@ export const products: Product[] = [
       "/images/tbck3.jpg",
     ],
     description:
-      "Needle-felted from pure Corriedale wool with a floral motif pressed by hand. A magnetic clasp closes the cotton-lined interior with two card slots.",
+      "Classic cable-knit throw blanket designed with a luxurious texture to provide warmth and elegance for everyday comfort.",
     details: [
-      "Corriedale wool body",
-      "Needle-felted floral design",
-      "Magnetic clasp",
-      "Cotton lining, 2 card slots",
-      "22cm × 13cm",
+      "Elegant braided texture",
+      "Warm and breathable material",
+      "Machine washable (check label)",
+      "Durable stitched finish",
+      "Ideal for home décor and relaxation",
+      "Suitable for sofas, beds, and lounges",
+      "Available in multiple colours",
     ],
-    tags: ["clutch", "felted", "purse", "floral"],
+    tags: ["blanket", "cable-knit", "throw", "cozy", "home décor"],
     inStock: true,
     featured: false,
+    sizes: [
+      { label: "Medium  45×60 in", price: 128000 },
+      { label: "Large    50×75 in", price: 145000 },
+      { label: "XL        80×100 in", price: 170000 },
+    ],
   },
   {
     id: "5",

@@ -33,13 +33,18 @@ export default function ProductDetail({
 }) {
   const { addItem } = useCart();
   const { formatAmount } = useCurrency();
-  const [activeImg, setActiveImg] = useState(0);
-  const [quantity,  setQuantity]  = useState(1);
-  const [added,     setAdded]     = useState(false);
+  const [activeImg,    setActiveImg]    = useState(0);
+  const [quantity,     setQuantity]     = useState(1);
+  const [added,        setAdded]        = useState(false);
+  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] ?? null);
+  const [detailsOpen,  setDetailsOpen]  = useState(false);
+
+  const activePrice = selectedSize?.price ?? product.price;
+  const cartName    = selectedSize ? `${product.name} (${selectedSize.label.trim()})` : product.name;
 
   const handleAdd = () => {
     for (let i = 0; i < quantity; i++) {
-      addItem({ id: product.id, name: product.name, price: product.price, image: product.image });
+      addItem({ id: product.id, name: cartName, price: activePrice, image: product.image });
     }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -108,7 +113,7 @@ export default function ProductDetail({
           </div>
 
           {/* Product info */}
-          <div className="px-4 sm:px-6 lg:px-0 py-5 lg:py-0 pb-28 lg:pb-0">
+          <div className="px-4 sm:px-6 lg:px-0 py-5 lg:py-0 pb-16 lg:pb-0">
             <p className="text-terracotta text-[10px] uppercase tracking-[0.15em] font-medium mb-2">
               {product.category.replace(/-/g, " ")}
             </p>
@@ -119,8 +124,8 @@ export default function ProductDetail({
             <StarRating rating={product.rating} count={product.reviewCount} />
 
             <div className="flex items-baseline gap-3 mt-4 mb-5">
-              <span className="text-2xl font-bold text-brown">{formatAmount(product.price)}</span>
-              {product.originalPrice && (
+              <span className="text-2xl font-bold text-brown">{formatAmount(activePrice)}</span>
+              {product.originalPrice && !selectedSize && (
                 <>
                   <span className="text-base text-taupe-dark line-through">{formatAmount(product.originalPrice)}</span>
                   <span className="text-sm font-medium text-terracotta">
@@ -132,19 +137,66 @@ export default function ProductDetail({
 
             <p className="text-brown/75 leading-relaxed text-sm sm:text-base mb-6">{product.description}</p>
 
-            {/* Desktop quantity + add */}
-            <div className="hidden lg:flex items-center gap-4 mb-5">
-              <div className="flex items-center border border-taupe/40 rounded-xl overflow-hidden">
+            {/* Size selector — only shown for products with size variants */}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="mb-6">
+                <label className="block text-xs font-semibold text-deep-brown uppercase tracking-widest mb-2">
+                  Size
+                </label>
+                <div className="relative inline-block">
+                  <select
+                    value={selectedSize?.label ?? ""}
+                    onChange={(e) => {
+                      const match = product.sizes!.find((s) => s.label === e.target.value);
+                      if (match) setSelectedSize(match);
+                    }}
+                    className="appearance-none h-9 pl-3 pr-8 rounded-lg border border-taupe/40
+                               bg-white text-deep-brown text-xs font-medium cursor-pointer
+                               focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20
+                               transition-all duration-200"
+                  >
+                    {product.sizes.map((s) => (
+                      <option key={s.label} value={s.label}>
+                        {s.label.trim()} — {formatAmount(s.price)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-taupe">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mobile quantity row — sits inline above the sticky bar */}
+            <div className="lg:hidden flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold text-deep-brown uppercase tracking-widest">Qty</span>
+              <div className="flex items-center border border-taupe/40 rounded overflow-hidden">
                 <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        className="w-12 h-12 flex items-center justify-center text-brown text-xl hover:bg-cream-dark transition-colors">−</button>
-                <span className="w-12 text-center font-medium text-deep-brown">{quantity}</span>
+                        className="w-8 h-8 flex items-center justify-center text-brown hover:bg-cream-dark transition-colors"
+                        style={{ touchAction: "manipulation" }}>−</button>
+                <span className="w-8 text-center text-sm font-semibold text-deep-brown">{quantity}</span>
                 <button onClick={() => setQuantity((q) => q + 1)}
-                        className="w-12 h-12 flex items-center justify-center text-brown text-xl hover:bg-cream-dark transition-colors">+</button>
+                        className="w-8 h-8 flex items-center justify-center text-brown hover:bg-cream-dark transition-colors"
+                        style={{ touchAction: "manipulation" }}>+</button>
+              </div>
+            </div>
+
+            {/* Desktop quantity + add */}
+            <div className="hidden lg:flex items-center gap-3 mb-5">
+              <div className="flex items-center border border-taupe/40 overflow-hidden">
+                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        className="w-9 h-9 flex items-center justify-center text-brown text-base hover:bg-cream-dark transition-colors">−</button>
+                <span className="w-8 text-center text-sm font-medium text-deep-brown">{quantity}</span>
+                <button onClick={() => setQuantity((q) => q + 1)}
+                        className="w-9 h-9 flex items-center justify-center text-brown text-base hover:bg-cream-dark transition-colors">+</button>
               </div>
               <button
                 onClick={handleAdd}
                 disabled={!product.inStock}
-                className={`flex-1 h-12 rounded-xl font-medium text-sm transition-all duration-200
+                className={`px-8 py-2.5 text-sm font-semibold transition-all duration-200
                             ${added ? "bg-green-600 text-white"
                               : "bg-terracotta text-cream hover:bg-gold hover:scale-[1.02] active:scale-[0.99]"
                             } disabled:opacity-40`}
@@ -153,26 +205,39 @@ export default function ProductDetail({
               </button>
             </div>
 
-            {/* Product details */}
-            <div className="border-t border-taupe/20 pt-5 mb-5">
-              <h3 className="font-heading font-600 text-deep-brown mb-3 text-base">Product Details</h3>
-              <ul className="space-y-2">
-                {product.details.map((d) => (
-                  <li key={d} className="flex items-start gap-2 text-sm text-brown/75">
-                    <span className="text-gold mt-0.5 shrink-0">✦</span>
-                    {d}
-                  </li>
-                ))}
-              </ul>
+            {/* Product details accordion */}
+            <div className="border-t border-b border-taupe/30 mt-2">
+              <button
+                onClick={() => setDetailsOpen((o) => !o)}
+                className="flex items-center gap-3 py-3.5 text-left"
+              >
+                <span className="font-heading font-500 text-sm tracking-wide" style={{ color: "#8B2035" }}>Product Details</span>
+                <span
+                  className="w-6 h-6 flex items-center justify-center border border-taupe/40 text-base font-medium leading-none transition-transform duration-300"
+                  style={{ color: "#8B2035", transform: detailsOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                >
+                  {detailsOpen ? "−" : "+"}
+                </span>
+              </button>
+
+              {/* Animated slide-down */}
+              <div
+                className="grid transition-all duration-300 ease-in-out"
+                style={{ gridTemplateRows: detailsOpen ? "1fr" : "0fr" }}
+              >
+                <div className="overflow-hidden">
+                  <ul className="space-y-2 pb-5 pt-1">
+                    {product.details.map((d) => (
+                      <li key={d} className="flex items-start gap-2 text-sm text-brown/75 animate-fade-up">
+                        <span className="text-gold mt-0.5 shrink-0">✦</span>
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {product.tags.map((tag) => (
-                <span key={tag} className="text-xs px-3 py-1 bg-cream-dark text-taupe-dark rounded-full border border-taupe/30">
-                  #{tag}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -188,33 +253,19 @@ export default function ProductDetail({
       </div>
 
       {/* Mobile sticky add-to-cart bar */}
-      <div
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-cream/95 backdrop-blur-md border-t border-taupe/20 px-4 pt-3"
-        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
-      >
-        <div className="flex items-center gap-3 max-w-sm mx-auto">
-          <div className="flex items-center border border-taupe/40 rounded-xl overflow-hidden shrink-0">
-            <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="w-11 h-11 flex items-center justify-center text-brown text-xl active:bg-cream-dark"
-                    style={{ touchAction: "manipulation" }}>−</button>
-            <span className="w-8 text-center text-sm font-semibold text-deep-brown">{quantity}</span>
-            <button onClick={() => setQuantity((q) => q + 1)}
-                    className="w-11 h-11 flex items-center justify-center text-brown text-xl active:bg-cream-dark"
-                    style={{ touchAction: "manipulation" }}>+</button>
-          </div>
-          <button
-            onClick={handleAdd}
-            disabled={!product.inStock}
-            className={`flex-1 h-14 rounded-2xl font-semibold text-base transition-all active:scale-[0.98]
-                        ${added ? "bg-green-600 text-white"
-                          : product.inStock ? "bg-terracotta text-cream active:bg-terracotta-dark"
-                          : "bg-taupe/30 text-taupe-dark"
-                        } disabled:cursor-not-allowed`}
-            style={{ touchAction: "manipulation" }}
-          >
-            {added ? "Added to Cart!" : product.inStock ? `Add to Cart · ${formatAmount(product.price * quantity)}` : "Out of Stock"}
-          </button>
-        </div>
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-stone-200 px-4 py-3">
+        <button
+          onClick={handleAdd}
+          disabled={!product.inStock}
+          className={`w-full h-12 rounded font-bold text-sm tracking-widest uppercase transition-all active:scale-[0.99]
+                      ${added ? "bg-green-600 text-white"
+                        : product.inStock ? "bg-deep-brown text-cream"
+                        : "bg-taupe/30 text-taupe-dark"
+                      } disabled:cursor-not-allowed`}
+          style={{ touchAction: "manipulation" }}
+        >
+          {added ? "Added to Cart!" : product.inStock ? "Add to Cart" : "Out of Stock"}
+        </button>
       </div>
     </div>
   );

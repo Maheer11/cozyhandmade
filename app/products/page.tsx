@@ -13,10 +13,13 @@ export default async function ProductsPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  // Use DB products if they exist, fall back to hardcoded until seeded
-  const products = data?.length
-    ? data.map(mapProduct)
-    : hardcodedProducts;
+  // Local products take priority (they have sizes + latest content).
+  // DB-only products (added via admin panel) are appended after.
+  const localIds = new Set(hardcodedProducts.map((p) => p.id));
+  const dbOnlyProducts = (data ?? [])
+    .filter((p: { id: string }) => !localIds.has(p.id))
+    .map(mapProduct);
+  const products = [...hardcodedProducts, ...dbOnlyProducts];
 
   return <ProductsContent products={products} categories={categories} />;
 }
