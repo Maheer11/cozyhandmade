@@ -45,7 +45,10 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
   const moreRef  = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormState>(defaultState(product));
-  const [uploading, setUploading] = useState(false);
+  const [uploadingMain, setUploadingMain] = useState(false);
+  const [uploadingMore, setUploadingMore] = useState(false);
+  const [mainImgError,  setMainImgError]  = useState<string | null>(null);
+  const [moreImgError,  setMoreImgError]  = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,20 +83,29 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
   async function handleMainImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
+    setMainImgError(null);
+    setUploadingMain(true);
     const url = await uploadFile(file);
-    if (url) set("image", url);
-    setUploading(false);
+    if (url) {
+      set("image", url);
+    } else {
+      setMainImgError("Upload failed — check your connection and try again.");
+    }
+    setUploadingMain(false);
   }
 
   async function handleMoreImages(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setUploading(true);
+    setMoreImgError(null);
+    setUploadingMore(true);
     const urls = await Promise.all(files.map(uploadFile));
     const valid = urls.filter(Boolean) as string[];
-    set("images", [...form.images, ...valid]);
-    setUploading(false);
+    if (valid.length < files.length) {
+      setMoreImgError(`${files.length - valid.length} image(s) failed to upload — try again.`);
+    }
+    if (valid.length > 0) set("images", [...form.images, ...valid]);
+    setUploadingMore(false);
   }
 
   function removeImage(idx: number) {
@@ -148,6 +160,13 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
   const labelCls = "block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide";
 
   return (
+    <>
+    <style>{`
+      @keyframes adminProgressSlide {
+        0%   { transform: translateX(-100%); }
+        100% { transform: translateX(350%); }
+      }
+    `}</style>
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
@@ -290,7 +309,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           <div>
             <label className={labelCls}>Main Image *</label>
             <div
-              onClick={() => fileRef.current?.click()}
+              onClick={() => !uploadingMain && fileRef.current?.click()}
               className="relative cursor-pointer aspect-square rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 transition-colors overflow-hidden flex items-center justify-center"
             >
               {form.image ? (
@@ -300,15 +319,31 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
                   <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                   </svg>
-                  <p className="text-xs text-gray-400">{uploading ? "Uploading…" : "Click to upload"}</p>
+                  <p className="text-xs text-gray-400">{uploadingMain ? "Uploading…" : "Click to upload"}</p>
                 </div>
               )}
-              {uploading && (
-                <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                  <span className="text-xs text-gray-500">Uploading…</span>
+              {uploadingMain && (
+                <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                  <span className="text-xs text-gray-500 font-medium">Uploading…</span>
+                </div>
+              )}
+              {/* Progress bar — slides across top while uploading */}
+              {uploadingMain && (
+                <div className="absolute top-0 left-0 right-0 h-0.75 overflow-hidden" style={{ backgroundColor: "#F5EDE0" }}>
+                  <div className="h-full w-2/5 rounded-full" style={{ backgroundColor: "#8B2035", animation: "adminProgressSlide 1.2s ease-in-out infinite" }} />
                 </div>
               )}
             </div>
+            {/* Error message */}
+            {mainImgError && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-red-600">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <span>{mainImgError}</span>
+                <button type="button" onClick={() => { setMainImgError(null); fileRef.current?.click(); }} className="underline font-medium hover:text-red-700">Try again</button>
+              </div>
+            )}
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleMainImage} />
             {form.image && (
               <input
@@ -332,6 +367,12 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           {/* Additional images */}
           <div>
             <label className={labelCls}>Additional Images</label>
+            {/* Progress bar for additional images */}
+            <div className="relative h-0.75 rounded-full mb-2 overflow-hidden" style={{ backgroundColor: "#F5EDE0" }}>
+              {uploadingMore && (
+                <div className="absolute top-0 left-0 h-full w-2/5 rounded-full" style={{ backgroundColor: "#8B2035", animation: "adminProgressSlide 1.2s ease-in-out infinite" }} />
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-2 mb-2">
               {form.images.map((img, i) => (
                 <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group">
@@ -345,10 +386,20 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
               ))}
               <button
                 type="button"
-                onClick={() => moreRef.current?.click()}
-                className="aspect-square rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-300 hover:text-gray-400 text-2xl flex items-center justify-center transition-colors"
-              >+</button>
+                onClick={() => !uploadingMore && moreRef.current?.click()}
+                className="aspect-square rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-300 hover:text-gray-400 text-2xl flex items-center justify-center transition-colors disabled:opacity-50"
+              >{uploadingMore ? "…" : "+"}</button>
             </div>
+            {/* Error message */}
+            {moreImgError && (
+              <div className="flex items-center gap-2 text-xs text-red-600 mt-1">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <span>{moreImgError}</span>
+                <button type="button" onClick={() => { setMoreImgError(null); moreRef.current?.click(); }} className="underline font-medium hover:text-red-700">Try again</button>
+              </div>
+            )}
             <input ref={moreRef} type="file" accept="image/*" multiple className="hidden" onChange={handleMoreImages} />
           </div>
         </div>
@@ -358,7 +409,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
       <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
-          disabled={saving || uploading}
+          disabled={saving || uploadingMain || uploadingMore}
           className="px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ backgroundColor: "#8B2035" }}
         >
@@ -373,5 +424,6 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
         </button>
       </div>
     </form>
+    </>
   );
 }
