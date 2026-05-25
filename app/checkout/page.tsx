@@ -43,27 +43,27 @@ const BANK: Record<string, { label: string; network: string; fields: [string, st
     label:   "EUR — SEPA Transfer",
     network: "SEPA · arrives same/next business day · free to receive",
     fields:  [
-      ["IBAN",     process.env.NEXT_PUBLIC_BANK_EUR_IBAN ?? "IE00WISE00000000000000"],
-      ["BIC/SWIFT",process.env.NEXT_PUBLIC_BANK_EUR_BIC  ?? "TRWTIGALXXX"],
-      ["Name",     process.env.NEXT_PUBLIC_BANK_EUR_NAME ?? "Woven With Love"],
+      ["IBAN",     process.env.NEXT_PUBLIC_BANK_EUR_IBAN ?? ""],
+      ["BIC/SWIFT",process.env.NEXT_PUBLIC_BANK_EUR_BIC  ?? ""],
+      ["Name",     process.env.NEXT_PUBLIC_BANK_EUR_NAME ?? ""],
     ],
   },
   GBP: {
     label:   "GBP — UK Bank Transfer",
     network: "Faster Payments · arrives within hours · free to receive",
     fields:  [
-      ["Sort Code", process.env.NEXT_PUBLIC_BANK_GBP_SORT    ?? "23-14-70"],
-      ["Account",   process.env.NEXT_PUBLIC_BANK_GBP_ACCOUNT ?? "00000000"],
-      ["Name",      process.env.NEXT_PUBLIC_BANK_GBP_NAME    ?? "Woven With Love"],
+      ["Sort Code", process.env.NEXT_PUBLIC_BANK_GBP_SORT    ?? ""],
+      ["Account",   process.env.NEXT_PUBLIC_BANK_GBP_ACCOUNT ?? ""],
+      ["Name",      process.env.NEXT_PUBLIC_BANK_GBP_NAME    ?? ""],
     ],
   },
   USD: {
     label:   "USD — US Bank Transfer (ACH)",
     network: "ACH · arrives 1–2 business days · free to receive",
     fields:  [
-      ["Routing No.", process.env.NEXT_PUBLIC_BANK_USD_ROUTING ?? "026073150"],
-      ["Account No.", process.env.NEXT_PUBLIC_BANK_USD_ACCOUNT ?? "0000000000"],
-      ["Name",        process.env.NEXT_PUBLIC_BANK_USD_NAME    ?? "Woven With Love"],
+      ["Routing No.", process.env.NEXT_PUBLIC_BANK_USD_ROUTING ?? ""],
+      ["Account No.", process.env.NEXT_PUBLIC_BANK_USD_ACCOUNT ?? ""],
+      ["Name",        process.env.NEXT_PUBLIC_BANK_USD_NAME    ?? ""],
     ],
   },
 };
@@ -738,10 +738,11 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNiger
   };
 
   const BANK = [
-    ["Account Number", "0312 445 678",       "acct"],
-    ["Account Name",   "Woven With Love Ltd.", "name"],
-    ["Amount",         formattedNGN,           "amt"],
-    ["Reference",      orderRef,               "ref"],
+    ["Account Number", process.env.NEXT_PUBLIC_BANK_NGN_ACCOUNT ?? "", "acct"],
+    ["Bank",           process.env.NEXT_PUBLIC_BANK_NGN_BANK    ?? "", "bank"],
+    ["Account Name",   process.env.NEXT_PUBLIC_BANK_NGN_NAME    ?? "", "name"],
+    ["Amount",         formattedNGN,                                   "amt"],
+    ["Reference",      orderRef,                                       "ref"],
   ] as [string, string, string][];
 
   return (
