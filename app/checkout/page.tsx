@@ -1479,7 +1479,7 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-cream">
       {/* Header */}
-      <div className="bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 py-4 sm:py-5">
+      <div className="sticky top-0 z-40 bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"
