@@ -15,28 +15,38 @@ export default async function ProductDetailPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  // Prefer local hardcoded data (has sizes + latest content).
-  // Fall back to Supabase only for products added via the admin panel (not in local list).
+  // Always check Supabase first so Cloudinary images take priority.
+  // If the product also exists in the hardcoded list, merge: keep local sizes/metadata
+  // but use DB images.
   const localProduct = getProduct(id);
 
-  let product;
-  let fromDb = false;
+  const { data: dbProduct } = await db
+    .from("products")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
 
-  if (localProduct) {
+  let product;
+  const fromDb = !!dbProduct;
+
+  if (dbProduct && localProduct) {
+    // Merge: DB images + local metadata (sizes, details, etc.)
+    product = {
+      ...localProduct,
+      image:  dbProduct.image  ?? localProduct.image,
+      images: dbProduct.images?.length ? dbProduct.images : localProduct.images,
+    };
+  } else if (dbProduct) {
+    product = mapProduct(dbProduct);
+  } else if (localProduct) {
     product = localProduct;
   } else {
-    const { data: dbProduct } = await db
-      .from("products")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    product = dbProduct ? mapProduct(dbProduct) : null;
-    fromDb = !!dbProduct;
+    product = null;
   }
 
   if (!product) notFound();
 
-  // Fetch related from same source
+  // Fetch related — prefer DB for admin-added products, fall back to hardcoded
   let related;
   if (fromDb) {
     const { data: dbRelated } = await db

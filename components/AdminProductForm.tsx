@@ -294,7 +294,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
               className="relative cursor-pointer aspect-square rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 transition-colors overflow-hidden flex items-center justify-center"
             >
               {form.image ? (
-                <Image src={form.image} alt="Main" fill className="object-cover" />
+                <Image src={form.image} alt="Main" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" priority className="object-cover" />
               ) : (
                 <div className="text-center p-4">
                   <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -335,7 +335,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
             <div className="grid grid-cols-3 gap-2 mb-2">
               {form.images.map((img, i) => (
                 <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group">
-                  <Image src={img} alt="" fill className="object-cover" />
+                  <Image src={img} alt="" fill sizes="(max-width: 768px) 33vw, 150px" className="object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(i)}

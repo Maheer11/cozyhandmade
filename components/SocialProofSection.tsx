@@ -287,6 +287,7 @@ function ScreenshotCard({ review }: { review: Review }) {
           src={review.screenshot}
           alt={`Customer review via ${review.platform}`}
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           loading="lazy"
           className="object-cover object-top"
         />

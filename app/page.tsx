@@ -71,13 +71,28 @@ export default async function HomePage() {
     .order("created_at", { ascending: false })
     .limit(6);
 
-  // Local featured products take priority; DB-only featured products appended
+  // Build a map of DB products so we can override hardcoded images with Cloudinary URLs
+  const dbRows: DbProduct[] = dbFeatured ?? [];
+  const dbById = new Map(dbRows.map((p) => [p.id, p]));
+
   const localFeatured = getFeaturedProducts();
   const localFeaturedIds = new Set(localFeatured.map((p) => p.id));
-  const dbOnlyFeatured = (dbFeatured ?? [])
+
+  // For hardcoded featured products that exist in DB, use DB (Cloudinary) images
+  const mergedLocal = localFeatured.map((local) => {
+    const db = dbById.get(local.id);
+    if (!db) return local;
+    return {
+      ...local,
+      image:  db.image  ?? local.image,
+      images: db.images?.length ? db.images : local.images,
+    };
+  });
+
+  const dbOnlyFeatured = dbRows
     .filter((p: DbProduct) => !localFeaturedIds.has(p.id))
     .map(mapProduct);
-  const featured = [...localFeatured, ...dbOnlyFeatured].slice(0, 6);
+  const featured = [...mergedLocal, ...dbOnlyFeatured].slice(0, 6);
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
   return (

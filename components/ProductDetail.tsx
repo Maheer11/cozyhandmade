@@ -74,6 +74,7 @@ export default function ProductDetail({
                 src={product.images[activeImg]}
                 alt={product.name}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="object-cover transition-opacity duration-300"
                 priority
               />
@@ -105,7 +106,7 @@ export default function ProductDetail({
                                 ${activeImg === i ? "border-gold" : "border-transparent"}`}
                     style={{ touchAction: "manipulation" }}
                   >
-                    <Image src={img} alt="" fill loading="lazy" className="object-cover" />
+                    <Image src={img} alt="" fill sizes="80px" loading="lazy" className="object-cover" />
                   </button>
                 ))}
               </div>
