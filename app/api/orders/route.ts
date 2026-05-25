@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -26,10 +27,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Admin client bypasses RLS — safe here because this is a server-side API route
+    const db = createAdminClient() as any;
+    // Auth client just to read the current user (may be null for guest checkout)
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-
     const { data: { user } } = await supabase.auth.getUser();
 
     // 1. Create the order

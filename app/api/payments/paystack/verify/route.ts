@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -49,9 +50,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const db = createAdminClient() as any;
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
     const { data: { user } } = await supabase.auth.getUser();
 
     // 2. Create the order — status is "paid" immediately (Paystack confirmed it)
