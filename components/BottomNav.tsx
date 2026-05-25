@@ -76,7 +76,8 @@ export default function BottomNav() {
   // These pages have their own full-width sticky bars — hide the bottom nav so it doesn't cover them
   const isProductDetail = /^\/products\/[^/]+$/.test(pathname);
   const isCheckout = pathname.startsWith("/checkout");
-  if (isProductDetail || isCheckout) return null;
+  const isCart = pathname === "/cart";
+  if (isProductDetail || isCheckout || isCart) return null;
 
   return (
     <nav

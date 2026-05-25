@@ -435,7 +435,7 @@ export default function CartPage() {
 
       {/* ── Mobile sticky summary bar ── */}
       <div
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-30
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50
                    bg-cream border-t border-taupe/20 px-4 pt-3 shadow-2xl"
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
       >
