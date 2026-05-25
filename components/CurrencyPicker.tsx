@@ -7,7 +7,7 @@ import type { CurrencyCode } from "@/lib/currency/types";
 
 const DISPLAYED: CurrencyCode[] = ["NGN", "USD", "GBP", "EUR", "CAD", "AUD", "GHS", "ZAR"];
 
-export default function CurrencyPicker() {
+export default function CurrencyPicker({ dropUp = false }: { dropUp?: boolean }) {
   const { currency, setCurrency, isLoading } = useCurrency();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -49,7 +49,9 @@ export default function CurrencyPicker() {
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-1 w-44 rounded-xl shadow-lg border z-50 overflow-hidden"
+          className={`absolute right-0 w-52 rounded-xl shadow-lg border z-50 overflow-hidden ${
+            dropUp ? "bottom-full mb-1" : "top-full mt-1"
+          }`}
           style={{ backgroundColor: "#FAF4ED", borderColor: "rgba(92,61,42,0.15)" }}
         >
           <p className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-widest font-body"

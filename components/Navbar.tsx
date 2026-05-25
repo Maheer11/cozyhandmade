@@ -315,7 +315,7 @@ export default function Navbar() {
         >
           <div className="flex items-center justify-between">
             <p className="text-xs text-taupe-dark font-body">Currency</p>
-            <CurrencyPicker />
+            <CurrencyPicker dropUp />
           </div>
 
           {user ? (

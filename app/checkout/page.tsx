@@ -834,8 +834,8 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNiger
           )}
 
           <button onClick={onBankTransferConfirm} disabled={!termsAccepted || isSubmitting}
-            className="mt-5 inline-flex items-center gap-2 px-10 py-3 rounded-none text-white font-semibold
-                       text-sm tracking-wide transition-all duration-200 shadow-sm
+            className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
+                       rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
                        disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
                        enabled:hover:-translate-y-px enabled:shadow-sm"
             style={{ backgroundColor: "#008751" }}>
@@ -891,8 +891,8 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNiger
           )}
 
           <button onClick={onPaystackConfirm} disabled={!termsAccepted || isSubmitting}
-            className="mt-5 inline-flex items-center gap-2 px-10 py-3 rounded-none text-white font-semibold
-                       text-sm tracking-wide transition-all duration-200 shadow-sm
+            className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
+                       rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
                        disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
                        enabled:hover:-translate-y-px"
             style={{ backgroundColor: "#0BA4DB" }}>
@@ -1070,8 +1070,8 @@ function InternationalPaymentStep({
           )}
 
           <button onClick={onTransferConfirm} disabled={!termsAccepted || isSubmitting}
-            className="mt-5 inline-flex items-center gap-2 px-10 py-3 rounded-none text-white font-semibold
-                       text-sm tracking-wide transition-all duration-200 shadow-sm
+            className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
+                       rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
                        disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
                        enabled:hover:-translate-y-px"
             style={{ backgroundColor: "#059669" }}>
@@ -1145,8 +1145,8 @@ function InternationalPaymentStep({
           <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
 
           <button type="button" onClick={onStripeConfirm} disabled={!termsAccepted}
-            className="mt-5 inline-flex items-center gap-2 px-10 py-3 rounded-none text-white font-semibold
-                       text-sm tracking-wide transition-all duration-200 shadow-sm
+            className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
+                       rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
                        disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
                        enabled:hover:-translate-y-px"
             style={{ backgroundColor: "#635BFF" }}>
@@ -1497,7 +1497,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-40 lg:pb-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-52 lg:pb-10">
         <StepBar current={step} mode={mode} />
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">

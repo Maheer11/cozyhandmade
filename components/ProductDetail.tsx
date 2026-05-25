@@ -254,14 +254,17 @@ export default function ProductDetail({
       </div>
 
       {/* Mobile sticky add-to-cart bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-stone-200 px-4 py-3">
+      <div
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-stone-200 px-4 pt-3"
+        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
+      >
         <button
           onClick={handleAdd}
           disabled={!product.inStock}
           className={`w-full h-12 rounded font-bold text-sm tracking-widest uppercase transition-all active:scale-[0.99]
                       ${added ? "bg-green-600 text-white"
                         : product.inStock ? "bg-deep-brown text-cream"
-                        : "bg-taupe/30 text-taupe-dark"
+                        : "bg-gray-200 text-gray-400"
                       } disabled:cursor-not-allowed`}
           style={{ touchAction: "manipulation" }}
         >

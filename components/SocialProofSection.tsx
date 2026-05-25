@@ -164,8 +164,8 @@ function WhatsAppCard({ review }: { review: Review }) {
 
       {/* Chat body */}
       <div
-        className="flex-1 px-3 py-3 space-y-2 text-[13px]"
-        style={{ background: "#e5ddd5 url(\"data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23128C7E' fill-opacity='0.03'%3E%3Cpath d='M0 0h40v40H0V0zm40 40h40v40H40V40z'/%3E%3C/g%3E%3C/svg%3E\")" }}
+        className="flex-1 px-3 py-3 space-y-2 text-[13px] overflow-y-auto"
+        style={{ background: "#e5ddd5 url(\"data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23128C7E' fill-opacity='0.03'%3E%3Cpath d='M0 0h40v40H0V0zm40 40h40v40H40V40z'/%3E%3C/g%3E%3C/svg%3E\")", maxHeight: "220px" }}
       >
         <div className="flex justify-center">
           <span className="bg-white/70 text-[#667781] text-[10px] px-2.5 py-0.5 rounded-full font-medium">{review.date}</span>
@@ -227,7 +227,7 @@ function InstagramCard({ review }: { review: Review }) {
       </div>
 
       {/* Chat body */}
-      <div className="flex-1 px-3 py-3 space-y-1.5 text-[13px] bg-white">
+      <div className="flex-1 px-3 py-3 space-y-1.5 text-[13px] bg-white overflow-y-auto" style={{ maxHeight: "220px" }}>
         <div className="flex justify-center mb-2">
           <span className="text-gray-400 text-[10px] font-medium">{review.date}</span>
         </div>
@@ -385,13 +385,14 @@ export default function SocialProofSection() {
             <div
               key={batchIdx}
               className="animate-fade-up
-                         flex gap-5 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide
+                         flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 snap-x snap-mandatory
                          lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0 lg:mx-0 lg:px-0"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
               {batch.map((review, cardIdx) => (
                 <div
                   key={`${batchIdx}-${cardIdx}`}
-                  className="shrink-0 w-[82vw] sm:w-[60vw] snap-start lg:w-auto
+                  className="shrink-0 w-[78vw] max-w-[320px] snap-center lg:w-auto lg:max-w-none
                              animate-fade-up transition-all duration-300 hover:-translate-y-1"
                   style={{ animationDelay: `${cardIdx * 90}ms` }}
                 >
@@ -401,6 +402,11 @@ export default function SocialProofSection() {
             </div>
           ))}
         </div>
+
+        {/* Mobile scroll hint */}
+        <p className="lg:hidden text-center text-[11px] mt-3 mb-1" style={{ color: "rgba(61,43,31,0.4)" }}>
+          ← swipe to see more →
+        </p>
 
         {/* ── Pagination controls ── */}
         <div className="flex flex-col items-center gap-3 mt-10">
