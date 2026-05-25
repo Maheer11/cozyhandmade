@@ -47,6 +47,8 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
   const [form, setForm] = useState<FormState>(defaultState(product));
   const [uploadingMain, setUploadingMain] = useState(false);
   const [uploadingMore, setUploadingMore] = useState(false);
+  const [mainProgress,  setMainProgress]  = useState(0);
+  const [moreProgress,  setMoreProgress]  = useState(0);
   const [mainImgError,  setMainImgError]  = useState<string | null>(null);
   const [moreImgError,  setMoreImgError]  = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -56,56 +58,80 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
     setForm((f) => ({ ...f, [k]: v }));
 
   /* ── Image upload helpers ── */
-  async function uploadFile(file: File): Promise<string | null> {
-    const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+  function uploadFile(file: File, onProgress: (pct: number) => void): Promise<string | null> {
+    return new Promise((resolve) => {
+      const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
-    if (!cloudName || !uploadPreset) {
-      console.error("Cloudinary env vars not set");
-      return null;
-    }
+      if (!cloudName || !uploadPreset) {
+        console.error("Cloudinary env vars not set");
+        resolve(null);
+        return;
+      }
 
-    const body = new FormData();
-    body.append("file", file);
-    body.append("upload_preset", uploadPreset);
-    body.append("folder", "product-images");
+      const body = new FormData();
+      body.append("file", file);
+      body.append("upload_preset", uploadPreset);
+      body.append("folder", "product-images");
 
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: "POST", body }
-    );
-
-    if (!res.ok) { console.error("Cloudinary upload failed", await res.text()); return null; }
-    const data = await res.json();
-    return (data.secure_url as string) ?? null;
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          resolve((data.secure_url as string) ?? null);
+        } else {
+          console.error("Cloudinary upload failed", xhr.responseText);
+          resolve(null);
+        }
+      };
+      xhr.onerror = () => { console.error("Cloudinary upload error"); resolve(null); };
+      xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`);
+      xhr.send(body);
+    });
   }
 
   async function handleMainImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setMainImgError(null);
+    setMainProgress(0);
     setUploadingMain(true);
-    const url = await uploadFile(file);
+    const url = await uploadFile(file, (pct) => setMainProgress(pct));
     if (url) {
       set("image", url);
     } else {
       setMainImgError("Upload failed — check your connection and try again.");
     }
     setUploadingMain(false);
+    setMainProgress(0);
   }
 
   async function handleMoreImages(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     setMoreImgError(null);
+    setMoreProgress(0);
     setUploadingMore(true);
-    const urls = await Promise.all(files.map(uploadFile));
+    const progresses = new Array(files.length).fill(0);
+    const urls = await Promise.all(
+      files.map((file, i) =>
+        uploadFile(file, (pct) => {
+          progresses[i] = pct;
+          const avg = Math.round(progresses.reduce((a, b) => a + b, 0) / files.length);
+          setMoreProgress(avg);
+        })
+      )
+    );
     const valid = urls.filter(Boolean) as string[];
     if (valid.length < files.length) {
       setMoreImgError(`${files.length - valid.length} image(s) failed to upload — try again.`);
     }
     if (valid.length > 0) set("images", [...form.images, ...valid]);
     setUploadingMore(false);
+    setMoreProgress(0);
   }
 
   function removeImage(idx: number) {
@@ -160,13 +186,6 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
   const labelCls = "block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide";
 
   return (
-    <>
-    <style>{`
-      @keyframes adminProgressSlide {
-        0%   { transform: translateX(-100%); }
-        100% { transform: translateX(350%); }
-      }
-    `}</style>
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
@@ -308,31 +327,68 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           {/* Main image */}
           <div>
             <label className={labelCls}>Main Image *</label>
-            <div
-              onClick={() => !uploadingMain && fileRef.current?.click()}
-              className="relative cursor-pointer aspect-square rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 transition-colors overflow-hidden flex items-center justify-center"
-            >
-              {form.image ? (
-                <Image src={form.image} alt="Main" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" priority className="object-cover" />
-              ) : (
-                <div className="text-center p-4">
-                  <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                  </svg>
-                  <p className="text-xs text-gray-400">{uploadingMain ? "Uploading…" : "Click to upload"}</p>
-                </div>
-              )}
+            <div className="relative group/main">
+              <div
+                onClick={() => !uploadingMain && !form.image && fileRef.current?.click()}
+                className={`relative aspect-square rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center transition-colors ${!form.image ? "cursor-pointer hover:border-gray-300 hover:bg-gray-100" : ""}`}
+              >
+                {form.image ? (
+                  <Image src={form.image} alt="Main" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" priority className="object-cover" />
+                ) : (
+                  <div className="text-center p-4">
+                    <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <p className="text-xs text-gray-400">{uploadingMain ? "Uploading…" : "Click to upload"}</p>
+                  </div>
+                )}
+                {/* Delete button — visible on hover when image is uploaded */}
+                {form.image && !uploadingMain && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); set("image", ""); if (fileRef.current) fileRef.current.value = ""; }}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover/main:opacity-100 transition-opacity shadow-md"
+                    style={{ backgroundColor: "#8B2035" }}
+                    title="Remove image"
+                  >
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+                {/* Change image button — visible on hover when image is uploaded */}
+                {form.image && !uploadingMain && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+                    className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium text-white opacity-0 group-hover/main:opacity-100 transition-opacity shadow-md whitespace-nowrap"
+                    style={{ backgroundColor: "rgba(26,8,16,0.75)" }}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Change
+                  </button>
+                )}
               {uploadingMain && (
-                <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                  <span className="text-xs text-gray-500 font-medium">Uploading…</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2"
+                     style={{ backgroundColor: "rgba(26,8,16,0.62)", backdropFilter: "blur(2px)" }}>
+                  <span
+                    className="text-white tabular-nums"
+                    style={{ fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 600, lineHeight: 1, letterSpacing: "0.01em" }}
+                  >
+                    {mainProgress}%
+                  </span>
+                  <div className="w-2/3 h-1 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.2)" }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-150"
+                      style={{ width: `${mainProgress}%`, backgroundColor: "#8B2035" }}
+                    />
+                  </div>
+                  <span className="text-white/60 text-[10px] tracking-widest uppercase">uploading</span>
                 </div>
               )}
-              {/* Progress bar — slides across top while uploading */}
-              {uploadingMain && (
-                <div className="absolute top-0 left-0 right-0 h-0.75 overflow-hidden" style={{ backgroundColor: "#F5EDE0" }}>
-                  <div className="h-full w-2/5 rounded-full" style={{ backgroundColor: "#8B2035", animation: "adminProgressSlide 1.2s ease-in-out infinite" }} />
-                </div>
-              )}
+              </div>
             </div>
             {/* Error message */}
             {mainImgError && (
@@ -368,11 +424,20 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           <div>
             <label className={labelCls}>Additional Images</label>
             {/* Progress bar for additional images */}
-            <div className="relative h-0.75 rounded-full mb-2 overflow-hidden" style={{ backgroundColor: "#F5EDE0" }}>
-              {uploadingMore && (
-                <div className="absolute top-0 left-0 h-full w-2/5 rounded-full" style={{ backgroundColor: "#8B2035", animation: "adminProgressSlide 1.2s ease-in-out infinite" }} />
-              )}
-            </div>
+            {uploadingMore && (
+              <div className="mb-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500 tracking-wide uppercase">Uploading…</span>
+                  <span className="text-xs font-bold tabular-nums" style={{ color: "#8B2035" }}>{moreProgress}%</span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "#F5EDE0" }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-200"
+                    style={{ width: `${moreProgress}%`, backgroundColor: "#8B2035" }}
+                  />
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-2 mb-2">
               {form.images.map((img, i) => (
                 <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group">
@@ -424,6 +489,5 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
         </button>
       </div>
     </form>
-    </>
   );
 }
