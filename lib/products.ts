@@ -43,7 +43,9 @@ export const categories: Category[] = [
 // ];
 ]
 
-export const products: Product[] = [
+// Products now live in Supabase + Cloudinary. Use lib/db-products.ts mapProduct() to fetch.
+
+const _unused: Product[] = [
   {
     id: "1",
     name: "Square Pattern Blanket",
@@ -353,15 +355,4 @@ export const products: Product[] = [
     featured: false,
   },
 ];
-
-export function getProduct(id: string): Product | undefined {
-  return products.find((p) => p.id === id);
-}
-
-export function getFeaturedProducts(): Product[] {
-  return products.filter((p) => p.featured);
-}
-
-export function getProductsByCategory(category: string): Product[] {
-  return products.filter((p) => p.category === category);
-}
+void _unused;

@@ -5,7 +5,7 @@ import NewsletterForm from "@/components/NewsletterForm";
 import ScrollReveal from "@/components/ScrollReveal";
 import SocialProofSection from "@/components/SocialProofSection";
 import HeroSlider from "@/components/HeroSlider";
-import { getFeaturedProducts, categories } from "@/lib/products";
+import { categories } from "@/lib/products";
 import { createClient } from "@/lib/supabase/server";
 import { mapProduct, type DbProduct } from "@/lib/db-products";
 import {
@@ -71,28 +71,7 @@ export default async function HomePage() {
     .order("created_at", { ascending: false })
     .limit(6);
 
-  // Build a map of DB products so we can override hardcoded images with Cloudinary URLs
-  const dbRows: DbProduct[] = dbFeatured ?? [];
-  const dbById = new Map(dbRows.map((p) => [p.id, p]));
-
-  const localFeatured = getFeaturedProducts();
-  const localFeaturedIds = new Set(localFeatured.map((p) => p.id));
-
-  // For hardcoded featured products that exist in DB, use DB (Cloudinary) images
-  const mergedLocal = localFeatured.map((local) => {
-    const db = dbById.get(local.id);
-    if (!db) return local;
-    return {
-      ...local,
-      image:  db.image  ?? local.image,
-      images: db.images?.length ? db.images : local.images,
-    };
-  });
-
-  const dbOnlyFeatured = dbRows
-    .filter((p: DbProduct) => !localFeaturedIds.has(p.id))
-    .map(mapProduct);
-  const featured = [...mergedLocal, ...dbOnlyFeatured].slice(0, 6);
+  const featured = ((dbFeatured ?? []) as DbProduct[]).map(mapProduct).slice(0, 6);
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
   return (

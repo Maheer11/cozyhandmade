@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
-import { getProduct } from "@/lib/products";
+import type { } from "@/lib/products";
 import type { CheckoutPricing } from "@/lib/currency/types";
 
 /* ─── Paystack inline script loader ─────────────────────── */
@@ -528,13 +528,6 @@ function OrderSummary({ items, pricing, mode, orderRef }: {
             {/* Item rows */}
             <div className="space-y-3.5 mb-4">
               {items.map((item) => {
-                const product   = getProduct(item.id);
-                const typeLabel = product?.category
-                  ? product.category.charAt(0).toUpperCase() + product.category.slice(1)
-                  : "—";
-                const material  = product?.tags?.[0]
-                  ? product.tags[0].charAt(0).toUpperCase() + product.tags[0].slice(1)
-                  : "";
 
                 return (
                   <div key={item.id} className="grid grid-cols-12 gap-1 items-start">
@@ -558,17 +551,7 @@ function OrderSummary({ items, pricing, mode, orderRef }: {
                       </p>
                     </div>
 
-                    {/* Type + material */}
-                    <div className="col-span-3">
-                      <p className="text-[10px] font-medium capitalize" style={{ color: "#4A1020" }}>
-                        {typeLabel}
-                      </p>
-                      {material && (
-                        <p className="text-[9px] capitalize font-body" style={{ color: "#9B3A50" }}>
-                          {material}
-                        </p>
-                      )}
-                    </div>
+                    <div className="col-span-3" />
 
                     {/* Line total */}
                     <p className="col-span-3 text-right text-[11px] font-bold pt-0.5"
