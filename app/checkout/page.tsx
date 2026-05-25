@@ -1479,8 +1479,8 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-cream">
       {/* Header */}
-      <div className="bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 py-5">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+      <div className="bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 py-4 sm:py-5">
+        <div className="max-w-4xl mx-auto flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"
                  stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -1489,7 +1489,7 @@ export default function CheckoutPage() {
             </svg>
             <h1 className="font-heading text-xl sm:text-2xl font-700 text-deep-brown">Secure Checkout</h1>
           </div>
-          <p className="text-xs font-medium tracking-wide" style={{ color: accent }}>
+          <p className="text-xs font-medium tracking-wide pl-6 sm:pl-0" style={{ color: accent }}>
             {mode === "nigerian"
               ? "Nigerian Orders · Paystack & Bank Transfer"
               : `International · Stripe · ${currency}`}
