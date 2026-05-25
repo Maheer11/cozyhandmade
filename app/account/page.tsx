@@ -97,8 +97,21 @@ export default async function AccountPage() {
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id) as unknown as { count: number | null };
 
-  const totalSpent = profile?.total_spent ?? 0;
-  const tierKey    = (profile?.tier ?? "bronze") as TierKey;
+  // Compute total spent live from confirmed orders — never rely on cached profile value
+  const { data: spendRows } = await supabase
+    .from("orders")
+    .select("total_amount")
+    .eq("user_id", user.id)
+    .in("status", ["paid", "processing", "shipped", "delivered"]) as unknown as {
+      data: { total_amount: number }[] | null;
+    };
+
+  const totalSpent = (spendRows ?? []).reduce((sum, o) => sum + (o.total_amount ?? 0), 0);
+  const tierKey: TierKey =
+    totalSpent >= 1_000_000 ? "vip"
+    : totalSpent >= 500_000 ? "gold"
+    : totalSpent >= 150_000 ? "silver"
+    : "bronze";
   const cfg        = TIER_CONFIG[tierKey];
   const pct        = getProgress(tierKey, totalSpent);
   const tierIdx    = TIER_ORDER.indexOf(tierKey);

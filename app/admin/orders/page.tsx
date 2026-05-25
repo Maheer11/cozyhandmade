@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import AdminOrderStatus from "@/components/AdminOrderStatus";
 
 type OrderRow = {
@@ -11,9 +11,8 @@ type OrderRow = {
 };
 
 export default async function AdminOrdersPage() {
-  const supabase = await createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
+  const db = createAdminClient() as any;
 
   const { data: orders } = await db
     .from("orders")

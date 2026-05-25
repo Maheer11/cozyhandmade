@@ -18,15 +18,21 @@ export default function AdminOrderStatus({
 
   const handleChange = async (next: string) => {
     if (next === status) return;
+    const prev = status;
     setSaving(true);
-    await fetch(`/api/admin/orders/${orderId}`, {
+    setStatus(next);
+    const res = await fetch(`/api/admin/orders/${orderId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: next }),
     });
-    setStatus(next);
+    if (!res.ok) {
+      setStatus(prev);
+      alert("Failed to update status — please try again.");
+    } else {
+      router.refresh();
+    }
     setSaving(false);
-    router.refresh();
   };
 
   const COLOR: Record<string, string> = {

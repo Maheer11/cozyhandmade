@@ -1,10 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
-  const supabase = await createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
+  const db = createAdminClient() as any;
 
   const [
     { count: totalOrders },

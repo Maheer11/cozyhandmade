@@ -106,6 +106,24 @@ export default async function OrdersPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Invoice download */}
+                <div className="px-5 py-3 border-t border-taupe/10 flex justify-end">
+                  <a
+                    href={`/api/orders/${order.id}/invoice`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold font-body
+                               text-brown/70 hover:text-deep-brown transition-colors group"
+                  >
+                    <svg className="w-3.5 h-3.5 shrink-0 group-hover:-translate-y-0.5 transition-transform"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Download Invoice (PDF)
+                  </a>
+                </div>
               </div>
             ))}
           </div>

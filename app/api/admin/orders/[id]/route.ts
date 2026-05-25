@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -13,6 +14,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
+
+    // Auth check uses anon client; DB writes use service-role to bypass RLS
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!isAdmin(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,11 +26,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
+    const db = createAdminClient() as any;
     const update: Record<string, string> = {};
     if (status) update.status = status;
-    if (notes  !== undefined) update.notes = notes;
+    if (notes !== undefined) update.notes = notes;
 
     const { error } = await db.from("orders").update(update).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

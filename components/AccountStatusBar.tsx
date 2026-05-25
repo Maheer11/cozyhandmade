@@ -7,11 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 
 type TierKey = "bronze" | "silver" | "gold" | "vip";
 
-interface ProfileSnap {
-  tier: TierKey;
-  total_spent: number;
-}
-
 const TIER_CONFIG: Record<TierKey, { color: string; label: string; min: number; max: number | null }> = {
   bronze: { color: "#CD7F32", label: "Bronze", min: 0,         max: 150_000   },
   silver: { color: "#A8A9AD", label: "Silver", min: 150_000,   max: 500_000   },
@@ -21,6 +16,13 @@ const TIER_CONFIG: Record<TierKey, { color: string; label: string; min: number; 
 
 const TIER_ORDER: TierKey[] = ["bronze", "silver", "gold", "vip"];
 
+function tierFromSpend(spent: number): TierKey {
+  if (spent >= 1_000_000) return "vip";
+  if (spent >= 500_000)   return "gold";
+  if (spent >= 150_000)   return "silver";
+  return "bronze";
+}
+
 function getProgress(tier: TierKey, spent: number): number {
   const cfg = TIER_CONFIG[tier];
   if (!cfg.max) return 100;
@@ -29,27 +31,31 @@ function getProgress(tier: TierKey, spent: number): number {
 
 export default function AccountStatusBar() {
   const { user, loading } = useAuth();
-  const [profile, setProfile] = useState<ProfileSnap | null>(null);
+  const [totalSpent, setTotalSpent] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user) { setProfile(null); return; }
+    if (!user) { setTotalSpent(null); return; }
     const supabase = createClient();
-    supabase
-      .from("profiles")
-      .select("tier, total_spent")
-      .eq("id", user.id)
-      .single()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .then(({ data }) => setProfile(data as any));
+    // Compute spend live from confirmed orders — same logic as account page
+    (supabase as any)
+      .from("orders")
+      .select("total_amount")
+      .eq("user_id", user.id)
+      .in("status", ["paid", "processing", "shipped", "delivered"])
+      .then(({ data }: { data: { total_amount: number }[] | null }) => {
+        const sum = (data ?? []).reduce((acc, o) => acc + (o.total_amount ?? 0), 0);
+        setTotalSpent(sum);
+      });
   }, [user]);
 
-  if (loading || !user || !profile) return null;
+  if (loading || !user || totalSpent === null) return null;
 
-  const cfg      = TIER_CONFIG[profile.tier];
-  const pct      = getProgress(profile.tier, profile.total_spent);
-  const nextIdx  = TIER_ORDER.indexOf(profile.tier) + 1;
+  const tier     = tierFromSpend(totalSpent);
+  const cfg      = TIER_CONFIG[tier];
+  const pct      = getProgress(tier, totalSpent);
+  const nextIdx  = TIER_ORDER.indexOf(tier) + 1;
   const nextTier = nextIdx < TIER_ORDER.length ? TIER_CONFIG[TIER_ORDER[nextIdx]] : null;
-  const toNext   = cfg.max ? cfg.max - profile.total_spent : 0;
+  const toNext   = cfg.max ? cfg.max - totalSpent : 0;
 
   return (
     <div className="w-full bg-white border-b border-cream-darker px-4 py-2 flex items-center gap-3 text-xs font-body">
@@ -67,7 +73,7 @@ export default function AccountStatusBar() {
 
       {/* Spend amount */}
       <span className="text-taupe-dark shrink-0">
-        ₦{profile.total_spent.toLocaleString("en-NG")} spent
+        ₦{totalSpent.toLocaleString("en-NG")} spent
       </span>
 
       {/* Progress bar + next tier label */}
