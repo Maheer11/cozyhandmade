@@ -1553,7 +1553,7 @@ export default function CheckoutPage() {
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
 
       {/* Mobile sticky bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-cream/95 backdrop-blur-md
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-md
                       border-t border-taupe/20 px-4 pt-3 shadow-2xl"
            style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}>
         <div className="flex items-center justify-between mb-2.5 text-sm">

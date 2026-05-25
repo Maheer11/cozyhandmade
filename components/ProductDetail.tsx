@@ -255,7 +255,7 @@ export default function ProductDetail({
 
       {/* Mobile sticky add-to-cart bar */}
       <div
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-stone-200 px-4 pt-3"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200 px-4 pt-3"
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
       >
         <button

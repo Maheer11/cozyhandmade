@@ -73,6 +73,11 @@ export default function BottomNav() {
   const pathname = usePathname();
   const { itemCount } = useCart();
 
+  // These pages have their own full-width sticky bars — hide the bottom nav so it doesn't cover them
+  const isProductDetail = /^\/products\/[^/]+$/.test(pathname);
+  const isCheckout = pathname.startsWith("/checkout");
+  if (isProductDetail || isCheckout) return null;
+
   return (
     <nav
       className="lg:hidden fixed bottom-0 left-0 right-0 z-40
