@@ -29,7 +29,7 @@ export default async function OrdersPage() {
     .order("created_at", { ascending: false }) as unknown as { data: Order[] | null };
 
   return (
-    <div className="min-h-screen bg-cream py-12 px-4">
+    <div className="min-h-screen bg-cream pt-8 pb-28 px-4 lg:py-12">
       <div className="max-w-2xl mx-auto">
 
         <div className="flex items-center gap-3 mb-6">

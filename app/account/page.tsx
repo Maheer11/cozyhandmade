@@ -120,7 +120,7 @@ export default async function AccountPage() {
   const orders     = recentOrders ?? [];
 
   return (
-    <div className="min-h-screen bg-cream py-12 px-4">
+    <div className="min-h-screen bg-cream pt-8 pb-28 px-4 lg:py-12">
       <div className="max-w-2xl mx-auto space-y-5">
 
         {/* Page header */}
