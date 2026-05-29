@@ -19,6 +19,15 @@ interface FormState {
   featured: boolean;
   image: string;
   images: string[];
+  colors: string[];
+  sizes: string[];
+  variant_stock: Record<string, number>;
+}
+
+function variantKey(color: string, size: string) {
+  if (color && size) return `${color}|${size}`;
+  if (color) return color;
+  return size;
 }
 
 function defaultState(product?: DbProduct): FormState {
@@ -35,6 +44,9 @@ function defaultState(product?: DbProduct): FormState {
     featured:       product?.featured       ?? false,
     image:          product?.image          ?? "",
     images:         product?.images         ?? [],
+    colors:         product?.colors         ?? [],
+    sizes:          product?.sizes          ?? [],
+    variant_stock:  (product?.variant_stock as Record<string, number>) ?? {},
   };
 }
 
@@ -54,7 +66,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const set = (k: keyof FormState, v: string | boolean | string[]) =>
+  const set = (k: keyof FormState, v: string | boolean | string[] | Record<string, number>) =>
     setForm((f) => ({ ...f, [k]: v }));
 
   /* ── Image upload helpers ── */
@@ -147,6 +159,13 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
     if (!form.image.trim()) { setError("Upload at least one image."); return; }
 
     setSaving(true);
+    const hasVariants = form.colors.length > 0 || form.sizes.length > 0;
+    // When variants are defined, stock_quantity = sum of all variant stocks
+    // so the in_stock generated column (stock_quantity > 0) stays accurate
+    const computedStock = hasVariants
+      ? Object.values(form.variant_stock).reduce((s, v) => s + v, 0)
+      : form.in_stock ? (parseInt(form.stock_quantity) || 1) : 0;
+
     const payload = {
       name:           form.name.trim(),
       price:          parseFloat(form.price),
@@ -155,9 +174,10 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
       description:    form.description.trim(),
       details:        form.details.split("\n").map((s) => s.trim()).filter(Boolean),
       tags:           form.tags.split(",").map((s) => s.trim()).filter(Boolean),
-      // in_stock is a generated column (stock_quantity > 0) — not sent directly
-      // "In Stock" checkbox drives stock_quantity: unchecked → 0, checked → quantity
-      stock_quantity: form.in_stock ? (parseInt(form.stock_quantity) || 1) : 0,
+      stock_quantity: computedStock,
+      colors:         form.colors,
+      sizes:          form.sizes,
+      variant_stock:  form.variant_stock,
       featured:       form.featured,
       image:          form.image,
       images:         form.images.length ? form.images : [form.image],
@@ -184,6 +204,224 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
   /* ── UI ── */
   const inputCls = "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 bg-white focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all";
   const labelCls = "block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide";
+
+  function InventorySection({
+    form,
+    set,
+  }: {
+    form: FormState;
+    set: (k: keyof FormState, v: string | boolean | string[] | Record<string, number>) => void;
+  }) {
+    const [colorInput, setColorInput] = useState("");
+    const [sizeInput,  setSizeInput]  = useState("");
+
+    const COMMON_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "One Size"];
+
+    function addColor(val: string) {
+      const v = val.trim();
+      if (!v || form.colors.includes(v)) return;
+      set("colors", [...form.colors, v]);
+      setColorInput("");
+    }
+
+    function removeColor(c: string) {
+      const next = form.colors.filter((x) => x !== c);
+      set("colors", next);
+      // clean up variant_stock entries for removed color
+      const vs = { ...form.variant_stock };
+      Object.keys(vs).forEach((k) => {
+        if (k === c || k.startsWith(`${c}|`)) delete vs[k];
+      });
+      set("variant_stock", vs);
+    }
+
+    function addSize(val: string) {
+      const v = val.trim();
+      if (!v || form.sizes.includes(v)) return;
+      set("sizes", [...form.sizes, v]);
+      setSizeInput("");
+    }
+
+    function removeSize(s: string) {
+      const next = form.sizes.filter((x) => x !== s);
+      set("sizes", next);
+      const vs = { ...form.variant_stock };
+      Object.keys(vs).forEach((k) => {
+        if (k === s || k.endsWith(`|${s}`)) delete vs[k];
+      });
+      set("variant_stock", vs);
+    }
+
+    function setStock(color: string, size: string, qty: number) {
+      set("variant_stock", {
+        ...form.variant_stock,
+        [variantKey(color, size)]: Math.max(0, qty),
+      });
+    }
+
+    function getStock(color: string, size: string): number {
+      return form.variant_stock[variantKey(color, size)] ?? 0;
+    }
+
+    const hasColors = form.colors.length > 0;
+    const hasSizes  = form.sizes.length > 0;
+
+    return (
+      <div className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
+        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Inventory</p>
+
+        {/* Colors */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
+            Colors <span className="normal-case text-gray-400 font-normal">(optional)</span>
+          </label>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {form.colors.map((c) => (
+              <span key={c} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-gray-300 text-gray-700">
+                {c}
+                <button type="button" onClick={() => removeColor(c)} className="text-gray-400 hover:text-red-500 leading-none">×</button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={colorInput}
+              onChange={(e) => setColorInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addColor(colorInput); } }}
+              placeholder="e.g. Red, Navy Blue, Cream…"
+              className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:border-red-300"
+            />
+            <button type="button" onClick={() => addColor(colorInput)}
+              className="px-3 py-1.5 text-xs font-semibold bg-gray-800 text-white rounded-lg hover:bg-gray-700">
+              Add
+            </button>
+          </div>
+        </div>
+
+        {/* Sizes */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
+            Sizes <span className="normal-case text-gray-400 font-normal">(optional)</span>
+          </label>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {COMMON_SIZES.map((s) => (
+              <button key={s} type="button"
+                onClick={() => form.sizes.includes(s) ? removeSize(s) : addSize(s)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors
+                  ${form.sizes.includes(s)
+                    ? "bg-gray-800 text-white border-gray-800"
+                    : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"}`}>
+                {s}
+              </button>
+            ))}
+          </div>
+          {form.sizes.filter((s) => !COMMON_SIZES.includes(s)).map((s) => (
+            <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-gray-300 text-gray-700 mr-1.5 mb-1.5">
+              {s}
+              <button type="button" onClick={() => removeSize(s)} className="text-gray-400 hover:text-red-500 leading-none">×</button>
+            </span>
+          ))}
+          <div className="flex gap-2 mt-1">
+            <input
+              type="text"
+              value={sizeInput}
+              onChange={(e) => setSizeInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSize(sizeInput); } }}
+              placeholder="Custom size e.g. 2XL, 140cm…"
+              className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:border-red-300"
+            />
+            <button type="button" onClick={() => addSize(sizeInput)}
+              className="px-3 py-1.5 text-xs font-semibold bg-gray-800 text-white rounded-lg hover:bg-gray-700">
+              Add
+            </button>
+          </div>
+        </div>
+
+        {/* Stock grid */}
+        {(hasColors || hasSizes) ? (
+          <div>
+            <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Stock per variant</p>
+            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+              <table className="text-xs w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    {hasColors && hasSizes && <th className="px-3 py-2 text-left font-medium text-gray-500">Color \ Size</th>}
+                    {hasColors && !hasSizes && <th className="px-3 py-2 text-left font-medium text-gray-500">Color</th>}
+                    {!hasColors && hasSizes && <th className="px-3 py-2 text-left font-medium text-gray-500">Size</th>}
+                    {hasSizes && form.sizes.map((s) => (
+                      <th key={s} className="px-3 py-2 text-center font-medium text-gray-500">{s}</th>
+                    ))}
+                    {!hasSizes && <th className="px-3 py-2 text-center font-medium text-gray-500">Qty</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {hasColors ? (
+                    form.colors.map((color) => (
+                      <tr key={color}>
+                        <td className="px-3 py-2 font-medium text-gray-700">{color}</td>
+                        {hasSizes ? (
+                          form.sizes.map((size) => (
+                            <td key={size} className="px-2 py-1.5 text-center">
+                              <input
+                                type="number" min={0}
+                                value={getStock(color, size)}
+                                onChange={(e) => setStock(color, size, parseInt(e.target.value) || 0)}
+                                className="w-14 text-center px-1.5 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-red-300"
+                              />
+                            </td>
+                          ))
+                        ) : (
+                          <td className="px-2 py-1.5 text-center">
+                            <input
+                              type="number" min={0}
+                              value={getStock(color, "")}
+                              onChange={(e) => setStock(color, "", parseInt(e.target.value) || 0)}
+                              className="w-14 text-center px-1.5 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-red-300"
+                            />
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  ) : (
+                    form.sizes.map((size) => (
+                      <tr key={size}>
+                        <td className="px-3 py-2 font-medium text-gray-700">{size}</td>
+                        <td className="px-2 py-1.5 text-center">
+                          <input
+                            type="number" min={0}
+                            value={getStock("", size)}
+                            onChange={(e) => setStock("", size, parseInt(e.target.value) || 0)}
+                            className="w-14 text-center px-1.5 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-red-300"
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1.5">
+              Total stock: {Object.values(form.variant_stock).reduce((s, v) => s + v, 0)} units
+            </p>
+          </div>
+        ) : (
+          /* Simple stock field — no variants defined */
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">Total Stock</label>
+            <input
+              type="number"
+              value={form.stock_quantity}
+              onChange={(e) => set("stock_quantity", e.target.value)}
+              className="w-32 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 bg-white focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100"
+              min={0}
+              placeholder="0"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -236,31 +474,22 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
             </div>
           </div>
 
-          {/* Category + Stock */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Category *</label>
-              <select
-                value={form.category}
-                onChange={(e) => set("category", e.target.value)}
-                className={inputCls}
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Stock Quantity</label>
-              <input
-                type="number"
-                value={form.stock_quantity}
-                onChange={(e) => set("stock_quantity", e.target.value)}
-                className={inputCls}
-                min={0}
-              />
-            </div>
+          {/* Category */}
+          <div>
+            <label className={labelCls}>Category *</label>
+            <select
+              value={form.category}
+              onChange={(e) => set("category", e.target.value)}
+              className={inputCls}
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
+
+          {/* ── Inventory ── */}
+          <InventorySection form={form} set={set} />
 
           {/* Description */}
           <div>
@@ -300,15 +529,6 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
 
           {/* Toggles */}
           <div className="flex gap-6">
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={form.in_stock}
-                onChange={(e) => set("in_stock", e.target.checked)}
-                className="w-4 h-4 rounded accent-red-700"
-              />
-              <span className="text-sm text-gray-700 font-medium">In Stock</span>
-            </label>
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <input
                 type="checkbox"

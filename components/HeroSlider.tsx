@@ -5,11 +5,11 @@ import Image from "next/image";
 
 const slides = [
   {
-    src: "/images/backgroundpic.jpg",
+    src: "/images/newhome1.jpg",
     alt: "Woven with Love — artisan craftsmanship",
   },
   {
-    src: "/images/hero-slide-1.jpg",
+    src: "/images/backgroundpic.jpg",
     alt: "Hand-knitted chunky blanket collection",
   },
   { src: "/images/hero-slide-2.jpg", alt: "Artisan wool throw — gift-wrapped" },

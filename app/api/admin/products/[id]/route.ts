@@ -30,6 +30,9 @@ export async function PATCH(
     if (body.image         !== undefined) update.image          = body.image;
     if (body.images        !== undefined) update.images         = body.images;
     if (body.stock_quantity !== undefined) update.stock_quantity = Number(body.stock_quantity);
+    if (body.colors        !== undefined) update.colors         = body.colors;
+    if (body.sizes         !== undefined) update.sizes          = body.sizes;
+    if (body.variant_stock !== undefined) update.variant_stock  = body.variant_stock;
     if (body.featured      !== undefined) update.featured       = body.featured;
     if (body.rating        !== undefined) update.rating         = Number(body.rating);
     if (body.review_count  !== undefined) update.review_count   = Number(body.review_count);
