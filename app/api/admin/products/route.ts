@@ -49,6 +49,7 @@ export async function POST(request: Request) {
         colors:         body.colors ?? [],
         sizes:          body.sizes ?? [],
         variant_stock:  body.variant_stock ?? {},
+        variant_price:  body.variant_price ?? {},
         featured:       body.featured ?? false,
         rating:         Number(body.rating ?? 5.0),
         review_count:   Number(body.review_count ?? 0),

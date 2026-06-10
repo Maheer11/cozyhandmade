@@ -17,6 +17,7 @@ export interface Product {
   colors: string[];
   sizes: string[];
   variantStock: Record<string, number>;
+  variantPrice: Record<string, number>;
 }
 
 export interface Category {

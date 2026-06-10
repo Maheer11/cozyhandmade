@@ -57,6 +57,7 @@ export interface Database {
           colors: string[];
           sizes: string[];
           variant_stock: Record<string, number>;
+          variant_price: Record<string, number>;
           created_at: string;
         };
         Insert: {
@@ -76,6 +77,7 @@ export interface Database {
           colors?: string[];
           sizes?: string[];
           variant_stock?: Record<string, number>;
+          variant_price?: Record<string, number>;
           featured?: boolean;
           created_at?: string;
         };
@@ -95,6 +97,7 @@ export interface Database {
           colors?: string[];
           sizes?: string[];
           variant_stock?: Record<string, number>;
+          variant_price?: Record<string, number>;
           featured?: boolean;
         };
       };

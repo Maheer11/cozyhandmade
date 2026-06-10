@@ -83,6 +83,27 @@ export async function POST(request: Request) {
       }))
     );
 
+    // 3b. Decrement stock for each product now that payment is confirmed
+    const qtyByProduct = body.items.reduce<Record<string, number>>((acc, item) => {
+      acc[item.product_id] = (acc[item.product_id] ?? 0) + item.quantity;
+      return acc;
+    }, {});
+    const productIds = Object.keys(qtyByProduct);
+    if (productIds.length > 0) {
+      const { data: products } = await db
+        .from("products")
+        .select("id, stock_quantity")
+        .in("id", productIds);
+      if (products) {
+        await Promise.all(
+          (products as { id: string; stock_quantity: number }[]).map((p) => {
+            const newQty = Math.max(0, (p.stock_quantity ?? 0) - (qtyByProduct[p.id] ?? 0));
+            return db.from("products").update({ stock_quantity: newQty }).eq("id", p.id);
+          })
+        );
+      }
+    }
+
     // 4. Create transaction record — status "success", channel from Paystack response
     await db.from("transactions").insert({
       order_id:           order.id,

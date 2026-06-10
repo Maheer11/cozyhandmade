@@ -24,5 +24,6 @@ export function mapProduct(p: DbProduct): Product {
     colors: p.colors ?? [],
     sizes: p.sizes ?? [],
     variantStock: (p.variant_stock as Record<string, number>) ?? {},
+    variantPrice: (p.variant_price as Record<string, number>) ?? {},
   };
 }

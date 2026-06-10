@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import PasswordInput from "@/components/PasswordInput";
 import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
@@ -41,7 +42,7 @@ function LoginForm() {
         {/* Logo mark */}
         <div className="text-center mb-8">
           <p className="text-[10px] uppercase tracking-[0.3em] text-taupe-dark font-body mb-2">
-            Woven with Love
+            Cozi Handmade
           </p>
           <h1 className="font-heading italic text-4xl font-400 text-deep-brown leading-tight">
             Welcome back
@@ -93,17 +94,12 @@ function LoginForm() {
                   Forgot password?
                 </Link>
               </div>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
-                required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={setPassword}
                 placeholder="••••••••"
-                className="w-full h-12 px-4 rounded-xl border border-taupe/40 bg-white text-deep-brown
-                           text-sm placeholder:text-taupe/50 focus:outline-none transition-all duration-200"
-                onFocus={(e) => { e.target.style.borderColor = "#8B2035"; e.target.style.boxShadow = "0 0 0 3px #8B203520"; }}
-                onBlur={(e)  => { e.target.style.borderColor = ""; e.target.style.boxShadow = ""; }}
+                required
               />
             </div>
 

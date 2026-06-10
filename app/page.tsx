@@ -403,7 +403,7 @@ export default async function HomePage() {
                 <div className="rounded-2xl lg:rounded-3xl overflow-hidden aspect-4/3 lg:aspect-[4/5] relative shadow-2xl">
                   <Image
                     src="/images/our-story.jpg"
-                    alt="Chunky burgundy yarn and handmade blanket — the beginning of Woven with Love"
+                    alt="Chunky burgundy yarn and handmade blanket — the beginning of Cozi Handmade"
                     fill
                     loading="lazy"
                     sizes="(max-width: 1024px) 100vw, 50vw"

@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 
-const slides = [
+const slides: { src: string; alt: string; objectPosition?: string }[] = [
   {
     src: "/images/newhome1.jpg",
-    alt: "Woven with Love — artisan craftsmanship",
+    alt: "Cozi Handmade — artisan craftsmanship",
   },
   {
     src: "/images/backgroundpic.jpg",
@@ -14,7 +14,7 @@ const slides = [
   },
   { src: "/images/hero-slide-2.jpg", alt: "Artisan wool throw — gift-wrapped" },
   { src: "/images/hero-slide-3.jpg", alt: "Premium handmade knit textures" },
-  { src: "/images/tbck3.jpg", alt: "Handcrafted baby knits and accessories" },
+  { src: "/images/newhome2.jpg", alt: "Handcrafted baby knits and accessories", objectPosition: "top" },
 ];
 
 const LAST = slides.length - 1;
@@ -81,7 +81,9 @@ export default function HeroSlider() {
               alt={slide.alt}
               fill
               sizes="100vw"
+              quality={90}
               className="object-cover"
+              style={slide.objectPosition ? { objectPosition: slide.objectPosition } : undefined}
               priority={i === 0}
               loading={i === 0 ? undefined : "lazy"}
             />

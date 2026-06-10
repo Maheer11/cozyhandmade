@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import PasswordInput from "@/components/PasswordInput";
 import { createClient } from "@/lib/supabase/client";
 
 type Stage = "form" | "confirm";
@@ -84,7 +85,7 @@ export default function SignupPage() {
 
         <div className="text-center mb-8">
           <p className="text-[10px] uppercase tracking-[0.3em] text-taupe-dark font-body mb-2">
-            Woven with Love
+            Cozi Handmade
           </p>
           <h1 className="font-heading italic text-4xl font-400 text-deep-brown leading-tight">
             Create your account
@@ -139,41 +140,23 @@ export default function SignupPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-body">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 8 characters"
-                className="w-full h-12 px-4 rounded-xl border border-taupe/40 bg-white text-deep-brown
-                           text-sm placeholder:text-taupe/50 focus:outline-none transition-all duration-200"
-                onFocus={(e) => { e.target.style.borderColor = "#C9A96E"; e.target.style.boxShadow = "0 0 0 3px #C9A96E20"; }}
-                onBlur={(e)  => { e.target.style.borderColor = ""; e.target.style.boxShadow = ""; }}
-              />
-            </div>
+            <PasswordInput
+              id="password"
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              placeholder="Min. 8 characters"
+              required
+            />
 
-            <div>
-              <label htmlFor="password2" className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-body">
-                Confirm Password
-              </label>
-              <input
-                id="password2"
-                type="password"
-                required
-                value={password2}
-                onChange={(e) => setPassword2(e.target.value)}
-                placeholder="Repeat password"
-                className="w-full h-12 px-4 rounded-xl border border-taupe/40 bg-white text-deep-brown
-                           text-sm placeholder:text-taupe/50 focus:outline-none transition-all duration-200"
-                onFocus={(e) => { e.target.style.borderColor = "#C9A96E"; e.target.style.boxShadow = "0 0 0 3px #C9A96E20"; }}
-                onBlur={(e)  => { e.target.style.borderColor = ""; e.target.style.boxShadow = ""; }}
-              />
-            </div>
+            <PasswordInput
+              id="password2"
+              label="Confirm Password"
+              value={password2}
+              onChange={setPassword2}
+              placeholder="Repeat password"
+              required
+            />
 
             <button
               type="submit"

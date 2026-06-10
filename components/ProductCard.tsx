@@ -27,9 +27,15 @@ export default function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   const { formatAmount, isLoading } = useCurrency();
 
+  // Determine display price: if sizes have per-size prices, show the lowest as "From X"
+  const variantPrices = Object.values(product.variantPrice);
+  const hasVariantPricing = variantPrices.length > 0;
+  const lowestPrice = hasVariantPricing ? Math.min(...variantPrices) : product.price;
+  const pricesVary  = hasVariantPricing && variantPrices.some((p) => p !== lowestPrice);
+
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
-    addItem({ id: product.id, name: product.name, price: product.price, image: product.image });
+    addItem({ id: product.id, name: product.name, price: lowestPrice, image: product.image });
   };
 
   return (
@@ -85,8 +91,11 @@ export default function ProductCard({ product }: { product: Product }) {
             <span className="h-5 w-20 bg-taupe/20 rounded animate-pulse" />
           ) : (
             <>
-              <span className="text-base font-semibold text-brown">{formatAmount(product.price)}</span>
-              {product.originalPrice && (
+              {pricesVary && (
+                <span className="text-xs text-taupe-dark font-normal">From</span>
+              )}
+              <span className="text-base font-semibold text-brown">{formatAmount(lowestPrice)}</span>
+              {product.originalPrice && !pricesVary && (
                 <span className="text-xs text-taupe-dark line-through">{formatAmount(product.originalPrice)}</span>
               )}
             </>

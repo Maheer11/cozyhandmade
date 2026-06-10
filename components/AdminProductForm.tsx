@@ -22,6 +22,7 @@ interface FormState {
   colors: string[];
   sizes: string[];
   variant_stock: Record<string, number>;
+  variant_price: Record<string, number>;
 }
 
 function variantKey(color: string, size: string) {
@@ -47,6 +48,7 @@ function defaultState(product?: DbProduct): FormState {
     colors:         product?.colors         ?? [],
     sizes:          product?.sizes          ?? [],
     variant_stock:  (product?.variant_stock as Record<string, number>) ?? {},
+    variant_price:  (product?.variant_price as Record<string, number>) ?? {},
   };
 }
 
@@ -178,6 +180,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
       colors:         form.colors,
       sizes:          form.sizes,
       variant_stock:  form.variant_stock,
+      variant_price:  form.variant_price,
       featured:       form.featured,
       image:          form.image,
       images:         form.images.length ? form.images : [form.image],
@@ -215,7 +218,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
     const [colorInput, setColorInput] = useState("");
     const [sizeInput,  setSizeInput]  = useState("");
 
-    const COMMON_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "One Size"];
+    const COMMON_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
     function addColor(val: string) {
       const v = val.trim();
@@ -250,6 +253,9 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
         if (k === s || k.endsWith(`|${s}`)) delete vs[k];
       });
       set("variant_stock", vs);
+      const vp = { ...form.variant_price };
+      delete vp[s];
+      set("variant_price", vp);
     }
 
     function setStock(color: string, size: string, qty: number) {
@@ -261,6 +267,18 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
 
     function getStock(color: string, size: string): number {
       return form.variant_stock[variantKey(color, size)] ?? 0;
+    }
+
+    function setSizePrice(size: string, price: number) {
+      set("variant_price", {
+        ...form.variant_price,
+        [size]: Math.max(0, price),
+      });
+    }
+
+    function getSizePrice(size: string): string {
+      const v = form.variant_price[size];
+      return v !== undefined ? v.toString() : "";
     }
 
     const hasColors = form.colors.length > 0;
@@ -404,6 +422,42 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
             <p className="text-[10px] text-gray-400 mt-1.5">
               Total stock: {Object.values(form.variant_stock).reduce((s, v) => s + v, 0)} units
             </p>
+
+            {/* Per-size pricing */}
+            {hasSizes && (
+              <div className="mt-4">
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
+                  Price per size <span className="normal-case text-gray-400 font-normal">(leave blank to use the base price)</span>
+                </p>
+                <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                  {form.sizes.map((size, i) => (
+                    <div key={size} className={`flex items-center gap-3 px-3 py-2 ${i > 0 ? "border-t border-gray-100" : ""}`}>
+                      <span className="text-xs font-semibold text-gray-700 w-12">{size}</span>
+                      <div className="relative flex-1 max-w-[140px]">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₦</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={getSizePrice(size)}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "") {
+                              const vp = { ...form.variant_price };
+                              delete vp[size];
+                              set("variant_price", vp);
+                            } else {
+                              setSizePrice(size, parseFloat(v) || 0);
+                            }
+                          }}
+                          placeholder={form.price || "Base price"}
+                          className="w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-red-300"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* Simple stock field — no variants defined */

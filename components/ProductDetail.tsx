@@ -60,6 +60,11 @@ export default function ProductDetail({
   const variantLabel = [selectedColor, selectedSize].filter(Boolean).join(" / ");
   const cartName     = variantLabel ? `${product.name} (${variantLabel})` : product.name;
 
+  // Use per-size price if set, otherwise fall back to base price
+  const displayPrice = (selectedSize && product.variantPrice[selectedSize] !== undefined)
+    ? product.variantPrice[selectedSize]
+    : product.price;
+
   // Reset quantity when variant changes to avoid exceeding new stock limit
   const handleColorSelect = (c: string) => { setSelectedColor(c); setQuantity(1); };
   const handleSizeSelect  = (s: string) => { setSelectedSize(s);  setQuantity(1); };
@@ -67,7 +72,7 @@ export default function ProductDetail({
   const handleAdd = () => {
     if (isOutOfStock) return;
     for (let i = 0; i < quantity; i++) {
-      addItem({ id: product.id, name: cartName, price: product.price, image: product.image });
+      addItem({ id: product.id, name: cartName, price: displayPrice, image: product.image });
     }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -148,8 +153,8 @@ export default function ProductDetail({
             <StarRating rating={product.rating} count={product.reviewCount} />
 
             <div className="flex items-baseline gap-3 mt-4 mb-5">
-              <span className="text-2xl font-bold text-brown">{formatAmount(product.price)}</span>
-              {product.originalPrice && (
+              <span className="text-2xl font-bold text-brown">{formatAmount(displayPrice)}</span>
+              {product.originalPrice && displayPrice === product.price && (
                 <>
                   <span className="text-base text-taupe-dark line-through">{formatAmount(product.originalPrice)}</span>
                   <span className="text-sm font-medium text-terracotta">

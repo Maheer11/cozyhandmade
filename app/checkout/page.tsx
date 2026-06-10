@@ -103,7 +103,7 @@ function TermsModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between px-5 py-4 shrink-0"
              style={{ backgroundColor: "#8B2035" }}>
           <div>
-            <p className="text-[9px] uppercase tracking-[0.25em] text-white/60 font-body">Woven with Love</p>
+            <p className="text-[9px] uppercase tracking-[0.25em] text-white/60 font-body">Cozi Handmade</p>
             <h2 className="font-heading italic text-white text-lg font-400 leading-tight">
               Terms & Conditions
             </h2>
@@ -128,7 +128,7 @@ function TermsModal({ onClose }: { onClose: () => void }) {
           {[
             {
               title: "1. Acceptance of Terms",
-              body: `By placing an order on Woven with Love ("we", "us", "our"), you confirm that you have read, understood, and agree to be bound by these Terms and Conditions. If you do not agree, please do not proceed with your purchase.`,
+              body: `By placing an order on Cozi Handmade ("we", "us", "our"), you confirm that you have read, understood, and agree to be bound by these Terms and Conditions. If you do not agree, please do not proceed with your purchase.`,
             },
             {
               title: "2. Handmade Products",
@@ -156,11 +156,11 @@ function TermsModal({ onClose }: { onClose: () => void }) {
             },
             {
               title: "8. Intellectual Property",
-              body: `All designs, photographs, text, and branding on this platform are the exclusive property of Woven with Love. Reproduction, distribution, or use of any content without prior written consent is strictly prohibited.`,
+              body: `All designs, photographs, text, and branding on this platform are the exclusive property of Cozi Handmade. Reproduction, distribution, or use of any content without prior written consent is strictly prohibited.`,
             },
             {
               title: "9. Limitation of Liability",
-              body: `To the fullest extent permitted by law, Woven with Love shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or services. Our total liability shall not exceed the value of the order placed.`,
+              body: `To the fullest extent permitted by law, Cozi Handmade shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or services. Our total liability shall not exceed the value of the order placed.`,
             },
             {
               title: "10. Privacy",
@@ -486,7 +486,7 @@ function OrderSummary({ items, pricing, mode, orderRef }: {
           {/* Header — burgundy */}
           <div className="px-5 pt-5 pb-4 text-center" style={{ backgroundColor: "#8B2035" }}>
             <p className="text-[9px] uppercase tracking-[0.3em] text-white/60 mb-1 font-body">
-              Woven with Love
+              Cozi Handmade
             </p>
             <p className="font-heading italic text-white text-xl font-400 leading-tight">
               Purchase Receipt

@@ -134,7 +134,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderTop: "1px solid rgba(92,61,42,0.2)" }}>
           <p className="text-xs font-body" style={{ color: "#5C3D2A" }}>
-            &copy; {new Date().getFullYear()} Woven with Love. All rights reserved.
+            &copy; {new Date().getFullYear()} Cozi Handmade. All rights reserved.
           </p>
           <div className="flex gap-6">
             {["Privacy Policy", "Terms of Service", "Cookie Policy"].map((t) => (

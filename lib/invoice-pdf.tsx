@@ -106,8 +106,8 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
 
   return (
     <Document
-      title={`Invoice ${ref} — Woven With Love`}
-      author="Woven With Love"
+      title={`Invoice ${ref} — Cozi Handmade`}
+      author="Cozi Handmade"
       subject="Order Invoice"
     >
       <Page size="A4" style={s.page}>
@@ -115,7 +115,7 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
         {/* HEADER */}
         <View style={s.header}>
           <View>
-            <Text style={s.brandName}>Woven With Love</Text>
+            <Text style={s.brandName}>Cozi Handmade</Text>
             <Text style={s.brandTagline}>HANDCRAFTED WITH HEART</Text>
           </View>
           <View>
