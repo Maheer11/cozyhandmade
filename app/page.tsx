@@ -5,18 +5,11 @@ import NewsletterForm from "@/components/NewsletterForm";
 import ScrollReveal from "@/components/ScrollReveal";
 import SocialProofSection from "@/components/SocialProofSection";
 import HeroSlider from "@/components/HeroSlider";
+import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
 import { categories } from "@/lib/products";
 import { createClient } from "@/lib/supabase/server";
 import { mapProduct, type DbProduct } from "@/lib/db-products";
-import {
-  YarnBall,
-  Scissors,
-  SewingNeedle,
-  KnittingNeedles,
-  ThreadSpool,
-  WoolSkein,
-  HandKnitting,
-} from "@/components/CraftIcons";
+import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
 
 /* ─── Marquee strip — refined, emoji-free ─────────── */
 const marqueeItems = [
@@ -71,7 +64,13 @@ export default async function HomePage() {
     .order("created_at", { ascending: false })
     .limit(6);
 
+  const { data: dbCustom } = await db
+    .from("custom_products")
+    .select("*")
+    .order("display_order", { ascending: true });
+
   const featured = ((dbFeatured ?? []) as DbProduct[]).map(mapProduct).slice(0, 6);
+  const customProducts = ((dbCustom ?? []) as DbCustomProduct[]).map(mapCustomProduct);
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
   return (
@@ -144,16 +143,6 @@ export default async function HomePage() {
 
           {/* Left — brand story */}
           <div className="relative flex flex-col justify-center px-12 xl:px-16 py-20 overflow-hidden bg-cream-dark">
-
-            {/* Watermark decorations */}
-            <WoolSkein
-              className="absolute -top-6 -left-6 w-52 h-52 opacity-[0.22] animate-spin-slow"
-              color="#9333EA"
-            />
-            <YarnBall
-              className="absolute bottom-10 -right-8 w-40 h-40 opacity-[0.20]"
-              color="#FBBF24"
-            />
 
             <div className="relative z-10 max-w-lg">
               <p className="text-gold text-xs uppercase tracking-[0.28em] font-body font-semibold mb-5 animate-fade-up">
@@ -307,24 +296,66 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════
+          CATEGORIES — "Find Your Perfect Piece"
+      ══════════════════════════════════════════════ */}
+      <section className="relative overflow-hidden py-14 lg:py-28 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ScrollReveal className="mb-10 lg:mb-14 text-center">
+            <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
+              ✦ Browse
+            </p>
+            <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown">
+              Find Your Perfect Piece
+            </h2>
+          </ScrollReveal>
+
+          {/* Horizontal scroll on mobile, 3×2 grid on desktop */}
+          <ScrollReveal>
+            <div
+              className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory
+                          lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:pb-0 lg:mx-0 lg:px-0"
+            >
+              {categories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  href={`/products?category=${cat.id}`}
+                  className="group relative rounded-2xl overflow-hidden shrink-0 block
+                             w-48 h-36 sm:w-56 sm:h-44 snap-start
+                             lg:w-auto lg:h-auto lg:aspect-4/3
+                             hover:shadow-2xl hover:-translate-y-1
+                             transition-all duration-300 ease-out
+                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                  style={{ touchAction: "manipulation" }}
+                >
+                  <Image
+                    src={cat.image}
+                    alt={cat.name}
+                    fill
+                    loading="lazy"
+                    sizes="(max-width: 640px) 192px, (max-width: 1024px) 224px, 33vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-deep-brown/80 via-deep-brown/20 to-transparent
+                                  group-hover:from-deep-brown/70 transition-all duration-300" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3 lg:p-5">
+                    <h3 className="font-heading italic text-cream font-400 text-sm lg:text-xl leading-tight">
+                      {cat.name}
+                    </h3>
+                    <p className="text-cream/70 text-[10px] lg:text-xs mt-0.5 hidden lg:block font-body">
+                      {cat.description}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
           FEATURED PRODUCTS — "Our Beloved Pieces"
       ══════════════════════════════════════════════ */}
       <section className="relative overflow-hidden py-14 lg:py-28 bg-white">
-        {/* Subtle corner watermarks */}
-        <div
-          className="absolute inset-0 pointer-events-none select-none"
-          aria-hidden="true"
-        >
-          <YarnBall
-            color="#3B82F6"
-            className="absolute -top-16 -left-16 w-64 h-64 opacity-[0.20]"
-          />
-          <WoolSkein
-            color="#22C55E"
-            className="absolute -bottom-8 -right-8 w-56 h-40 opacity-[0.18]"
-          />
-        </div>
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal className="text-center mb-12 lg:mb-16">
             <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
@@ -372,6 +403,11 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════
+          OUR BELOVED PIECES — Apple-style Showcase
+      ══════════════════════════════════════════════ */}
+      {customProducts.length > 0 && <BelovedPiecesShowcase products={customProducts} />}
+
+      {/* ══════════════════════════════════════════════
           ABOUT — "Stitched with Soul"
       ══════════════════════════════════════════════ */}
       <section
@@ -379,21 +415,6 @@ export default async function HomePage() {
         className="relative overflow-hidden py-14 lg:py-28"
         style={{ backgroundColor: "#FBF0E4" }}
       >
-        {/* Corner watermarks */}
-        <div
-          className="absolute inset-0 pointer-events-none select-none"
-          aria-hidden="true"
-        >
-          <HandKnitting
-            color="#FBBF24"
-            className="absolute -bottom-10 -left-10 w-64 h-64 opacity-[0.22]"
-          />
-          <KnittingNeedles
-            color="#9333EA"
-            className="absolute top-10 -right-10 w-52 h-52 opacity-[0.20]"
-          />
-        </div>
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-20 lg:items-center gap-10">
 
@@ -496,78 +517,6 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          CATEGORIES — "Find Your Perfect Piece"
-      ══════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden py-14 lg:py-28 bg-white">
-        {/* Corner watermarks */}
-        <div
-          className="absolute inset-0 pointer-events-none select-none"
-          aria-hidden="true"
-        >
-          <ThreadSpool
-            color="#3B82F6"
-            className="absolute -top-8 -right-8 w-48 h-56 opacity-[0.20]"
-          />
-          <Scissors
-            color="#22C55E"
-            className="absolute bottom-8 -left-6 w-36 h-36 opacity-[0.20] rotate-6"
-          />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ScrollReveal className="mb-10 lg:mb-14 text-center">
-            <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
-              ✦ Browse
-            </p>
-            <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown">
-              Find Your Perfect Piece
-            </h2>
-          </ScrollReveal>
-
-          {/* Horizontal scroll on mobile, 3×2 grid on desktop */}
-          <ScrollReveal>
-            <div
-              className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory
-                          lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:pb-0 lg:mx-0 lg:px-0"
-            >
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/products?category=${cat.id}`}
-                  className="group relative rounded-2xl overflow-hidden shrink-0 block
-                             w-48 h-36 sm:w-56 sm:h-44 snap-start
-                             lg:w-auto lg:h-auto lg:aspect-4/3
-                             hover:shadow-2xl hover:-translate-y-1
-                             transition-all duration-300 ease-out
-                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                  style={{ touchAction: "manipulation" }}
-                >
-                  <Image
-                    src={cat.image}
-                    alt={cat.name}
-                    fill
-                    loading="lazy"
-                    sizes="(max-width: 640px) 192px, (max-width: 1024px) 224px, 33vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-deep-brown/80 via-deep-brown/20 to-transparent
-                                  group-hover:from-deep-brown/70 transition-all duration-300" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3 lg:p-5">
-                    <h3 className="font-heading italic text-cream font-400 text-sm lg:text-xl leading-tight">
-                      {cat.name}
-                    </h3>
-                    <p className="text-cream/70 text-[10px] lg:text-xs mt-0.5 hidden lg:block font-body">
-                      {cat.description}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════
           TESTIMONIALS — Social Proof
       ══════════════════════════════════════════════ */}
       <SocialProofSection />
@@ -579,25 +528,6 @@ export default async function HomePage() {
         id="newsletter"
         className="relative overflow-hidden py-14 lg:py-28 bg-deep-brown"
       >
-        {/* Corner watermarks */}
-        <div
-          className="absolute inset-0 pointer-events-none select-none"
-          aria-hidden="true"
-        >
-          <ThreadSpool
-            color="#FBBF24"
-            className="absolute -top-10 -left-10 w-52 h-60 opacity-[0.22]"
-          />
-          <KnittingNeedles
-            color="#60A5FA"
-            className="absolute -bottom-12 -right-12 w-60 h-60 opacity-[0.20]"
-          />
-          <YarnBall
-            color="white"
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] opacity-[0.08]"
-          />
-        </div>
-
         <ScrollReveal className="max-w-xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
             ✦ Join the Circle

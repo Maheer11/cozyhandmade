@@ -7,6 +7,7 @@ import type { DbProduct } from "@/lib/db-products";
 import { categories } from "@/lib/products";
 
 interface FormState {
+  productType: "regular" | "custom";
   name: string;
   price: string;
   original_price: string;
@@ -23,6 +24,7 @@ interface FormState {
   sizes: string[];
   variant_stock: Record<string, number>;
   variant_price: Record<string, number>;
+  display_order: string;
 }
 
 function variantKey(color: string, size: string) {
@@ -33,6 +35,7 @@ function variantKey(color: string, size: string) {
 
 function defaultState(product?: DbProduct): FormState {
   return {
+    productType:    "regular",
     name:           product?.name           ?? "",
     price:          product?.price.toString()         ?? "",
     original_price: product?.original_price?.toString() ?? "",
@@ -49,6 +52,7 @@ function defaultState(product?: DbProduct): FormState {
     sizes:          product?.sizes          ?? [],
     variant_stock:  (product?.variant_stock as Record<string, number>) ?? {},
     variant_price:  (product?.variant_price as Record<string, number>) ?? {},
+    display_order:  "0",
   };
 }
 
@@ -162,13 +166,11 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
 
     setSaving(true);
     const hasVariants = form.colors.length > 0 || form.sizes.length > 0;
-    // When variants are defined, stock_quantity = sum of all variant stocks
-    // so the in_stock generated column (stock_quantity > 0) stays accurate
     const computedStock = hasVariants
       ? Object.values(form.variant_stock).reduce((s, v) => s + v, 0)
       : form.in_stock ? (parseInt(form.stock_quantity) || 1) : 0;
 
-    const payload = {
+    const basePayload = {
       name:           form.name.trim(),
       price:          parseFloat(form.price),
       original_price: form.original_price ? parseFloat(form.original_price) : null,
@@ -176,17 +178,35 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
       description:    form.description.trim(),
       details:        form.details.split("\n").map((s) => s.trim()).filter(Boolean),
       tags:           form.tags.split(",").map((s) => s.trim()).filter(Boolean),
-      stock_quantity: computedStock,
-      colors:         form.colors,
-      sizes:          form.sizes,
-      variant_stock:  form.variant_stock,
-      variant_price:  form.variant_price,
-      featured:       form.featured,
       image:          form.image,
       images:         form.images.length ? form.images : [form.image],
     };
 
-    const url    = isEdit ? `/api/admin/products/${product!.id}` : "/api/admin/products";
+    const payload = form.productType === "custom"
+      ? {
+          ...basePayload,
+          rating: 5,
+          review_count: 0,
+          stock_quantity: 0,
+          in_stock: true,
+          colors: [],
+          sizes: [],
+          variant_stock: {},
+          variant_price: {},
+          display_order: parseInt(form.display_order) || 0,
+        }
+      : {
+          ...basePayload,
+          stock_quantity: computedStock,
+          colors:         form.colors,
+          sizes:          form.sizes,
+          variant_stock:  form.variant_stock,
+          variant_price:  form.variant_price,
+          featured:       form.featured,
+        };
+
+    const endpoint = form.productType === "custom" ? "custom-products" : "products";
+    const url    = isEdit ? `/api/admin/${endpoint}/${product!.id}` : `/api/admin/${endpoint}`;
     const method = isEdit ? "PATCH" : "POST";
     const res    = await fetch(url, {
       method,
@@ -485,6 +505,38 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
         </div>
       )}
 
+      {/* Product Type Toggle */}
+      <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-50 border border-gray-200">
+        <p className="text-sm font-medium text-gray-700">Product Type:</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => set("productType", "regular")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              form.productType === "regular"
+                ? "bg-gray-800 text-white"
+                : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300"
+            }`}
+          >
+            New Product (Stock)
+          </button>
+          <button
+            type="button"
+            onClick={() => set("productType", "custom")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              form.productType === "custom"
+                ? "text-white"
+                : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300"
+            }`}
+            style={{
+              backgroundColor: form.productType === "custom" ? "#8B2035" : "white"
+            }}
+          >
+            Custom Product (Beloved Piece)
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* ── Left: main fields ── */}
@@ -542,8 +594,24 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
             </select>
           </div>
 
-          {/* ── Inventory ── */}
-          <InventorySection form={form} set={set} />
+          {/* Display Order — Custom Products Only */}
+          {form.productType === "custom" && (
+            <div>
+              <label className={labelCls}>Display Order in Showcase</label>
+              <input
+                type="number"
+                value={form.display_order}
+                onChange={(e) => set("display_order", e.target.value)}
+                className={inputCls}
+                placeholder="0"
+                min={0}
+              />
+              <p className="text-xs text-gray-400 mt-1">Lower number = appears first in carousel</p>
+            </div>
+          )}
+
+          {/* ── Inventory — Regular Products Only ── */}
+          {form.productType === "regular" && <InventorySection form={form} set={set} />}
 
           {/* Description */}
           <div>
@@ -581,18 +649,20 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
             />
           </div>
 
-          {/* Toggles */}
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={form.featured}
-                onChange={(e) => set("featured", e.target.checked)}
-                className="w-4 h-4 rounded accent-red-700"
-              />
-              <span className="text-sm text-gray-700 font-medium">Featured on homepage</span>
-            </label>
-          </div>
+          {/* Toggles — Regular Products Only */}
+          {form.productType === "regular" && (
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.featured}
+                  onChange={(e) => set("featured", e.target.checked)}
+                  className="w-4 h-4 rounded accent-red-700"
+                />
+                <span className="text-sm text-gray-700 font-medium">Featured on homepage</span>
+              </label>
+            </div>
+          )}
         </div>
 
         {/* ── Right: images ── */}
@@ -752,7 +822,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           className="px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ backgroundColor: "#8B2035" }}
         >
-          {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
+          {saving ? "Saving…" : isEdit ? "Save Changes" : form.productType === "custom" ? "Create Beloved Piece" : "Create Product"}
         </button>
         <button
           type="button"

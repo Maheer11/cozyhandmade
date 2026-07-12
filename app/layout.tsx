@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import AccountStatusBar from "@/components/AccountStatusBar";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-playfair", // keep same CSS var name so @theme still works
@@ -60,6 +61,9 @@ export default function RootLayout({
 
           {/* Mobile / tablet bottom nav — hidden on desktop */}
           <BottomNav />
+
+          {/* Floating WhatsApp chat button — every page */}
+          <FloatingWhatsApp />
         </CartProvider>
         </CurrencyProvider>
         </AuthProvider>

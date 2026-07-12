@@ -26,9 +26,9 @@ export default function CurrencyPicker({ dropUp = false }: { dropUp?: boolean })
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-body
-                   transition-colors duration-150 hover:bg-black/5"
-        style={{ color: "#5C3D2A" }}
+        className="flex items-center gap-1.5 px-2.5 h-11 rounded-md text-xs font-body
+                   transition-colors duration-150 hover:bg-black/5 active:bg-black/10 active:scale-95"
+        style={{ touchAction: "manipulation", color: "#5C3D2A" }}
         aria-label="Change currency"
         aria-expanded={open}
       >
@@ -65,9 +65,10 @@ export default function CurrencyPicker({ dropUp = false }: { dropUp?: boolean })
               <button
                 key={code}
                 onClick={() => { setCurrency(code); setOpen(false); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-body text-left
-                           transition-colors duration-100"
+                className="w-full flex items-center gap-2 px-3 h-11 text-xs font-body text-left
+                           transition-colors duration-100 active:opacity-70"
                 style={{
+                  touchAction: "manipulation",
                   backgroundColor: active ? "rgba(139,32,53,0.08)" : "transparent",
                   color: active ? "#8B2035" : "#3D2B1F",
                 }}

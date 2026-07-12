@@ -18,12 +18,11 @@ const navLinks = [
 ];
 
 const drawerCategories = [
-  { href: "/products?category=duvets", label: "Duvets & Quilts" },
-  { href: "/products?category=baby", label: "Baby Clothing" },
+  { href: "/products?category=Blankets", label: "Throw Blankets" },
+  { href: "/products?category=baby", label: "Baby Blankets" },
   { href: "/products?category=handbags", label: "Handbags & Totes" },
   { href: "/products?category=wallets", label: "Purses & Wallets" },
   { href: "/products?category=scarves", label: "Scarves & Wraps" },
-  { href: "/products?category=blankets", label: "Blankets & Throws" },
 ];
 
 export default function Navbar() {

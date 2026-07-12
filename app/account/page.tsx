@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import Link from "next/link";
+import AccountPageClient from "@/components/AccountPageClient";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type TierKey = "bronze" | "silver" | "gold" | "vip";
@@ -120,7 +121,8 @@ export default async function AccountPage() {
   const orders     = recentOrders ?? [];
 
   return (
-    <div className="min-h-screen bg-cream pt-8 pb-28 px-4 lg:py-12">
+    <AccountPageClient>
+      <div className="min-h-screen bg-cream pt-8 pb-28 px-4 lg:py-12">
       <div className="max-w-2xl mx-auto space-y-5">
 
         {/* Page header */}
@@ -175,8 +177,8 @@ export default async function AccountPage() {
                 </div>
                 <div className="h-2 bg-cream-darker rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${pct}%`, backgroundColor: cfg.color }}
+                    className="h-full w-full rounded-full origin-left transition-transform duration-700 ease-out"
+                    style={{ transform: `scaleX(${pct / 100})`, backgroundColor: cfg.color }}
                   />
                 </div>
                 <div className="flex justify-between text-[10px] text-taupe-dark font-body mt-1">
@@ -381,6 +383,7 @@ export default async function AccountPage() {
         </div>
 
       </div>
-    </div>
+      </div>
+    </AccountPageClient>
   );
 }

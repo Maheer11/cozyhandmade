@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import PasswordInput from "@/components/PasswordInput";
 import { createClient } from "@/lib/supabase/client";
+import { getSiteUrl } from "@/lib/auth-helpers";
 
 type Stage = "form" | "confirm";
 
@@ -37,7 +38,7 @@ export default function SignupPage() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${getSiteUrl()}/auth/callback`,
       },
     });
 

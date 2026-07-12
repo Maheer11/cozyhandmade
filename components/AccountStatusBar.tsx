@@ -80,8 +80,8 @@ export default function AccountStatusBar() {
       <div className="flex-1 flex items-center gap-2 min-w-0">
         <div className="flex-1 h-1.5 bg-cream-darker rounded-full overflow-hidden min-w-[40px]">
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${pct}%`, backgroundColor: cfg.color }}
+            className="h-full w-full rounded-full origin-left transition-transform duration-500 ease-out"
+            style={{ transform: `scaleX(${pct / 100})`, backgroundColor: cfg.color }}
           />
         </div>
         <span className="text-taupe-dark shrink-0 hidden sm:inline">

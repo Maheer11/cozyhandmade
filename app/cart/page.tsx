@@ -216,8 +216,8 @@ function SwipeableItem({
             <div className="flex items-center border border-taupe/30 rounded-xl overflow-hidden">
               <button
                 onClick={() => onUpdateQty(item.id, item.quantity - 1)}
-                className="w-8 h-8 flex items-center justify-center text-brown
-                           active:bg-cream-dark transition-colors"
+                className="w-11 h-11 flex items-center justify-center text-brown
+                           active:bg-cream-dark active:scale-90 transition-transform duration-100"
                 style={{ touchAction: "manipulation" }}
                 aria-label="Decrease quantity"
               >−</button>
@@ -226,8 +226,8 @@ function SwipeableItem({
               </span>
               <button
                 onClick={() => onUpdateQty(item.id, item.quantity + 1)}
-                className="w-8 h-8 flex items-center justify-center text-brown
-                           active:bg-cream-dark transition-colors"
+                className="w-11 h-11 flex items-center justify-center text-brown
+                           active:bg-cream-dark active:scale-90 transition-transform duration-100"
                 style={{ touchAction: "manipulation" }}
                 aria-label="Increase quantity"
               >+</button>

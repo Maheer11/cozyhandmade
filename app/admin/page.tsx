@@ -9,12 +9,14 @@ export default async function AdminDashboard() {
     { count: totalOrders },
     { count: pendingOrders },
     { count: totalProducts },
+    { count: customProducts },
     { data: revenueData },
     { data: recentOrders },
   ] = await Promise.all([
     db.from("orders").select("id", { count: "exact", head: true }),
     db.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
     db.from("products").select("id", { count: "exact", head: true }),
+    db.from("custom_products").select("id", { count: "exact", head: true }),
     db.from("orders").select("total_amount").neq("status", "cancelled"),
     db.from("orders")
       .select("id, status, total_amount, created_at, delivery_address")
@@ -44,12 +46,13 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {[
           { label: "Total Revenue", value: `₦${totalRevenue.toLocaleString("en-NG")}`, sub: "all time", color: "#8B2035" },
           { label: "Total Orders",  value: (totalOrders ?? 0).toString(),               sub: "all time",      color: "#C9A96E" },
           { label: "Pending Orders", value: (pendingOrders ?? 0).toString(),             sub: "need attention", color: "#D97706" },
           { label: "Products",      value: (totalProducts ?? 0).toString(),             sub: "in catalogue",   color: "#059669" },
+          { label: "Beloved Pieces", value: (customProducts ?? 0).toString(),            sub: "custom products", color: "#D4A76A" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">{s.label}</p>
@@ -60,7 +63,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Quick actions */}
-      <div className="flex gap-3 mb-8">
+      <div className="flex flex-wrap gap-3 mb-8">
         <Link
           href="/admin/products/new"
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90"
