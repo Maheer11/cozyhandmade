@@ -100,12 +100,15 @@ export default function BottomNav() {
           <Link
             key={label}
             href={href}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 pt-1
-                       active:bg-cream-dark transition-colors duration-150
+            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 pt-1
+                       active:scale-95 transition-transform duration-100
                        ${active ? "text-gold" : "text-taupe-dark"}`}
             aria-label={label}
             aria-current={active ? "page" : undefined}
           >
+            {active && (
+              <span className="absolute top-0.5 w-8 h-1 rounded-full bg-gold" aria-hidden="true" />
+            )}
             {icon(active)}
             <span className={`text-[10px] font-medium tracking-wide ${active ? "text-gold" : "text-taupe-dark"}`}>
               {label}

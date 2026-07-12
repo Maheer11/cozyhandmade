@@ -178,9 +178,9 @@ function ProductsContentInner({ products, categories }: { products: Product[]; c
       {/* ══════════════════════════════════════════════
           CURATED CATEGORIES
       ══════════════════════════════════════════════ */}
-      <section className="bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+      <section className="bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 lg:px-8 py-6 lg:py-16">
         <div className="max-w-7xl mx-auto">
-          <ScrollReveal className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8 lg:mb-12">
+          <ScrollReveal className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5 lg:mb-12">
             <div>
               <p className="text-gold text-[11px] uppercase tracking-[0.28em] font-body font-semibold mb-2">
                 ✦ Handcrafted goods
@@ -216,7 +216,7 @@ function ProductsContentInner({ products, categories }: { products: Product[]; c
       {/* ══════════════════════════════════════════════
           FILTER & SORT
       ══════════════════════════════════════════════ */}
-      <div className="sticky top-14 z-30 bg-cream/95 backdrop-blur-md border-b border-taupe/20">
+      <div className="sticky top-20 z-30 bg-cream/95 backdrop-blur-md border-b border-taupe/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
           <div className="flex items-center gap-3 mb-2">
@@ -362,8 +362,8 @@ function ProductsContentInner({ products, categories }: { products: Product[]; c
       {/* ══════════════════════════════════════════════
           FEATURED PRODUCTS INTRO + GRID
       ══════════════════════════════════════════════ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-14">
-        <ScrollReveal className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8 lg:mb-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-14">
+        <ScrollReveal className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-5 lg:mb-10">
           <div>
             <h2 className="font-heading italic text-2xl sm:text-3xl lg:text-4xl font-400 text-deep-brown mb-3">
               Featured Products
@@ -447,7 +447,7 @@ function ProductsContentInner({ products, categories }: { products: Product[]; c
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4 lg:gap-5">
                 {filtered.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
