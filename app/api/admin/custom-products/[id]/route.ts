@@ -1,18 +1,19 @@
-import { createClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = createClient() as any;
+    const { id } = await params;
+    const db = createAdminClient() as any;
     const body = await request.json();
 
     const { error, data } = await db
       .from("custom_products")
       .update({ ...body, updated_at: new Date().toISOString() })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -29,15 +30,16 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = createClient() as any;
+    const { id } = await params;
+    const db = createAdminClient() as any;
 
     const { error } = await db
       .from("custom_products")
       .delete()
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });

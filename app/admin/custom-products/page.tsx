@@ -56,7 +56,8 @@ export default function AdminCustomProductsPage() {
     display_order: 0,
   });
 
-  const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createClient() as any;
 
   useEffect(() => {
     fetchProducts();

@@ -19,6 +19,7 @@ export function mapCustomProduct(p: DbCustomProduct): Product {
     details: p.details ?? [],
     tags: p.tags ?? [],
     inStock: p.in_stock,
+    featured: false,
     stockQuantity: p.stock_quantity,
     colors: p.colors ?? [],
     sizes: p.sizes ?? [],
