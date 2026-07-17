@@ -16,7 +16,7 @@ import { getClientRate, prefetchAllRates } from "./exchangeRateClient";
 import {
   priceItem as _priceItem,
   priceCheckout as _priceCheckout,
-  ngnIdentityRate,
+  eurIdentityRate,
 } from "./pricingUtils";
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -38,9 +38,9 @@ export function CurrencyProvider({ children, userProfile = null }: CurrencyProvi
   const [currency, setCurrencyState] = useState<CurrencyCode>(DEFAULT_CURRENCY);
   const [region, setRegion] = useState<UserRegion>({
     currency: DEFAULT_CURRENCY,
-    countryCode: "NG",
-    continent: "Africa",
-    checkoutMode: "nigerian",
+    countryCode: "DE",
+    continent: "International",
+    checkoutMode: "international",
     detectedVia: "default",
   });
   const [rate, setRate] = useState<ExchangeRate | null>(null);
@@ -74,7 +74,7 @@ export function CurrencyProvider({ children, userProfile = null }: CurrencyProvi
 
     boot().catch((err) => {
       console.error("[currency] Boot failed:", err);
-      setRate(ngnIdentityRate());
+      setRate(eurIdentityRate());
       setIsLoading(false);
     });
 
@@ -96,19 +96,19 @@ export function CurrencyProvider({ children, userProfile = null }: CurrencyProvi
 
   // Pricing helpers — memoised closures over current rate
   const priceItem = useCallback(
-    (amountNGN: number): PricedItem =>
-      _priceItem(amountNGN, rate ?? ngnIdentityRate(), currency),
+    (amountEUR: number): PricedItem =>
+      _priceItem(amountEUR, rate ?? eurIdentityRate(), currency),
     [currency, rate],
   );
 
   const formatAmount = useCallback(
-    (amountNGN: number): string => priceItem(amountNGN).formatted,
+    (amountEUR: number): string => priceItem(amountEUR).formatted,
     [priceItem],
   );
 
   const priceCheckout = useCallback(
-    (subtotalNGN: number, shippingNGN: number): CheckoutPricing =>
-      _priceCheckout(subtotalNGN, shippingNGN, rate ?? ngnIdentityRate(), currency),
+    (subtotalEUR: number, shippingEUR: number): CheckoutPricing =>
+      _priceCheckout(subtotalEUR, shippingEUR, rate ?? eurIdentityRate(), currency),
     [currency, rate],
   );
 

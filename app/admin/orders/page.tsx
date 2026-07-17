@@ -80,7 +80,7 @@ export default async function AdminOrdersPage() {
 
                     {/* Amount */}
                     <td className="px-5 py-4 font-semibold text-gray-900 whitespace-nowrap">
-                      ₦{order.total_amount.toLocaleString("en-NG")}
+                      €{order.total_amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
 
                     {/* Status dropdown */}

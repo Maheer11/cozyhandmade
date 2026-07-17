@@ -17,7 +17,7 @@ interface StoryRow {
 const rows: StoryRow[] = [
   {
     image: "/images/our-story.jpg",
-    alt: "Chunky burgundy yarn and the first handmade blanket — where Cozi Handmade began",
+    alt: "Chunky burgundy yarn and the first handmade blanket where Cozi Handmade began",
     eyebrow: "The Beginning",
     heading: "A Quiet Curiosity",
     paragraphs: [
@@ -31,9 +31,9 @@ const rows: StoryRow[] = [
     eyebrow: "The Craft",
     heading: "Every Stitch, By Hand",
     paragraphs: [
-      "With each stitch, I discovered more than just a craft — I found patience, creativity, and joy in turning simple threads into something meaningful. My early pieces were far from perfect, but they carried something special: care, time, and intention.",
+      "With each stitch, I discovered more than just a craft. I found patience, creativity, and joy in turning simple threads into something meaningful. My early pieces were far from perfect, but they carried something special: care, time, and intention.",
     ],
-    quote: "Every blanket I create is more than a product — it is a piece of that journey.",
+    quote: "Every blanket I create is more than a product it is a piece of that journey.",
     imageSide: "right",
   },
   {
@@ -42,7 +42,7 @@ const rows: StoryRow[] = [
     eyebrow: "Today",
     heading: "Made To Be Lived In",
     paragraphs: [
-      "As my skills grew, so did my love for making cozy blankets. Today, every piece is made slowly and thoughtfully — soft, warm, and made to be lived in — with the hope that it brings warmth and comfort into someone else's home.",
+      "As my skills grew, so did my love for making cozy blankets. Today, every piece is made slowly and thoughtfully soft, warm, and made to be lived in with the hope that it brings warmth and comfort into someone else's home.",
     ],
     extra: (
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-taupe-dark font-body tracking-wide mt-2 mb-3">

@@ -36,7 +36,7 @@ const trustPoints = [
   },
   {
     label: "Free Shipping",
-    description: "On orders over £150",
+    description: "On orders over €150",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v11.177m0-11.177L12 3.75 3 12l9 8.25" />
@@ -143,11 +143,13 @@ export default function ProductDetail({
                   Sale
                 </span>
               )}
-              <span className="absolute top-4 right-16 lg:right-4 bg-cream/90 backdrop-blur-sm
-                               text-brown text-[10px] font-medium px-2.5 py-1 rounded-full
-                               border border-taupe/20">
-                ✦ Handmade
-              </span>
+              {product.isHandmade && (
+                <span className="absolute top-4 right-16 lg:right-4 bg-cream/90 backdrop-blur-sm
+                                 text-brown text-[10px] font-medium px-2.5 py-1 rounded-full
+                                 border border-taupe/20">
+                  ✦ Handmade
+                </span>
+              )}
               <Link
                 href="/products"
                 className="lg:hidden absolute top-4 right-4 w-11 h-11 bg-cream/90 backdrop-blur-sm

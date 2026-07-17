@@ -13,7 +13,8 @@ interface OrderItemInput {
 
 interface CreateOrderBody {
   items: OrderItemInput[];
-  total_amount: number;
+  total_amount: number; // base GBP total — stored on orders.total_amount
+  charged_amount?: number; // actual amount charged/instructed in `currency` — stored on transactions.amount; falls back to total_amount
   delivery_address: Record<string, string>;
   payment_method: "bank_transfer" | "paystack_card" | "stripe_card" | "swift_transfer";
   order_ref: string;
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
         order_id: order.id,
         user_id: user?.id ?? null,
         paystack_reference: body.order_ref,
-        amount: body.total_amount,
+        amount: body.charged_amount ?? body.total_amount,
         currency: body.currency,
         status: "pending",
         payment_channel: body.payment_method,
@@ -101,9 +102,9 @@ export async function POST(request: Request) {
 
       if (profile) {
         const newTotal = (profile.total_spent ?? 0) + body.total_amount;
-        const newTier  = newTotal >= 1_000_000 ? "vip"
-                       : newTotal >= 500_000   ? "gold"
-                       : newTotal >= 150_000   ? "silver"
+        const newTier  = newTotal >= 750 ? "vip"
+                       : newTotal >= 400 ? "gold"
+                       : newTotal >= 100 ? "silver"
                        : "bronze";
 
         await db

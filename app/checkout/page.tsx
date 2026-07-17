@@ -82,8 +82,8 @@ const NG_STATES = [
   "Taraba","Yobe","Zamfara",
 ];
 
-const FREE_SHIP_NGN = 50000;
-const SHIPPING_NGN  = 6000;
+const FREE_SHIP_EUR = 75;
+const SHIPPING_EUR  = 5;
 
 /* ═════════════════════════════════════════════════════════
    TERMS & CONDITIONS MODAL
@@ -574,8 +574,8 @@ function OrderSummary({ items, pricing, mode, orderRef }: {
               </div>
               <div className="flex justify-between text-xs font-body" style={{ color: "#7A2030" }}>
                 <span>Shipping</span>
-                <span className={pricing.shippingNGN === 0 ? "font-semibold" : ""}
-                      style={{ color: pricing.shippingNGN === 0 ? "#008751" : "#7A2030" }}>
+                <span className={pricing.shippingEUR === 0 ? "font-semibold" : ""}
+                      style={{ color: pricing.shippingEUR === 0 ? "#008751" : "#7A2030" }}>
                   {pricing.formattedShipping}
                 </span>
               </div>
@@ -948,7 +948,7 @@ function InternationalPaymentStep({
   const [cardName, setCardName] = useState("");
   const [copied,   setCopied]   = useState<string | null>(null);
 
-  // Pick the matching bank account, fall back to EUR for unsupported currencies
+  // Pick the matching bank account, fall back to EUR (the home currency)
   const bankInfo  = BANK[currency] ?? BANK.EUR;
   const isFallback = !BANK[currency] && currency !== "EUR";
 
@@ -1302,9 +1302,16 @@ export default function CheckoutPage() {
   const mode: CheckoutMode = currency === "NGN" ? "nigerian" : "international";
   const accent = mode === "nigerian" ? "#008751" : "#8B2035";
 
-  const shippingNGN  = total >= FREE_SHIP_NGN ? 0 : SHIPPING_NGN;
-  const orderTotalNGN = total + shippingNGN;
-  const pricing       = priceCheckout(total, shippingNGN);
+  // `total` (cart subtotal) is in EUR — the base currency every price is
+  // stored/entered in. `orderTotalEUR` is that same base total, used for the
+  // order's canonical ledger amount regardless of how the customer pays.
+  // `chargedTotal` is the properly-converted amount in the customer's
+  // selected currency — that's what's actually charged/displayed/transferred
+  // (NGN via Paystack/bank transfer when mode === "nigerian").
+  const shippingEUR   = total >= FREE_SHIP_EUR ? 0 : SHIPPING_EUR;
+  const orderTotalEUR = total + shippingEUR;
+  const pricing       = priceCheckout(total, shippingEUR);
+  const chargedTotal  = pricing.totalConverted;
 
   const [step,           setStep]           = useState<Step>("shipping");
   const [nigerianMethod, setNigerianMethod] = useState<NigerianPayMethod>("bank-transfer");
@@ -1339,7 +1346,8 @@ export default function CheckoutPage() {
             source: item.source ?? "product",
             variant: item.variant,
           })),
-          total_amount: orderTotalNGN,
+          total_amount: orderTotalEUR,
+          charged_amount: chargedTotal,
           delivery_address: ship,
           payment_method: "bank_transfer",
           order_ref: orderRef,
@@ -1371,7 +1379,7 @@ export default function CheckoutPage() {
       const handler = PaystackPop.setup({
         key:      process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? "",
         email:    ship.email,
-        amount:   orderTotalNGN * 100, // Paystack works in kobo (1/100 of NGN)
+        amount:   Math.round(chargedTotal * 100), // Paystack works in kobo (1/100 of NGN) — chargedTotal is already EUR→NGN converted
         currency: "NGN",
         ref:      orderRef,
         callback: async (response) => {
@@ -1391,7 +1399,7 @@ export default function CheckoutPage() {
                   source:        item.source ?? "product",
                   variant:       item.variant,
                 })),
-                total_amount:     orderTotalNGN,
+                total_amount:     orderTotalEUR,
                 delivery_address: ship,
                 currency:         "NGN",
               }),
@@ -1436,7 +1444,8 @@ export default function CheckoutPage() {
             source: item.source ?? "product",
             variant: item.variant,
           })),
-          total_amount: pricing.totalNGN,
+          total_amount: orderTotalEUR,
+          charged_amount: chargedTotal,
           delivery_address: ship,
           payment_method: "swift_transfer",
           order_ref: orderRef,
@@ -1477,7 +1486,7 @@ export default function CheckoutPage() {
       <ConfirmationScreen
         mode={mode} nigerianMethod={nigerianMethod}
         orderRef={orderRef} firstName={ship.firstName}
-        pricing={pricing} orderTotalNGN={orderTotalNGN}
+        pricing={pricing} orderTotalNGN={chargedTotal}
         clearCart={clearCart}
       />
     );
@@ -1515,7 +1524,7 @@ export default function CheckoutPage() {
             )}
             {step === "payment" && mode === "nigerian" && (
               <NigerianPaymentStep
-                orderTotalNGN={orderTotalNGN} orderRef={orderRef}
+                orderTotalNGN={chargedTotal} orderRef={orderRef}
                 nigerianMethod={nigerianMethod} setNigerianMethod={setNigerianMethod}
                 onBack={() => { setStep("shipping"); setTermsAccepted(false); setSubmitError(""); }}
                 onBankTransferConfirm={handleBankTransferConfirm}
@@ -1601,7 +1610,7 @@ export default function CheckoutPage() {
                 : (mode === "nigerian" && nigerianMethod === "bank-transfer") ||
                   (mode === "international" && intlMethod === "bank-transfer")
                   ? "Confirm Order"
-                  : `Pay ${mode === "nigerian" ? `₦${orderTotalNGN.toLocaleString("en-NG")}` : pricing.formattedTotal}`}
+                  : `Pay ${pricing.formattedTotal}`}
             </button>
           </div>
         )}

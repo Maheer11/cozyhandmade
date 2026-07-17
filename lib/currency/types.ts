@@ -1,5 +1,4 @@
-export type CurrencyCode =
-  | "NGN" | "USD" | "GBP" | "EUR" | "CAD" | "AUD" | "GHS" | "KES" | "ZAR";
+export type CurrencyCode = "EUR" | "GBP" | "NGN" | "USD";
 
 export interface CurrencyConfig {
   code: CurrencyCode;
@@ -15,7 +14,7 @@ export interface CurrencyConfig {
 }
 
 export interface ExchangeRate {
-  base: "NGN";
+  base: "EUR";
   currency: CurrencyCode;
   rate: number;
   fetchedAt: number; // Unix ms
@@ -36,21 +35,21 @@ export interface UserRegion {
 }
 
 export interface PricedItem {
-  amountNGN: number; // base price in kobo-free NGN
+  amountEUR: number; // base price in EUR, exactly as entered in the admin dashboard
   amountConverted: number; // converted & luxury-rounded
   currency: CurrencyCode;
   symbol: string;
-  formatted: string; // e.g. "£45.00" or "₦120,000"
+  formatted: string; // e.g. "€45.00" or "₦120,000"
   rate: number;
   rateSource: ExchangeRate["source"];
 }
 
 export interface CheckoutPricing {
-  subtotalNGN: number;
+  subtotalEUR: number;
   subtotalConverted: number;
-  shippingNGN: number;
+  shippingEUR: number;
   shippingConverted: number;
-  totalNGN: number;
+  totalEUR: number;
   totalConverted: number;
   currency: CurrencyCode;
   symbol: string;
@@ -67,7 +66,7 @@ export interface CurrencyContextValue {
   rate: ExchangeRate | null;
   isLoading: boolean;
   setCurrency: (code: CurrencyCode) => void;
-  priceItem: (amountNGN: number) => PricedItem;
-  formatAmount: (amountNGN: number) => string;
-  priceCheckout: (subtotalNGN: number, shippingNGN: number) => CheckoutPricing;
+  priceItem: (amountEUR: number) => PricedItem;
+  formatAmount: (amountEUR: number) => string;
+  priceCheckout: (subtotalEUR: number, shippingEUR: number) => CheckoutPricing;
 }

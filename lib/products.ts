@@ -13,6 +13,7 @@ export interface Product {
   tags: string[];
   inStock: boolean;
   featured: boolean;
+  isHandmade: boolean;
   stockQuantity: number;
   colors: string[];
   sizes: string[];

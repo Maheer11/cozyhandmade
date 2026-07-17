@@ -5,12 +5,12 @@ import Image from "next/image";
 
 /* ─────────────────────────────────────────────────────────
    TYPES
-   Each review is a real screenshot you've received from a
-   customer — no fabricated quotes or chat text. Drop the
-   image into /public/reviews/ and add one entry below.
+   Each review is a real screenshot a customer sent — no
+   fabricated quotes or chat text. Managed from the admin
+   dashboard (/admin/reviews), not hardcoded here — this
+   component just renders whatever list it's given.
 ───────────────────────────────────────────────────────── */
 export type Review = {
-  /** Path to the screenshot in /public/reviews/, e.g. "/reviews/my-file.jpeg" */
   screenshot: string;
   platform: "whatsapp" | "instagram";
   /** Optional — shown under the screenshot if provided */
@@ -20,33 +20,8 @@ export type Review = {
   rating?: number;
 };
 
-/* ─────────────────────────────────────────────────────────
-   REVIEWS DATA
-   Add a new entry per screenshot. The section paginates
-   automatically in rows of BATCH (default 3).
-
-   Example:
-   {
-     screenshot: "/reviews/amara-instagram.jpg",
-     platform: "instagram",
-     customerLabel: "Amara K.",
-     location: "Manchester",
-     date: "1 month ago",
-     rating: 5,
-   },
-───────────────────────────────────────────────────────── */
+/* Reviews paginate automatically in rows of BATCH (default 3). */
 const BATCH = 3;
-
-const reviews: Review[] = [
-  {
-    screenshot: "/reviews/review1.jpeg",
-    platform: "whatsapp",
-    customerLabel: "Sarah M.",
-    location: "London",
-    date: "2 weeks ago",
-    rating: 5,
-  },
-];
 
 /* ─────────────────────────────────────────────────────────
    HELPER: STAR RATING
@@ -189,7 +164,7 @@ function Lightbox({ review, onClose }: { review: Review; onClose: () => void }) 
 /* ─────────────────────────────────────────────────────────
    MAIN SECTION
 ───────────────────────────────────────────────────────── */
-export default function SocialProofSection() {
+export default function SocialProofSection({ reviews }: { reviews: Review[] }) {
   const [visibleRows, setVisibleRows] = useState(1);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 

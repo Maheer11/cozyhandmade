@@ -7,15 +7,15 @@ import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import BottomSheet from "@/components/BottomSheet";
 import ScrollReveal from "@/components/ScrollReveal";
-import SocialProofSection from "@/components/SocialProofSection";
+import SocialProofSection, { type Review } from "@/components/SocialProofSection";
 import CategorySlider from "@/components/CategorySlider";
 import type { Product, Category } from "@/lib/products";
 
 const priceRanges = [
-  { label: "Under ₦50k",     min: 0,      max: 50_000    },
-  { label: "₦50k – ₦150k",  min: 50_000, max: 150_000   },
-  { label: "₦150k – ₦300k", min: 150_000, max: 300_000  },
-  { label: "Over ₦300k",    min: 300_000, max: Infinity  },
+  { label: "Under €50",    min: 0,   max: 50       },
+  { label: "€50 – €150",   min: 50,  max: 150      },
+  { label: "€150 – €300",  min: 150, max: 300      },
+  { label: "Over €300",    min: 300, max: Infinity },
 ];
 
 const sortOptions = [
@@ -113,7 +113,7 @@ function FilterPill({
   );
 }
 
-function ProductsContentInner({ products, categories }: { products: Product[]; categories: Category[] }) {
+function ProductsContentInner({ products, categories, reviews }: { products: Product[]; categories: Category[]; reviews: Review[] }) {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") ?? "all";
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -535,7 +535,7 @@ function ProductsContentInner({ products, categories }: { products: Product[]; c
       {/* ══════════════════════════════════════════════
           CUSTOMER STORIES
       ══════════════════════════════════════════════ */}
-      <SocialProofSection />
+      <SocialProofSection reviews={reviews} />
 
       {/* Mobile bottom-sheet filters */}
       <BottomSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filter Products">
@@ -594,10 +594,10 @@ function ProductsContentInner({ products, categories }: { products: Product[]; c
   );
 }
 
-export default function ProductsContent({ products, categories }: { products: Product[]; categories: Category[] }) {
+export default function ProductsContent({ products, categories, reviews }: { products: Product[]; categories: Category[]; reviews: Review[] }) {
   return (
     <Suspense>
-      <ProductsContentInner products={products} categories={categories} />
+      <ProductsContentInner products={products} categories={categories} reviews={reviews} />
     </Suspense>
   );
 }

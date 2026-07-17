@@ -105,7 +105,7 @@ export default async function OrdersPage() {
                       {order.status}
                     </span>
                     <p className="text-sm font-bold text-deep-brown">
-                      ₦{order.total_amount.toLocaleString("en-NG")}
+                      €{order.total_amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
@@ -130,10 +130,10 @@ export default async function OrdersPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-deep-brown truncate">{item.product_name}</p>
-                        <p className="text-xs text-taupe-dark font-body">Qty {item.quantity} × ₦{item.unit_price.toLocaleString("en-NG")}</p>
+                        <p className="text-xs text-taupe-dark font-body">Qty {item.quantity} × €{item.unit_price.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       </div>
                       <p className="text-sm font-semibold text-deep-brown shrink-0">
-                        ₦{item.subtotal.toLocaleString("en-NG")}
+                        €{item.subtotal.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                   ))}

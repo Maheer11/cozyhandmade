@@ -2,13 +2,22 @@ import Link from "next/link";
 import Image from "next/image";
 import NewsletterForm from "@/components/NewsletterForm";
 import ScrollReveal from "@/components/ScrollReveal";
-import SocialProofSection from "@/components/SocialProofSection";
+import SocialProofSection, { type Review } from "@/components/SocialProofSection";
 import HeroSlider from "@/components/HeroSlider";
 import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
 import OurStorySection from "@/components/OurStorySection";
 import NewInSection, { type NewInCardData } from "@/components/NewInSection";
 import { createClient } from "@/lib/supabase/server";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
+
+interface DbReview {
+  screenshot: string;
+  platform: "whatsapp" | "instagram";
+  customer_label: string | null;
+  location: string | null;
+  review_date: string | null;
+  rating: number | null;
+}
 
 /* ─── Marquee strip — refined, emoji-free ─────────── */
 const marqueeItems = [
@@ -46,7 +55,7 @@ const testimonials = [
 
 /* ─── Trust strip ────────────────────────────────── */
 const trustItems = [
-  { title: "Free UK Shipping", subtitle: "On orders over £80" },
+  { title: "Free UK Shipping", subtitle: "On orders over €80" },
   { title: "100% Natural Wool", subtitle: "Merino & Shetland fleece" },
   { title: "Gift Wrapped", subtitle: "Ready to give on arrival" },
   { title: "Handcrafted with Care", subtitle: "A skilled Creative in the world of needle and thread" },
@@ -64,12 +73,26 @@ export default async function HomePage() {
   // New In is a fully standalone collection now — no join, own price/stock.
   const { data: dbNewIn } = await db
     .from("new_in_items")
-    .select("id, name, product_image, lifestyle_image, sold_out, price, discount_price")
+    .select("id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price")
     .order("display_order", { ascending: true })
     .limit(10);
 
+  // Reviews are admin-managed (/admin/reviews) — no more hardcoded array.
+  const { data: dbReviews } = await db
+    .from("reviews")
+    .select("*")
+    .order("display_order", { ascending: true });
+
   const customProducts = ((dbCustom ?? []) as DbCustomProduct[]).map(mapCustomProduct);
   const newInItems = (dbNewIn ?? []) as NewInCardData[];
+  const reviews: Review[] = (dbReviews ?? []).map((r: DbReview) => ({
+    screenshot: r.screenshot,
+    platform: r.platform,
+    customerLabel: r.customer_label ?? undefined,
+    location: r.location ?? undefined,
+    date: r.review_date ?? undefined,
+    rating: r.rating ?? undefined,
+  }));
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
   return (
@@ -134,7 +157,7 @@ export default async function HomePage() {
               </div>
 
               <p className="text-deep-brown/35 text-[10px] tracking-wide font-body mt-6 animate-fade-up delay-400">
-                ✦ We also offer Free Shipping over £300 &nbsp;·&nbsp; ✦ Gift wrapped
+                ✦ We also offer Free Shipping over €300 &nbsp;·&nbsp; ✦ Gift wrapped
               </p>
             </div>
           </div>
@@ -186,7 +209,7 @@ export default async function HomePage() {
               </div>
 
               <p className="text-deep-brown/75 text-xs tracking-wide font-body animate-fade-up delay-400">
-                ✦ Free Shipping over £150 &nbsp;·&nbsp; ✦ Each piece unique
+                ✦ Free Shipping over €150 &nbsp;·&nbsp; ✦ Each piece unique
                 &nbsp;·&nbsp; ✦ Gift wrap available
               </p>
             </div>
@@ -318,7 +341,7 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           TESTIMONIALS — Social Proof
       ══════════════════════════════════════════════ */}
-      <SocialProofSection />
+      <SocialProofSection reviews={reviews} />
 
       {/* ══════════════════════════════════════════════
           NEWSLETTER — "Join the Circle"

@@ -73,11 +73,11 @@ export default async function AdminNewInPage() {
                     <td className="px-5 py-3 text-gray-600">
                       {item.discount_price ? (
                         <span>
-                          <span className="line-through text-gray-400 mr-1">£{item.price.toFixed(2)}</span>
-                          <span className="font-medium text-gray-900">£{item.discount_price.toFixed(2)}</span>
+                          <span className="line-through text-gray-400 mr-1">€{item.price.toFixed(2)}</span>
+                          <span className="font-medium text-gray-900">€{item.discount_price.toFixed(2)}</span>
                         </span>
                       ) : (
-                        `£${item.price.toFixed(2)}`
+                        `€${item.price.toFixed(2)}`
                       )}
                     </td>
                     <td className="px-5 py-3 text-gray-600">{item.stock_quantity}</td>

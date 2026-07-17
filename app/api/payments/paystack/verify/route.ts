@@ -1,5 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { getServerRates } from "@/lib/currency/exchangeRateClient";
+import { convertPrice } from "@/lib/currency/pricingUtils";
 import { NextResponse } from "next/server";
 
 interface VerifyBody {
@@ -18,9 +20,14 @@ interface VerifyBody {
   currency: string;
 }
 
-// Max allowed drift between the recomputed total and Paystack's confirmed
-// charge before we fail closed and reject the order.
-const ROUNDING_TOLERANCE_NGN = 1;
+// Max allowed drift between the recomputed total (converted to NGN) and
+// Paystack's confirmed charge before we fail closed and reject the order.
+// A flat floor (matches the nearest-100 NGN luxury-rounding step) plus a
+// percentage allowance for exchange-rate drift between when the client
+// priced the order (its rate can be cached up to 6h) and this server-side
+// re-verification.
+const ROUNDING_TOLERANCE_NGN = 100;
+const RATE_DRIFT_TOLERANCE_PCT = 0.03;
 
 export async function POST(request: Request) {
   try {
@@ -132,15 +139,22 @@ export async function POST(request: Request) {
       };
     });
 
-    // 3. Compare the recomputed total to what Paystack actually confirmed was
-    //    charged (kobo → NGN). Fail closed on any meaningful mismatch.
-    const paystackConfirmedAmount = paystackData.data.amount / 100;
-    const amountDiff = Math.abs(paystackConfirmedAmount - verifiedTotal);
+    // 3. Convert the recomputed total (EUR — the base currency every price is
+    //    stored/entered in) to NGN, since Paystack only ever charges NGN, then
+    //    compare to what Paystack actually confirmed was charged (kobo → NGN).
+    //    Fail closed on any meaningful mismatch.
+    const { rates } = await getServerRates();
+    const ngnRate = rates.NGN ?? { base: "EUR" as const, currency: "NGN" as const, rate: 0, fetchedAt: Date.now(), source: "fallback" as const };
+    const verifiedTotalNGN = convertPrice(verifiedTotal, ngnRate, "NGN");
 
-    if (amountDiff > ROUNDING_TOLERANCE_NGN) {
+    const paystackConfirmedAmount = paystackData.data.amount / 100;
+    const amountDiff = Math.abs(paystackConfirmedAmount - verifiedTotalNGN);
+    const tolerance = Math.max(ROUNDING_TOLERANCE_NGN, verifiedTotalNGN * RATE_DRIFT_TOLERANCE_PCT);
+
+    if (amountDiff > tolerance) {
       console.error(
         `Payment amount mismatch on ref ${body.reference}: Paystack charged ₦${paystackConfirmedAmount}, ` +
-        `recomputed total is ₦${verifiedTotal} — rejecting, no order created.`
+        `recomputed total is €${verifiedTotal} (₦${verifiedTotalNGN} at current rate) — rejecting, no order created.`
       );
       // TODO: trigger a refund via Paystack's refund API here — the charge succeeded
       // but doesn't match real product prices, so the customer should be refunded automatically.
@@ -161,6 +175,7 @@ export async function POST(request: Request) {
     const { data: orderId, error: rpcError } = await db.rpc("checkout_verified_order", {
       p_user_id: user?.id ?? null,
       p_total_amount: verifiedTotal,
+      p_charged_amount: verifiedTotalNGN,
       p_delivery_address: body.delivery_address,
       p_currency: body.currency ?? "NGN",
       p_paystack_reference: body.reference,
@@ -195,9 +210,9 @@ export async function POST(request: Request) {
 
       if (profile) {
         const newTotal = (profile.total_spent ?? 0) + verifiedTotal;
-        const newTier = newTotal >= 1_000_000 ? "vip"
-                       : newTotal >= 500_000   ? "gold"
-                       : newTotal >= 150_000   ? "silver"
+        const newTier = newTotal >= 750 ? "vip"
+                       : newTotal >= 400 ? "gold"
+                       : newTotal >= 100 ? "silver"
                        : "bronze";
         await db.from("profiles").update({ total_spent: newTotal, tier: newTier }).eq("id", user.id);
       }

@@ -10,21 +10,22 @@ import type { CurrencyCode, ExchangeRate, RateCache } from "./types";
 let serverCache: RateCache | null = null;
 
 const SUPPORTED_CURRENCIES = Object.keys(CURRENCIES).filter(
-  (c) => c !== "NGN",
+  (c) => c !== "EUR",
 ) as CurrencyCode[];
 
 // ─── API fetching ────────────────────────────────────────────────────────────
 
 /**
- * Fetch live rates from the configured exchange rate provider.
+ * Fetch live rates from the configured exchange rate provider, based on EUR
+ * (the currency prices are stored/entered in across the whole app).
  * Uses open.er-api.com (free tier: 1,500 req/mo).
  * Set EXCHANGE_RATE_API_KEY in .env.local to upgrade to paid tier.
  */
 async function fetchLiveRates(): Promise<Partial<Record<CurrencyCode, number>>> {
   const apiKey = process.env.EXCHANGE_RATE_API_KEY;
   const url = apiKey
-    ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/NGN`
-    : `https://open.er-api.com/v6/latest/NGN`;
+    ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/EUR`
+    : `https://open.er-api.com/v6/latest/EUR`;
 
   const res = await fetch(url, {
     next: { revalidate: 0 }, // always fresh on server route
@@ -34,7 +35,7 @@ async function fetchLiveRates(): Promise<Partial<Record<CurrencyCode, number>>> 
   if (!res.ok) throw new Error(`Exchange rate API responded ${res.status}`);
 
   const json = await res.json();
-  // Both providers return { rates: { USD: 0.00065, GBP: 0.00052, ... } }
+  // Both providers return { rates: { USD: 0.00065, EUR: 0.00052, ... } }
   const raw: Record<string, number> = json.rates ?? json.conversion_rates ?? {};
 
   const filtered: Partial<Record<CurrencyCode, number>> = {};
@@ -63,7 +64,7 @@ export async function getServerRates(): Promise<RateCache> {
 
     for (const [code, rate] of Object.entries(rawRates)) {
       rates[code as CurrencyCode] = {
-        base: "NGN",
+        base: "EUR",
         currency: code as CurrencyCode,
         rate,
         fetchedAt: now,
@@ -71,8 +72,8 @@ export async function getServerRates(): Promise<RateCache> {
       };
     }
 
-    // Always include NGN identity
-    rates["NGN"] = { base: "NGN", currency: "NGN", rate: 1, fetchedAt: now, source: "live" };
+    // Always include EUR identity
+    rates["EUR"] = { base: "EUR", currency: "EUR", rate: 1, fetchedAt: now, source: "live" };
 
     serverCache = { rates, lastFetch: now };
     return serverCache;
@@ -93,9 +94,9 @@ export async function getServerRates(): Promise<RateCache> {
       return fallback;
     }
 
-    // No cache — return NGN identity only
+    // No cache — return EUR identity only
     return {
-      rates: { NGN: { base: "NGN", currency: "NGN", rate: 1, fetchedAt: now, source: "fallback" } },
+      rates: { EUR: { base: "EUR", currency: "EUR", rate: 1, fetchedAt: now, source: "fallback" } },
       lastFetch: now,
     };
   }
@@ -126,8 +127,8 @@ function writeClientCache(cache: RateCache): void {
  * Checks localStorage first; fetches /api/currency/rates if stale.
  */
 export async function getClientRate(currency: CurrencyCode): Promise<ExchangeRate> {
-  if (currency === "NGN") {
-    return { base: "NGN", currency: "NGN", rate: 1, fetchedAt: Date.now(), source: "live" };
+  if (currency === "EUR") {
+    return { base: "EUR", currency: "EUR", rate: 1, fetchedAt: Date.now(), source: "live" };
   }
 
   const now = Date.now();
@@ -146,7 +147,7 @@ export async function getClientRate(currency: CurrencyCode): Promise<ExchangeRat
     writeClientCache(fresh);
     return (
       fresh.rates[currency] ?? {
-        base: "NGN",
+        base: "EUR",
         currency,
         rate: 0,
         fetchedAt: now,
@@ -160,8 +161,8 @@ export async function getClientRate(currency: CurrencyCode): Promise<ExchangeRat
       if (stale) return { ...stale, source: "cached" };
     }
 
-    // No cache at all — return NGN identity with disclaimer
-    return { base: "NGN", currency: "NGN", rate: 1, fetchedAt: now, source: "fallback" };
+    // No cache at all — return EUR identity with disclaimer
+    return { base: "EUR", currency: "EUR", rate: 1, fetchedAt: now, source: "fallback" };
   }
 }
 

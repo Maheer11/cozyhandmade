@@ -254,10 +254,10 @@ export default function AdminCustomProductsPage() {
                             {product.name}
                           </h3>
                           <p className="text-sm text-taupe-dark mt-1">
-                            £{product.price.toFixed(2)}
+                            €{product.price.toFixed(2)}
                             {product.original_price && (
                               <span className="ml-2 line-through">
-                                £{product.original_price.toFixed(2)}
+                                €{product.original_price.toFixed(2)}
                               </span>
                             )}
                           </p>
@@ -335,7 +335,7 @@ export default function AdminCustomProductsPage() {
 
                   <input
                     type="number"
-                    placeholder="Price (£)"
+                    placeholder="Price (€)"
                     value={formData.price || ""}
                     onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                     className="w-full px-3 py-2 border border-taupe/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold"

@@ -163,7 +163,7 @@ export default function Navbar() {
             {/* Shop Now — icon only, no background, visible on mobile and desktop */}
             <Link
               href="/products"
-              className="inline-flex items-center px-2 py-2.5
+              className="inline-flex items-center px-2 py-2.5 ml-2 lg:ml-0
                          hover:opacity-75 active:opacity-75 transition-opacity duration-200"
               aria-label="Shop Now"
             >

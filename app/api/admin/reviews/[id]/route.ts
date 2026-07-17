@@ -19,26 +19,20 @@ export async function PATCH(
     const db = createAdminClient() as any;
     const body = await request.json();
 
-    const update: Record<string, unknown> = {};
-    if (body.name            !== undefined) update.name            = body.name;
-    if (body.product_image   !== undefined) update.product_image   = body.product_image;
-    if (body.lifestyle_image !== undefined) update.lifestyle_image = body.lifestyle_image || null;
-    if (body.sold_out        !== undefined) update.sold_out        = body.sold_out;
-    if (body.is_handmade     !== undefined) update.is_handmade     = body.is_handmade;
-    if (body.display_order   !== undefined) update.display_order   = Number(body.display_order);
-    if (body.price           !== undefined) update.price           = Number(body.price);
-    if (body.discount_price  !== undefined) {
-      update.discount_price = body.discount_price === null || body.discount_price === ""
-        ? null : Number(body.discount_price);
+    if (body.platform !== undefined && body.platform !== "whatsapp" && body.platform !== "instagram") {
+      return NextResponse.json({ error: "Platform must be whatsapp or instagram" }, { status: 400 });
     }
-    if (body.colors          !== undefined) update.colors          = body.colors;
-    if (body.sizes           !== undefined) update.sizes           = body.sizes;
-    if (body.description     !== undefined) update.description     = body.description;
-    if (body.sku             !== undefined) update.sku             = body.sku?.trim() || null;
-    if (body.stock_quantity  !== undefined) update.stock_quantity  = Number(body.stock_quantity);
-    if (body.variant_price   !== undefined) update.variant_price   = body.variant_price;
 
-    const { error } = await db.from("new_in_items").update(update).eq("id", id);
+    const update: Record<string, unknown> = {};
+    if (body.screenshot     !== undefined) update.screenshot     = body.screenshot;
+    if (body.platform       !== undefined) update.platform       = body.platform;
+    if (body.customer_label !== undefined) update.customer_label = body.customer_label?.trim() || null;
+    if (body.location       !== undefined) update.location       = body.location?.trim() || null;
+    if (body.review_date    !== undefined) update.review_date    = body.review_date?.trim() || null;
+    if (body.rating         !== undefined) update.rating         = body.rating === null || body.rating === "" ? null : Number(body.rating);
+    if (body.display_order  !== undefined) update.display_order  = Number(body.display_order);
+
+    const { error } = await db.from("reviews").update(update).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ success: true });
@@ -59,7 +53,7 @@ export async function DELETE(
     if (!isAdmin(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = createAdminClient() as any;
-    const { error } = await db.from("new_in_items").delete().eq("id", id);
+    const { error } = await db.from("reviews").delete().eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ success: true });

@@ -82,9 +82,9 @@ export function fromBrowserLocale(): UserRegion | null {
   return buildRegion(countryHint, "browser");
 }
 
-/** Layer 5: Default fallback — NGN */
+/** Layer 5: Default fallback — EUR */
 export function defaultRegion(): UserRegion {
-  return buildRegion("NG", "default");
+  return buildRegion("DE", "default");
 }
 
 // ─── Main cascade ─────────────────────────────────────────────────────────────

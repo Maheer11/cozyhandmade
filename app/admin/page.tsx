@@ -48,7 +48,7 @@ export default async function AdminDashboard() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {[
-          { label: "Total Revenue", value: `₦${totalRevenue.toLocaleString("en-NG")}`, sub: "all time", color: "#8B2035" },
+          { label: "Total Revenue", value: `€${totalRevenue.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: "all time", color: "#8B2035" },
           { label: "Total Orders",  value: (totalOrders ?? 0).toString(),               sub: "all time",      color: "#C9A96E" },
           { label: "Pending Orders", value: (pendingOrders ?? 0).toString(),             sub: "need attention", color: "#D97706" },
           { label: "Products",      value: (totalProducts ?? 0).toString(),             sub: "in catalogue",   color: "#059669" },
@@ -113,7 +113,7 @@ export default async function AdminDashboard() {
                     {(order.delivery_address as Record<string, string> | null)?.name ?? "Guest"}
                   </td>
                   <td className="px-5 py-3 font-semibold text-gray-900">
-                    ₦{order.total_amount.toLocaleString("en-NG")}
+                    €{order.total_amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td className="px-5 py-3">
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600">

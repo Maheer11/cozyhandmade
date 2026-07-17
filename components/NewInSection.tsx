@@ -4,7 +4,7 @@ import { Fragment, memo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import ScrollReveal from "@/components/ScrollReveal";
-import { formatGBP } from "@/lib/currency/formatGBP";
+import { useCurrency } from "@/lib/currency/CurrencyContext";
 
 export interface NewInCardData {
   id: string;
@@ -12,6 +12,7 @@ export interface NewInCardData {
   product_image: string;
   lifestyle_image: string | null;
   sold_out: boolean;
+  is_handmade: boolean;
   price: number;
   discount_price: number | null;
 }
@@ -29,6 +30,7 @@ export const NewInCard = memo(function NewInCard({
   // press-and-hold reveals it on touch, hover reveals it on desktop, and
   // releasing/tapping still follows the link.
   const [revealed, setRevealed] = useState(false);
+  const { formatAmount } = useCurrency();
 
   return (
     <Link
@@ -76,17 +78,21 @@ export const NewInCard = memo(function NewInCard({
                       transition-opacity duration-300 ${revealed ? "opacity-100" : "opacity-0"}`}
         />
 
-        <span
-          className={`absolute top-3 left-3 text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full
-                       ${item.sold_out ? "bg-black text-white" : "bg-white/95 text-deep-brown shadow-sm"}`}
-        >
-          {item.sold_out ? "Sold Out" : "Available"}
-        </span>
+        <div className="absolute top-3 left-3 right-3 flex flex-col items-start gap-1.5">
+          <span
+            className={`text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full
+                         ${item.sold_out ? "bg-black text-white" : "bg-white/95 text-deep-brown shadow-sm"}`}
+          >
+            {item.sold_out ? "Sold Out" : "Available"}
+          </span>
 
-        <span className="absolute top-3 right-3 bg-cream/90 text-brown text-[10px] font-medium
-                         px-2.5 py-1 rounded-full backdrop-blur-sm border border-taupe/20">
-          ✦ Handmade
-        </span>
+          {item.is_handmade && (
+            <span className="bg-cream/90 text-brown text-[10px] font-medium
+                             px-2.5 py-1 rounded-full backdrop-blur-sm border border-taupe/20">
+              ✦ Handmade
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Info */}
@@ -97,11 +103,11 @@ export const NewInCard = memo(function NewInCard({
         <div className="flex items-baseline gap-2 font-ios">
           {item.discount_price ? (
             <>
-              <span className="text-sm font-600 text-brown">{formatGBP(item.discount_price)}</span>
-              <span className="text-xs text-taupe-dark line-through">{formatGBP(item.price)}</span>
+              <span className="text-sm font-600 text-brown">{formatAmount(item.discount_price)}</span>
+              <span className="text-xs text-taupe-dark line-through">{formatAmount(item.price)}</span>
             </>
           ) : (
-            <span className="text-sm font-600 text-brown">{formatGBP(item.price)}</span>
+            <span className="text-sm font-600 text-brown">{formatAmount(item.price)}</span>
           )}
         </div>
       </div>

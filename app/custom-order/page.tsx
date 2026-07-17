@@ -125,7 +125,7 @@ export default function CustomOrderPage() {
               type="text"
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
-              placeholder="e.g. £80–120"
+              placeholder="e.g. €80–120"
               className="w-full h-12 px-4 rounded-xl bg-white border border-taupe/30 text-sm
                          text-deep-brown placeholder:text-taupe-dark
                          focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30

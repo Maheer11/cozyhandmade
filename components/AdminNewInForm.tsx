@@ -10,6 +10,7 @@ export interface NewInItem {
   product_image: string;
   lifestyle_image: string | null;
   sold_out: boolean;
+  is_handmade: boolean;
   display_order: number;
   price: number;
   discount_price: number | null;
@@ -26,6 +27,7 @@ interface FormState {
   product_image: string;
   lifestyle_image: string;
   sold_out: boolean;
+  is_handmade: boolean;
   display_order: string;
   price: string;
   discount_price: string;
@@ -43,6 +45,7 @@ function defaultState(item?: NewInItem): FormState {
     product_image:   item?.product_image   ?? "",
     lifestyle_image: item?.lifestyle_image ?? "",
     sold_out:        item?.sold_out        ?? false,
+    is_handmade:     item?.is_handmade     ?? true,
     display_order:   item?.display_order?.toString() ?? "0",
     price:           item?.price?.toString() ?? "",
     discount_price:  item?.discount_price?.toString() ?? "",
@@ -225,6 +228,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
       product_image:   form.product_image,
       lifestyle_image: form.lifestyle_image || null,
       sold_out:        form.sold_out,
+      is_handmade:     form.is_handmade,
       display_order:   parseInt(form.display_order) || 0,
       price:           parseFloat(form.price),
       discount_price:  form.discount_price.trim() ? parseFloat(form.discount_price) : null,
@@ -288,7 +292,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Price (£)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Price (€)</label>
           <p className="text-xs text-gray-400 mb-1.5">
             Entered and shown in pounds directly — no currency conversion for New In items.
           </p>
@@ -302,7 +306,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Discount price (£, optional)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Discount price (€, optional)</label>
           <input
             type="number"
             step="0.01"
@@ -354,7 +358,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
               <div key={size} className="flex items-center gap-3">
                 <span className="w-48 shrink-0 text-sm text-gray-700 truncate">{size}</span>
                 <div className="relative flex-1 max-w-[160px]">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">£</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">€</span>
                   <input
                     type="number"
                     step="0.01"
@@ -412,15 +416,26 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-        <input
-          type="checkbox"
-          checked={form.sold_out}
-          onChange={(e) => set("sold_out", e.target.checked)}
-          className="w-4 h-4 rounded border-gray-300"
-        />
-        Sold out
-      </label>
+      <div className="flex items-center gap-6">
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <input
+            type="checkbox"
+            checked={form.sold_out}
+            onChange={(e) => set("sold_out", e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300"
+          />
+          Sold out
+        </label>
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <input
+            type="checkbox"
+            checked={form.is_handmade}
+            onChange={(e) => set("is_handmade", e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300"
+          />
+          Handmade
+        </label>
+      </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

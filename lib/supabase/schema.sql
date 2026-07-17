@@ -53,6 +53,7 @@ create table if not exists products (
   stock_quantity integer default 0,
   in_stock       boolean generated always as (stock_quantity > 0) stored,
   featured       boolean default false,
+  is_handmade    boolean not null default true,
   created_at     timestamptz default now()
 );
 
@@ -201,7 +202,8 @@ create table if not exists new_in_items (
   -- Keys should match entries in `sizes` — same variant_price/size pattern
   -- already used on the `products` table. Falls back to `price`/`discount_price`
   -- when a selected size has no entry (or `sizes` is empty entirely).
-  variant_price   jsonb not null default '{}'::jsonb
+  variant_price   jsonb not null default '{}'::jsonb,
+  is_handmade     boolean not null default true
 );
 
 alter table new_in_items enable row level security;
@@ -246,7 +248,8 @@ create or replace function public.checkout_verified_order(
   p_currency           text,
   p_paystack_reference text,
   p_payment_channel    text,
-  p_items              jsonb   -- [{item_type, ref_id, product_name, product_image, quantity, unit_price}, ...]
+  p_items              jsonb,  -- [{item_type, ref_id, product_name, product_image, quantity, unit_price}, ...]
+  p_charged_amount     numeric default null  -- actual amount charged in p_currency; falls back to p_total_amount (GBP) when same-currency
 )
 returns uuid
 language plpgsql
@@ -326,8 +329,34 @@ begin
   -- whole function (order + order_items + stock decrement included). That
   -- gives idempotency against double-submitted verify requests for free.
   insert into transactions (order_id, user_id, paystack_reference, amount, currency, status, payment_channel, paid_at)
-  values (v_order_id, p_user_id, p_paystack_reference, p_total_amount, p_currency, 'success', p_payment_channel, now());
+  values (v_order_id, p_user_id, p_paystack_reference, coalesce(p_charged_amount, p_total_amount), p_currency, 'success', p_payment_channel, now());
 
   return v_order_id;
 end;
 $$;
+
+
+-- ============================================================
+-- REVIEWS — real customer screenshots, admin-managed via Cloudinary
+-- uploads (replaces the old hardcoded array in SocialProofSection.tsx)
+-- ============================================================
+
+create table if not exists reviews (
+  id              uuid primary key default gen_random_uuid(),
+  screenshot      text not null,
+  platform        text not null check (platform in ('whatsapp','instagram')),
+  customer_label  text,
+  location        text,
+  review_date     text,
+  rating          integer default 5,
+  display_order   integer default 0,
+  created_at      timestamptz default now()
+);
+
+alter table reviews enable row level security;
+
+-- Public read (homepage + products page), no insert/update/delete policy —
+-- only the service-role client used by app/api/admin/reviews/** can write,
+-- same pattern as products/new_in_items.
+create policy "Reviews are publicly readable"
+  on reviews for select using (true);

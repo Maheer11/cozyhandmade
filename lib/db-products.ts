@@ -20,6 +20,7 @@ export function mapProduct(p: DbProduct): Product {
     tags: p.tags ?? [],
     inStock: p.in_stock,
     featured: p.featured,
+    isHandmade: p.is_handmade,
     stockQuantity: p.stock_quantity,
     colors: p.colors ?? [],
     sizes: p.sizes ?? [],

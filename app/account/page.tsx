@@ -16,24 +16,24 @@ type RecentOrder = {
 };
 
 const TIER_CONFIG: Record<TierKey, { color: string; label: string; min: number; max: number | null }> = {
-  bronze: { color: "#CD7F32", label: "Bronze", min: 0,         max: 150_000   },
-  silver: { color: "#A8A9AD", label: "Silver", min: 150_000,   max: 500_000   },
-  gold:   { color: "#C9A96E", label: "Gold",   min: 500_000,   max: 1_000_000 },
-  vip:    { color: "#8B2035", label: "VIP",    min: 1_000_000, max: null      },
+  bronze: { color: "#CD7F32", label: "Bronze", min: 0,   max: 100 },
+  silver: { color: "#A8A9AD", label: "Silver", min: 100, max: 400 },
+  gold:   { color: "#C9A96E", label: "Gold",   min: 400, max: 750 },
+  vip:    { color: "#8B2035", label: "VIP",    min: 750, max: null },
 };
 
 const TIER_ORDER: TierKey[] = ["bronze", "silver", "gold", "vip"];
 
 const TIER_JOURNEY_LABELS: Record<TierKey, string> = {
-  bronze: "₦0",
-  silver: "₦150k",
-  gold:   "₦500k",
-  vip:    "₦1M",
+  bronze: "€0",
+  silver: "€100",
+  gold:   "€400",
+  vip:    "€750",
 };
 
 const TIER_BENEFITS: Record<TierKey, string[]> = {
   bronze: [
-    "Free standard delivery on orders over ₦50,000",
+    "Free standard delivery on orders over €75",
     "Full order tracking & history",
     "Member-only newsletter & updates",
   ],
@@ -109,9 +109,9 @@ export default async function AccountPage() {
 
   const totalSpent = (spendRows ?? []).reduce((sum, o) => sum + (o.total_amount ?? 0), 0);
   const tierKey: TierKey =
-    totalSpent >= 1_000_000 ? "vip"
-    : totalSpent >= 500_000 ? "gold"
-    : totalSpent >= 150_000 ? "silver"
+    totalSpent >= 750 ? "vip"
+    : totalSpent >= 400 ? "gold"
+    : totalSpent >= 100 ? "silver"
     : "bronze";
   const cfg        = TIER_CONFIG[tierKey];
   const pct        = getProgress(tierKey, totalSpent);
@@ -156,7 +156,7 @@ export default async function AccountPage() {
                   {cfg.label} Member
                 </p>
                 <p className="text-2xl font-heading italic text-deep-brown">
-                  ₦{totalSpent.toLocaleString("en-NG")}
+                  €{totalSpent.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-taupe-dark font-body">Total lifetime spend</p>
               </div>
@@ -172,7 +172,7 @@ export default async function AccountPage() {
                 <div className="flex justify-between text-xs mb-1.5 font-body">
                   <span className="font-semibold" style={{ color: cfg.color }}>{cfg.label}</span>
                   <span className="text-taupe-dark">
-                    ₦{toNext.toLocaleString("en-NG")} more to {nextTier.label}
+                    €{toNext.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to {nextTier.label}
                   </span>
                 </div>
                 <div className="h-2 bg-cream-darker rounded-full overflow-hidden">
@@ -183,7 +183,7 @@ export default async function AccountPage() {
                 </div>
                 <div className="flex justify-between text-[10px] text-taupe-dark font-body mt-1">
                   <span>{pct.toFixed(0)}% of the way there</span>
-                  <span style={{ color: nextTier.color }}>{nextTier.label} unlocks at ₦{cfg.max?.toLocaleString("en-NG")}</span>
+                  <span style={{ color: nextTier.color }}>{nextTier.label} unlocks at €{cfg.max?.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
             ) : (
@@ -252,7 +252,7 @@ export default async function AccountPage() {
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: "Orders",      value: (orderCount ?? 0).toString() },
-            { label: "Total Spent", value: totalSpent >= 1000 ? `₦${(totalSpent / 1000).toFixed(0)}k` : `₦${totalSpent}` },
+            { label: "Total Spent", value: totalSpent >= 1000 ? `€${(totalSpent / 1000).toFixed(0)}k` : `€${totalSpent}` },
             { label: "Coins",       value: (profile?.coin_balance ?? 0).toLocaleString() },
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-2xl border border-cream-darker shadow-sm p-4 text-center">
@@ -284,7 +284,7 @@ export default async function AccountPage() {
           {nextTier && (
             <div className="mt-4 pt-4 border-t border-cream-darker">
               <p className="text-xs text-taupe-dark font-body">
-                Spend ₦{toNext.toLocaleString("en-NG")} more to unlock{" "}
+                Spend €{toNext.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to unlock{" "}
                 <span className="font-semibold" style={{ color: nextTier.color }}>{nextTier.label}</span> benefits.
               </p>
             </div>
@@ -323,7 +323,7 @@ export default async function AccountPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-deep-brown">
-                      ₦{order.total_amount.toLocaleString("en-NG")}
+                      €{order.total_amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-full font-semibold font-body uppercase tracking-wide ${STATUS_STYLES[order.status] ?? STATUS_STYLES.pending}`}

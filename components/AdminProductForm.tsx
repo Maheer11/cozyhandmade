@@ -18,6 +18,7 @@ interface FormState {
   stock_quantity: string;
   in_stock: boolean;
   featured: boolean;
+  is_handmade: boolean;
   image: string;
   images: string[];
   colors: string[];
@@ -46,6 +47,7 @@ function defaultState(product?: DbProduct): FormState {
     stock_quantity: product?.stock_quantity?.toString() ?? "0",
     in_stock:       product?.in_stock       ?? true,
     featured:       product?.featured       ?? false,
+    is_handmade:    product?.is_handmade    ?? true,
     image:          product?.image          ?? "",
     images:         product?.images         ?? [],
     colors:         product?.colors         ?? [],
@@ -212,6 +214,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           variant_stock:  form.variant_stock,
           variant_price:  form.variant_price,
           featured:       form.featured,
+          is_handmade:    form.is_handmade,
         };
 
     const endpoint = form.productType === "custom" ? "custom-products" : "products";
@@ -463,7 +466,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
                     <div key={size} className={`flex items-center gap-3 px-3 py-2 ${i > 0 ? "border-t border-gray-100" : ""}`}>
                       <span className="text-xs font-semibold text-gray-700 w-12">{size}</span>
                       <div className="relative flex-1 max-w-[140px]">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₦</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">€</span>
                         <input
                           type="number"
                           min={0}
@@ -490,16 +493,27 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           </div>
         ) : (
           /* Simple stock field — no variants defined */
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">Total Stock</label>
-            <input
-              type="number"
-              value={form.stock_quantity}
-              onChange={(e) => set("stock_quantity", e.target.value)}
-              className="w-32 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 bg-white focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100"
-              min={0}
-              placeholder="0"
-            />
+          <div className="flex items-end gap-5">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">Total Stock</label>
+              <input
+                type="number"
+                value={form.stock_quantity}
+                onChange={(e) => set("stock_quantity", e.target.value)}
+                className="w-32 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 bg-white focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100"
+                min={0}
+                placeholder="0"
+              />
+            </div>
+            <label className="flex items-center gap-2.5 cursor-pointer select-none pb-2">
+              <input
+                type="checkbox"
+                checked={form.in_stock}
+                onChange={(e) => set("in_stock", e.target.checked)}
+                className="w-4 h-4 rounded accent-red-700"
+              />
+              <span className="text-sm text-gray-700 font-medium">Available for purchase</span>
+            </label>
           </div>
         )}
       </div>
@@ -566,7 +580,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           {/* Price row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Price (₦) *</label>
+              <label className={labelCls}>Price (€) *</label>
               <input
                 type="number"
                 value={form.price}
@@ -577,7 +591,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
               />
             </div>
             <div>
-              <label className={labelCls}>Original Price (₦) — for sale</label>
+              <label className={labelCls}>Original Price (€) — for sale</label>
               <input
                 type="number"
                 value={form.original_price}
@@ -669,6 +683,15 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
                   className="w-4 h-4 rounded accent-red-700"
                 />
                 <span className="text-sm text-gray-700 font-medium">Featured on homepage</span>
+              </label>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.is_handmade}
+                  onChange={(e) => set("is_handmade", e.target.checked)}
+                  className="w-4 h-4 rounded accent-red-700"
+                />
+                <span className="text-sm text-gray-700 font-medium">Handmade</span>
               </label>
             </div>
           )}

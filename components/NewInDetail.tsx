@@ -4,7 +4,7 @@ import { Fragment, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "./CartContext";
-import { formatGBP } from "@/lib/currency/formatGBP";
+import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { NewInCardData } from "./NewInSection";
 import { parseDescription } from "@/lib/parse-new-in-description";
 
@@ -18,6 +18,7 @@ export interface NewInDetailData extends NewInCardData {
 
 export default function NewInDetail({ item }: { item: NewInDetailData }) {
   const { addItem, openCart } = useCart();
+  const { formatAmount } = useCurrency();
 
   const [activeImg, setActiveImg]   = useState(0);
   const [quantity, setQuantity]     = useState(1);
@@ -101,11 +102,13 @@ export default function NewInDetail({ item }: { item: NewInDetailData }) {
               >
                 {isOutOfStock ? "Sold Out" : "Available"}
               </span>
-              <span className="absolute top-4 right-16 lg:right-4 bg-cream/90 backdrop-blur-sm
-                               text-brown text-[10px] font-medium px-2.5 py-1 rounded-full
-                               border border-taupe/20">
-                ✦ Handmade
-              </span>
+              {item.is_handmade && (
+                <span className="absolute top-4 right-16 lg:right-4 bg-cream/90 backdrop-blur-sm
+                                 text-brown text-[10px] font-medium px-2.5 py-1 rounded-full
+                                 border border-taupe/20">
+                  ✦ Handmade
+                </span>
+              )}
               <Link
                 href="/new-in"
                 className="lg:hidden absolute top-4 right-4 w-11 h-11 bg-cream/90 backdrop-blur-sm
@@ -149,14 +152,14 @@ export default function NewInDetail({ item }: { item: NewInDetailData }) {
               {selectedSize && item.variant_price[selectedSize] !== undefined ? (
                 // A selected size/tier has its own price — show that alone,
                 // no strikethrough (tiers are configurations, not discounts).
-                <span className="font-ios text-xl font-700 text-brown">{formatGBP(displayPrice)}</span>
+                <span className="font-ios text-xl font-700 text-brown">{formatAmount(displayPrice)}</span>
               ) : item.discount_price ? (
                 <>
-                  <span className="font-ios text-xl font-700 text-brown">{formatGBP(item.discount_price)}</span>
-                  <span className="font-ios text-sm text-taupe-dark line-through">{formatGBP(item.price)}</span>
+                  <span className="font-ios text-xl font-700 text-brown">{formatAmount(item.discount_price)}</span>
+                  <span className="font-ios text-sm text-taupe-dark line-through">{formatAmount(item.price)}</span>
                 </>
               ) : (
-                <span className="font-ios text-xl font-700 text-brown">{formatGBP(item.price)}</span>
+                <span className="font-ios text-xl font-700 text-brown">{formatAmount(item.price)}</span>
               )}
               {isOutOfStock && (
                 <span className="text-xs font-semibold text-red-500 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">

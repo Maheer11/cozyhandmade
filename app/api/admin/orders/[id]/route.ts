@@ -133,7 +133,7 @@ export async function PATCH(
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
-          const isNGN = (tx?.currency ?? "NGN") === "NGN";
+          const isNGN = tx?.currency === "NGN";
           estimatedDeliveryDate = estimatedDeliveryLabel(isNGN);
         }
 

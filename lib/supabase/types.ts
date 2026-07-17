@@ -54,6 +54,7 @@ export interface Database {
           stock_quantity: number;
           in_stock: boolean;
           featured: boolean;
+          is_handmade: boolean;
           colors: string[];
           sizes: string[];
           variant_stock: Record<string, number>;
@@ -79,6 +80,7 @@ export interface Database {
           variant_stock?: Record<string, number>;
           variant_price?: Record<string, number>;
           featured?: boolean;
+          is_handmade?: boolean;
           created_at?: string;
         };
         Update: {
@@ -99,6 +101,7 @@ export interface Database {
           variant_stock?: Record<string, number>;
           variant_price?: Record<string, number>;
           featured?: boolean;
+          is_handmade?: boolean;
         };
       };
       orders: {
@@ -207,6 +210,7 @@ export interface Database {
           stock_quantity: number;
           updated_at: string;
           variant_price: Record<string, number>;
+          is_handmade: boolean;
         };
         Insert: {
           id?: string;
@@ -225,6 +229,7 @@ export interface Database {
           stock_quantity?: number;
           updated_at?: string;
           variant_price?: Record<string, number>;
+          is_handmade?: boolean;
         };
         Update: {
           name?: string;
@@ -241,6 +246,7 @@ export interface Database {
           stock_quantity?: number;
           updated_at?: string;
           variant_price?: Record<string, number>;
+          is_handmade?: boolean;
         };
       };
       custom_products: {
@@ -308,6 +314,39 @@ export interface Database {
           variant_price?: Record<string, number>;
           display_order?: number;
           updated_at?: string;
+        };
+      };
+      reviews: {
+        Row: {
+          id: string;
+          screenshot: string;
+          platform: "whatsapp" | "instagram";
+          customer_label: string | null;
+          location: string | null;
+          review_date: string | null;
+          rating: number | null;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          screenshot: string;
+          platform: "whatsapp" | "instagram";
+          customer_label?: string | null;
+          location?: string | null;
+          review_date?: string | null;
+          rating?: number | null;
+          display_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          screenshot?: string;
+          platform?: "whatsapp" | "instagram";
+          customer_label?: string | null;
+          location?: string | null;
+          review_date?: string | null;
+          rating?: number | null;
+          display_order?: number;
         };
       };
     };

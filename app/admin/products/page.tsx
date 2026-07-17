@@ -71,10 +71,10 @@ export default async function AdminProductsPage() {
                   </td>
                   <td className="px-5 py-3 text-gray-600 capitalize">{product.category}</td>
                   <td className="px-5 py-3">
-                    <span className="font-semibold text-gray-900">₦{product.price.toLocaleString("en-NG")}</span>
+                    <span className="font-semibold text-gray-900">€{product.price.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     {product.original_price && (
                       <span className="ml-1.5 text-xs text-gray-400 line-through">
-                        ₦{product.original_price.toLocaleString("en-NG")}
+                        €{product.original_price.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     )}
                   </td>

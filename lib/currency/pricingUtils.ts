@@ -3,7 +3,7 @@ import type { CurrencyCode, CurrencyConfig, ExchangeRate, PricedItem, CheckoutPr
 
 /**
  * Core luxury rounding engine.
- * Never exposes awkward decimals like £23.47 — rounds to the nearest
+ * Never exposes awkward decimals like €23.47 — rounds to the nearest
  * psychologically clean breakpoint based on the price tier.
  */
 export function luxuryRound(amount: number, currency: CurrencyCode): number {
@@ -21,15 +21,19 @@ export function luxuryRound(amount: number, currency: CurrencyCode): number {
 }
 
 /**
- * Convert NGN → target currency and apply luxury rounding.
+ * Convert EUR (the base currency prices are stored/entered in) → target
+ * currency and apply luxury rounding.
  */
 export function convertPrice(
-  amountNGN: number,
+  amountEUR: number,
   rate: ExchangeRate,
   toCurrency: CurrencyCode,
 ): number {
-  if (toCurrency === "NGN") return luxuryRound(amountNGN, "NGN");
-  const raw = amountNGN * rate.rate;
+  // EUR is the identity currency — exactly what the admin entered, no
+  // conversion and no rounding (rounding here would silently collapse two
+  // different admin-entered prices into the same displayed value).
+  if (toCurrency === "EUR") return amountEUR;
+  const raw = amountEUR * rate.rate;
   return luxuryRound(raw, toCurrency);
 }
 
@@ -58,14 +62,14 @@ export function formatCurrency(
  * Full price item: convert, round, format in one call.
  */
 export function priceItem(
-  amountNGN: number,
+  amountEUR: number,
   rate: ExchangeRate,
   toCurrency: CurrencyCode,
 ): PricedItem {
   const config = CURRENCIES[toCurrency];
-  const amountConverted = convertPrice(amountNGN, rate, toCurrency);
+  const amountConverted = convertPrice(amountEUR, rate, toCurrency);
   return {
-    amountNGN,
+    amountEUR,
     amountConverted,
     currency: toCurrency,
     symbol: config.symbol,
@@ -80,22 +84,22 @@ export function priceItem(
  * Converts each line independently to prevent rounding drift accumulation.
  */
 export function priceCheckout(
-  subtotalNGN: number,
-  shippingNGN: number,
+  subtotalEUR: number,
+  shippingEUR: number,
   rate: ExchangeRate,
   toCurrency: CurrencyCode,
 ): CheckoutPricing {
   const config = CURRENCIES[toCurrency];
-  const subtotalConverted = convertPrice(subtotalNGN, rate, toCurrency);
-  const shippingConverted = convertPrice(shippingNGN, rate, toCurrency);
+  const subtotalConverted = convertPrice(subtotalEUR, rate, toCurrency);
+  const shippingConverted = convertPrice(shippingEUR, rate, toCurrency);
   const totalConverted = subtotalConverted + shippingConverted;
 
   return {
-    subtotalNGN,
+    subtotalEUR,
     subtotalConverted,
-    shippingNGN,
+    shippingEUR,
     shippingConverted,
-    totalNGN: subtotalNGN + shippingNGN,
+    totalEUR: subtotalEUR + shippingEUR,
     totalConverted,
     currency: toCurrency,
     symbol: config.symbol,
@@ -108,13 +112,14 @@ export function priceCheckout(
 }
 
 /**
- * Build a synthetic NGN-identity rate for the fallback case where
- * currency detection fails and we must display NGN prices.
+ * Build a synthetic EUR-identity rate for the fallback case where
+ * currency detection fails and we must display EUR prices (the base
+ * currency prices are stored/entered in).
  */
-export function ngnIdentityRate(): ExchangeRate {
+export function eurIdentityRate(): ExchangeRate {
   return {
-    base: "NGN",
-    currency: "NGN",
+    base: "EUR",
+    currency: "EUR",
     rate: 1,
     fetchedAt: Date.now(),
     source: "fallback",

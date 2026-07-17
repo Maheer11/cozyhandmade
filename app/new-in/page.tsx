@@ -20,7 +20,7 @@ export default async function NewInGridPage({
 
   const { data: items, count } = await db
     .from("new_in_items")
-    .select("id, name, product_image, lifestyle_image, sold_out, price, discount_price", { count: "exact" })
+    .select("id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price", { count: "exact" })
     .order("display_order", { ascending: true })
     .range(from, to) as { data: NewInCardData[] | null; count: number | null };
 

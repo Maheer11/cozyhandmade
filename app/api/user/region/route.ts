@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COUNTRY_CURRENCY_MAP } from "@/lib/currency/constants";
+import { COUNTRY_CURRENCY_MAP, DEFAULT_CURRENCY } from "@/lib/currency/constants";
 
 /**
  * GET /api/user/region
@@ -41,13 +41,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Unable to determine — return NG as default (base currency)
-  return countryResponse("NG");
+  // Unable to determine — return DE as default (Eurozone, base currency)
+  return countryResponse("DE");
 }
 
 function countryResponse(countryCode: string) {
   const upper = countryCode.toUpperCase();
-  const currency = COUNTRY_CURRENCY_MAP[upper] ?? "NGN";
+  const currency = COUNTRY_CURRENCY_MAP[upper] ?? DEFAULT_CURRENCY;
   return NextResponse.json(
     { countryCode: upper, currency },
     {

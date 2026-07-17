@@ -62,18 +62,20 @@ export default function ProductCard({ product }: { product: Product }) {
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
         />
 
-        {/* Sale badge */}
-        {product.originalPrice && (
-          <span className="absolute top-2 left-2 bg-gold text-cream text-[10px] font-semibold px-2 py-0.5 rounded-full">
-            Sale
-          </span>
-        )}
+        <div className="absolute top-2 left-2 right-2 flex flex-col items-start gap-1">
+          {product.originalPrice && (
+            <span className="bg-gold text-cream text-[10px] font-semibold px-2 py-0.5 rounded-full">
+              Sale
+            </span>
+          )}
 
-        {/* Handmade badge — top-right */}
-        <span className="absolute top-2 right-2 bg-cream/90 text-brown text-[10px] font-medium
-                         px-2 py-0.5 rounded-full backdrop-blur-sm border border-taupe/20">
-          ✦ Handmade
-        </span>
+          {product.isHandmade && (
+            <span className="bg-cream/90 text-brown text-[10px] font-medium
+                             px-2 py-0.5 rounded-full backdrop-blur-sm border border-taupe/20">
+              ✦ Handmade
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Info */}

@@ -257,17 +257,17 @@ function SwipeableItem({
 /* ─────────────────────────────────────────────────────────
    CART PAGE
 ───────────────────────────────────────────────────────── */
-const FREE_SHIP_NGN = 50000;  // ₦50,000 — most items qualify
-const SHIPPING_NGN  = 6000;   // ₦6,000 shipping when below threshold
+const FREE_SHIP_EUR = 75;  // €75 — most items qualify
+const SHIPPING_EUR  = 5;   // €5 shipping when below threshold
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total, itemCount } = useCart();
   const { currency, priceCheckout, formatAmount } = useCurrency();
 
   const isNGN      = currency === "NGN";
-  const shippingNGN  = total >= FREE_SHIP_NGN ? 0 : SHIPPING_NGN;
-  const pricing      = priceCheckout(total, shippingNGN);
-  const remaining    = FREE_SHIP_NGN - total; // NGN remaining for free shipping
+  const shippingEUR  = total >= FREE_SHIP_EUR ? 0 : SHIPPING_EUR;
+  const pricing      = priceCheckout(total, shippingEUR);
+  const remaining    = FREE_SHIP_EUR - total; // EUR remaining for free shipping
 
   if (items.length === 0) {
     return (
@@ -380,8 +380,8 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-brown/75">
                   <span>Shipping</span>
-                  <span className={shippingNGN === 0 ? "text-green-600 font-semibold" : ""}>
-                    {shippingNGN === 0 ? "✓ FREE" : pricing.formattedShipping}
+                  <span className={shippingEUR === 0 ? "text-green-600 font-semibold" : ""}>
+                    {shippingEUR === 0 ? "✓ FREE" : pricing.formattedShipping}
                   </span>
                 </div>
                 {remaining > 0 && (
@@ -477,8 +477,8 @@ export default function CartPage() {
           <div>
             <p className="text-xs text-taupe-dark">
               {itemCount} items · Shipping{" "}
-              <span className={shippingNGN === 0 ? "text-green-600 font-medium" : ""}>
-                {shippingNGN === 0 ? "FREE" : pricing.formattedShipping}
+              <span className={shippingEUR === 0 ? "text-green-600 font-medium" : ""}>
+                {shippingEUR === 0 ? "FREE" : pricing.formattedShipping}
               </span>
             </p>
             <p className="font-semibold text-deep-brown text-base">

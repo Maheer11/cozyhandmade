@@ -5,7 +5,7 @@ import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { CURRENCIES } from "@/lib/currency/constants";
 import type { CurrencyCode } from "@/lib/currency/types";
 
-const DISPLAYED: CurrencyCode[] = ["NGN", "USD", "GBP", "EUR", "CAD", "AUD", "GHS", "ZAR"];
+const DISPLAYED: CurrencyCode[] = ["EUR", "GBP", "NGN", "USD"];
 
 export default function CurrencyPicker({ dropUp = false }: { dropUp?: boolean }) {
   const { currency, setCurrency, isLoading } = useCurrency();

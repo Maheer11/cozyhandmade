@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "./CartContext";
+import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { Product } from "@/lib/products";
 
 interface BelovedPiecesShowcaseProps {
@@ -15,6 +16,7 @@ export default function BelovedPiecesShowcase({ products }: BelovedPiecesShowcas
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const currentProduct = products[selectedProductIndex];
   const { addItem } = useCart();
+  const { formatAmount } = useCurrency();
 
   if (!products.length) return null;
 
@@ -136,11 +138,11 @@ export default function BelovedPiecesShowcase({ products }: BelovedPiecesShowcas
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-8">
               <span className="text-4xl font-semibold text-deep-brown">
-                £{currentProduct.price.toFixed(2)}
+                {formatAmount(currentProduct.price)}
               </span>
               {currentProduct.originalPrice && (
                 <span className="text-lg text-taupe-dark line-through">
-                  £{currentProduct.originalPrice.toFixed(2)}
+                  {formatAmount(currentProduct.originalPrice)}
                 </span>
               )}
             </div>

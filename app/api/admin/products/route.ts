@@ -51,6 +51,7 @@ export async function POST(request: Request) {
         variant_stock:  body.variant_stock ?? {},
         variant_price:  body.variant_price ?? {},
         featured:       body.featured ?? false,
+        is_handmade:    body.is_handmade ?? true,
         rating:         Number(body.rating ?? 5.0),
         review_count:   Number(body.review_count ?? 0),
       })

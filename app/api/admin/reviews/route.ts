@@ -14,12 +14,12 @@ export async function GET() {
 
     const db = createAdminClient() as any;
     const { data, error } = await db
-      .from("new_in_items")
+      .from("reviews")
       .select("*")
       .order("display_order", { ascending: true });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ items: data });
+    return NextResponse.json({ reviews: data });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -35,30 +35,22 @@ export async function POST(request: Request) {
     const db = createAdminClient() as any;
     const body = await request.json();
 
-    if (!body.name?.trim())          return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    if (!body.product_image?.trim()) return NextResponse.json({ error: "Product image is required" }, { status: 400 });
-    if (body.price === undefined || body.price === null || Number.isNaN(Number(body.price))) {
-      return NextResponse.json({ error: "Price is required" }, { status: 400 });
+    if (!body.screenshot?.trim()) return NextResponse.json({ error: "Screenshot image is required" }, { status: 400 });
+    if (body.platform !== "whatsapp" && body.platform !== "instagram") {
+      return NextResponse.json({ error: "Platform must be whatsapp or instagram" }, { status: 400 });
     }
 
     const { data, error } = await db
-      .from("new_in_items")
+      .from("reviews")
       .insert({
-        name:            body.name,
-        product_image:   body.product_image,
-        lifestyle_image: body.lifestyle_image || null,
-        sold_out:        body.sold_out ?? false,
-        is_handmade:     body.is_handmade ?? true,
-        display_order:   Number(body.display_order ?? 0),
-        price:           Number(body.price),
-        discount_price:  body.discount_price !== undefined && body.discount_price !== null && body.discount_price !== ""
-                            ? Number(body.discount_price) : null,
-        colors:          body.colors ?? [],
-        sizes:           body.sizes ?? [],
-        description:     body.description ?? "",
-        sku:             body.sku?.trim() || null,
-        stock_quantity:  Number(body.stock_quantity ?? 0),
-        variant_price:   body.variant_price ?? {},
+        screenshot:     body.screenshot,
+        platform:       body.platform,
+        customer_label: body.customer_label?.trim() || null,
+        location:       body.location?.trim() || null,
+        review_date:    body.review_date?.trim() || null,
+        rating:         body.rating !== undefined && body.rating !== null && body.rating !== ""
+                          ? Number(body.rating) : 5,
+        display_order:  Number(body.display_order ?? 0),
       })
       .select("id")
       .single();

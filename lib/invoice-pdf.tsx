@@ -63,8 +63,8 @@ const s = StyleSheet.create({
 });
 
 /* ─── helpers ─────────────────────────────────────── */
-function ngn(n: number) {
-  return "₦" + n.toLocaleString("en-NG");
+function eur(n: number) {
+  return "€" + n.toLocaleString("en-IE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function statusColor(status: string) {
@@ -180,8 +180,8 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
           <View key={i} style={[s.tableRow, i % 2 !== 0 ? s.tableRowAlt : {}]}>
             <Text style={[s.cellText, s.colName]}>{item.product_name}</Text>
             <Text style={[s.cellText, s.colQty]}>{item.quantity}</Text>
-            <Text style={[s.cellText, s.colPrice]}>{ngn(item.unit_price)}</Text>
-            <Text style={[s.cellBold, s.colTotal]}>{ngn(item.subtotal)}</Text>
+            <Text style={[s.cellText, s.colPrice]}>{eur(item.unit_price)}</Text>
+            <Text style={[s.cellBold, s.colTotal]}>{eur(item.subtotal)}</Text>
           </View>
         ))}
 
@@ -189,7 +189,7 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
         <View style={s.totalsWrap}>
           <View style={s.totalRow}>
             <Text style={s.totalLabel}>Subtotal</Text>
-            <Text style={s.totalValue}>{ngn(data.total_amount)}</Text>
+            <Text style={s.totalValue}>{eur(data.total_amount)}</Text>
           </View>
           <View style={s.totalRow}>
             <Text style={s.totalLabel}>Delivery</Text>
@@ -197,7 +197,7 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
           </View>
           <View style={[s.totalRow, { marginTop: 6, borderTopWidth: 1, borderTopColor: CREAM, paddingTop: 8 }]}>
             <Text style={s.grandLabel}>Total</Text>
-            <Text style={s.grandValue}>{ngn(data.total_amount)}</Text>
+            <Text style={s.grandValue}>{eur(data.total_amount)}</Text>
           </View>
         </View>
 
