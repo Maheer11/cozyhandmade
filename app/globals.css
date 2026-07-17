@@ -51,19 +51,26 @@ body {
 }
 
 /* ─── Safe Area Utilities ───────────────────────────
-   Wrapped in Tailwind's utilities layer so responsive Tailwind classes
-   (e.g. "pb-nav lg:pb-0") can actually override these — unlayered CSS
-   always beats layered CSS regardless of source order/specificity, which
-   was letting .pb-nav's padding survive on desktop and leave a stray
-   strip of the page's white background between sections. */
+   Even inside Tailwind's utilities layer, this file's rules are still
+   textually *after* `@import "tailwindcss"`, so within the merged layer
+   they still come after Tailwind's own generated utilities (e.g. the
+   `lg:pb-0` used alongside "pb-nav") — same specificity, later source
+   wins regardless of breakpoint, which was letting .pb-nav's padding
+   survive on desktop and leave a stray strip of white page background
+   between sections. Fix: .pb-nav resets itself above the "lg" breakpoint
+   instead of relying on a separate Tailwind class to cancel it out. */
 @layer utilities {
   .pb-safe    { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .pt-safe    { padding-top: env(safe-area-inset-top, 0px); }
   .pl-safe    { padding-left: env(safe-area-inset-left, 0px); }
   .pr-safe    { padding-right: env(safe-area-inset-right, 0px); }
 
-  /* Bottom nav height = 56px + device safe area */
+  /* Bottom nav height = 56px + device safe area — self-contained reset,
+     doesn't depend on a separate "lg:pb-0" utility winning the cascade. */
   .pb-nav     { padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
+  @media (min-width: 1024px) {
+    .pb-nav   { padding-bottom: 0; }
+  }
   .h-bottom-nav { height: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
   .bottom-nav { bottom: env(safe-area-inset-bottom, 0px); }
 }
