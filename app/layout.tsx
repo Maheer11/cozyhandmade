@@ -5,10 +5,10 @@ import { CartProvider } from "@/components/CartContext";
 import { CurrencyProvider } from "@/lib/currency/CurrencyContext";
 import { AuthProvider } from "@/lib/supabase/auth-context";
 import Navbar from "@/components/Navbar";
-import AccountStatusBar from "@/components/AccountStatusBar";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import CartDrawer from "@/components/CartDrawer";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-playfair", // keep same CSS var name so @theme still works
@@ -48,9 +48,6 @@ export default function RootLayout({
           {/* Top bar — always visible */}
           <Navbar />
 
-          {/* Tier status bar — only renders when user is logged in */}
-          <AccountStatusBar />
-
           {/* Page content — extra bottom padding on mobile for bottom nav */}
           <main className="flex-1 pb-nav lg:pb-0">{children}</main>
 
@@ -64,6 +61,9 @@ export default function RootLayout({
 
           {/* Floating WhatsApp chat button — every page */}
           <FloatingWhatsApp />
+
+          {/* Slide-in cart drawer — every page */}
+          <CartDrawer />
         </CartProvider>
         </CurrencyProvider>
         </AuthProvider>

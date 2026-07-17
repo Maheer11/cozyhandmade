@@ -7,19 +7,24 @@ import { useAuth } from "@/lib/supabase/auth-context";
 
 export default function BottomNav() {
   const pathname  = usePathname();
-  const { itemCount } = useCart();
+  const { itemCount, openCart } = useCart();
   const { user }  = useAuth();
 
   // These pages have their own full-width sticky bars — hide the bottom nav
   const isProductDetail = /^\/products\/[^/]+$/.test(pathname);
   const isCheckout = pathname.startsWith("/checkout");
-  const isCart = pathname === "/cart";
-  if (isProductDetail || isCheckout || isCart) return null;
+  if (isProductDetail || isCheckout) return null;
 
   const accountHref  = user ? "/account" : "/auth/login";
   const accountActive = pathname.startsWith("/account") || pathname.startsWith("/auth");
 
-  const tabs = [
+  const tabs: {
+    href: string;
+    label: string;
+    active: boolean;
+    onClick?: () => void;
+    icon: (on: boolean) => React.ReactNode;
+  }[] = [
     {
       href: "/",
       label: "Home",
@@ -60,7 +65,8 @@ export default function BottomNav() {
     {
       href: "/cart",
       label: "Cart",
-      active: pathname === "/cart",
+      active: false,
+      onClick: openCart,
       icon: (on: boolean) => (
         <div className="relative">
           <svg className={`w-6 h-6 ${on ? "stroke-gold" : "stroke-taupe-dark"} fill-none`}
@@ -96,10 +102,11 @@ export default function BottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex items-stretch h-14">
-        {tabs.map(({ href, label, active, icon }) => (
+        {tabs.map(({ href, label, active, icon, onClick }) => (
           <Link
             key={label}
             href={href}
+            onClick={onClick ? (e) => { e.preventDefault(); onClick(); } : undefined}
             className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 pt-1
                        active:scale-95 transition-transform duration-100
                        ${active ? "text-gold" : "text-taupe-dark"}`}

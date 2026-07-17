@@ -10,6 +10,15 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  // "product" (default, omitted for backward-compat with existing carts in
+  // localStorage) vs "new_in" — a standalone new_in_items row with no
+  // products-table link. Determines which table checkout verifies price/stock
+  // against and which detail route ("/products/:id" vs "/new-in/:id") to link to.
+  source?: "product" | "new_in";
+  // The selected size/tier key (e.g. "With Stand") when the item has
+  // per-tier pricing (new_in_items.variant_price). Lets checkout verify the
+  // exact tier price server-side instead of falling back to the base price.
+  variant?: string;
 }
 
 interface CartContextType {
@@ -20,6 +29,10 @@ interface CartContextType {
   clearCart: () => void;
   itemCount: number;
   total: number;
+  isOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
+  toggleCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -43,6 +56,11 @@ function writeCart(items: CartItem[]): void {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const openCart = () => setIsOpen(true);
+  const closeCart = () => setIsOpen(false);
+  const toggleCart = () => setIsOpen((o) => !o);
 
   // Hydrate from localStorage on first mount (client only)
   useEffect(() => {
@@ -84,7 +102,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQuantity, clearCart, itemCount, total }}
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        itemCount,
+        total,
+        isOpen,
+        openCart,
+        closeCart,
+        toggleCart,
+      }}
     >
       {children}
     </CartContext.Provider>

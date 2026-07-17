@@ -130,6 +130,7 @@ function SwipeableItem({
   onUpdateQty: (id: string, qty: number) => void;
 }) {
   const { formatAmount } = useCurrency();
+  const itemHref = item.source === "new_in" ? `/new-in/${item.id}` : `/products/${item.id}`;
   const [offset, setOffset] = useState(0);
   const [removing, setRemoving] = useState(false);
   const startX = useRef(0);
@@ -197,14 +198,14 @@ function SwipeableItem({
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <Link href={`/products/${item.id}`} className="shrink-0">
+        <Link href={itemHref} className="shrink-0">
           <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-cream-dark">
             <Image src={item.image} alt={item.name} fill loading="lazy" className="object-cover" />
           </div>
         </Link>
 
         <div className="flex-1 min-w-0">
-          <Link href={`/products/${item.id}`}>
+          <Link href={itemHref}>
             <h3 className="font-heading font-600 text-deep-brown text-sm leading-snug
                            active:text-[#8B2035] transition-colors line-clamp-2">
               {item.name}

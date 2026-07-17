@@ -109,6 +109,8 @@ export interface Database {
           total_amount: number;
           delivery_address: Json | null;
           notes: string | null;
+          shipped_at: string | null;
+          delivered_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -119,6 +121,8 @@ export interface Database {
           total_amount: number;
           delivery_address?: Json | null;
           notes?: string | null;
+          shipped_at?: string | null;
+          delivered_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -126,6 +130,8 @@ export interface Database {
           status?: OrderStatus;
           delivery_address?: Json | null;
           notes?: string | null;
+          shipped_at?: string | null;
+          delivered_at?: string | null;
           updated_at?: string;
         };
       };
@@ -181,6 +187,60 @@ export interface Database {
           payment_channel?: string | null;
           paid_at?: string | null;
           paystack_reference?: string | null;
+        };
+      };
+      new_in_items: {
+        Row: {
+          id: string;
+          name: string;
+          product_image: string;
+          lifestyle_image: string | null;
+          sold_out: boolean;
+          display_order: number;
+          created_at: string;
+          price: number;
+          discount_price: number | null;
+          colors: string[];
+          sizes: string[];
+          description: string | null;
+          sku: string | null;
+          stock_quantity: number;
+          updated_at: string;
+          variant_price: Record<string, number>;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          product_image: string;
+          lifestyle_image?: string | null;
+          sold_out?: boolean;
+          display_order?: number;
+          created_at?: string;
+          price: number;
+          discount_price?: number | null;
+          colors?: string[];
+          sizes?: string[];
+          description?: string | null;
+          sku?: string | null;
+          stock_quantity?: number;
+          updated_at?: string;
+          variant_price?: Record<string, number>;
+        };
+        Update: {
+          name?: string;
+          product_image?: string;
+          lifestyle_image?: string | null;
+          sold_out?: boolean;
+          display_order?: number;
+          price?: number;
+          discount_price?: number | null;
+          colors?: string[];
+          sizes?: string[];
+          description?: string | null;
+          sku?: string | null;
+          stock_quantity?: number;
+          updated_at?: string;
+          variant_price?: Record<string, number>;
         };
       };
       custom_products: {

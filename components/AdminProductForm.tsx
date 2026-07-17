@@ -75,7 +75,15 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
   const set = (k: keyof FormState, v: string | boolean | string[] | Record<string, number>) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  /* ── Image upload helpers ── */
+  /* ── Image upload helpers ──
+     Cloudinary stores the raw original upload (phone photos can be 5-20MB).
+     Inserting a delivery transformation into the returned URL — auto format,
+     auto quality, capped width — keeps the stored URL itself small, instead
+     of every viewer having to transcode the full-size original on first load. */
+  function optimizeCloudinaryUrl(url: string): string {
+    return url.replace("/upload/", "/upload/f_auto,q_auto,w_1600,c_limit/");
+  }
+
   function uploadFile(file: File, onProgress: (pct: number) => void): Promise<string | null> {
     return new Promise((resolve) => {
       const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -99,7 +107,8 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
       xhr.onload = () => {
         if (xhr.status === 200) {
           const data = JSON.parse(xhr.responseText);
-          resolve((data.secure_url as string) ?? null);
+          const url = data.secure_url as string | undefined;
+          resolve(url ? optimizeCloudinaryUrl(url) : null);
         } else {
           console.error("Cloudinary upload failed", xhr.responseText);
           resolve(null);

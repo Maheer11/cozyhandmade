@@ -3,11 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 interface OrderItemInput {
-  product_id: string;
+  product_id: string; // products.id OR new_in_items.id, depending on `source`
   product_name: string;
   product_image: string | null;
   quantity: number;
   unit_price: number;
+  source?: "product" | "new_in";
 }
 
 interface CreateOrderBody {
@@ -51,12 +52,15 @@ export async function POST(request: Request) {
     }
 
     // 2. Create each order item
+    // order_items.product_id has a FK to products(id) — a new_in_items id would
+    // violate it, so New In items are stored the same way any non-catalog line
+    // item is: product_id null, with the name/image/price snapshot fields set.
     const { error: itemsError } = await db
       .from("order_items")
       .insert(
         body.items.map((item) => ({
           order_id: order.id,
-          product_id: item.product_id,
+          product_id: item.source === "new_in" ? null : item.product_id,
           product_name: item.product_name,
           product_image: item.product_image,
           quantity: item.quantity,

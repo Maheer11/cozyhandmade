@@ -27,6 +27,8 @@
 
   --font-heading: var(--font-playfair), "Playfair Display", Georgia, serif;
   --font-body: var(--font-inter), Inter, system-ui, sans-serif;
+  /* San Francisco on Apple devices, falls back to the closest system font elsewhere */
+  --font-ios: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 html {
@@ -48,16 +50,23 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ─── Safe Area Utilities ─────────────────────────── */
-.pb-safe    { padding-bottom: env(safe-area-inset-bottom, 0px); }
-.pt-safe    { padding-top: env(safe-area-inset-top, 0px); }
-.pl-safe    { padding-left: env(safe-area-inset-left, 0px); }
-.pr-safe    { padding-right: env(safe-area-inset-right, 0px); }
+/* ─── Safe Area Utilities ───────────────────────────
+   Wrapped in Tailwind's utilities layer so responsive Tailwind classes
+   (e.g. "pb-nav lg:pb-0") can actually override these — unlayered CSS
+   always beats layered CSS regardless of source order/specificity, which
+   was letting .pb-nav's padding survive on desktop and leave a stray
+   strip of the page's white background between sections. */
+@layer utilities {
+  .pb-safe    { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .pt-safe    { padding-top: env(safe-area-inset-top, 0px); }
+  .pl-safe    { padding-left: env(safe-area-inset-left, 0px); }
+  .pr-safe    { padding-right: env(safe-area-inset-right, 0px); }
 
-/* Bottom nav height = 56px + device safe area */
-.pb-nav     { padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
-.h-bottom-nav { height: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
-.bottom-nav { bottom: env(safe-area-inset-bottom, 0px); }
+  /* Bottom nav height = 56px + device safe area */
+  .pb-nav     { padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
+  .h-bottom-nav { height: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
+  .bottom-nav { bottom: env(safe-area-inset-bottom, 0px); }
+}
 
 /* ─── Scrollbar ───────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }

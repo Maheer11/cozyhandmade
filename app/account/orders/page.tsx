@@ -2,10 +2,35 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import Link from "next/link";
+import { PROCESSING_DAYS } from "@/lib/config";
 
 type Order = Database["public"]["Tables"]["orders"]["Row"] & {
   order_items: (Database["public"]["Tables"]["order_items"]["Row"])[];
 };
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+// Stage 4 — single place that turns an order's status/timestamps into the
+// customer-facing lifecycle message. PROCESSING_DAYS is the one source of
+// truth for the "estimated ship-by" date (lib/config.ts).
+function lifecycleMessage(order: Order): string | null {
+  if (order.status === "processing") {
+    const shipBy = new Date(order.created_at);
+    shipBy.setDate(shipBy.getDate() + PROCESSING_DAYS);
+    return `Payment confirmed. Your order is being prepared — estimated to ship by ${formatDate(shipBy.toISOString())}.`;
+  }
+  if (order.status === "shipped") {
+    return order.shipped_at
+      ? `Your order has shipped! Shipped on ${formatDate(order.shipped_at)}.`
+      : "Your order has shipped!";
+  }
+  if (order.status === "delivered") {
+    return order.delivered_at ? `Delivered on ${formatDate(order.delivered_at)}.` : "Delivered.";
+  }
+  return null;
+}
 
 const STATUS_STYLES: Record<string, string> = {
   pending:    "bg-amber-50 text-amber-700 border-amber-100",
@@ -84,6 +109,13 @@ export default async function OrdersPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* Lifecycle status — estimated ship-by / shipped / delivered */}
+                {lifecycleMessage(order) && (
+                  <div className="px-5 py-3 bg-cream/60 border-b border-taupe/10">
+                    <p className="text-xs text-brown/80 font-body">{lifecycleMessage(order)}</p>
+                  </div>
+                )}
 
                 {/* Order items */}
                 <div className="px-5 py-4 space-y-3">

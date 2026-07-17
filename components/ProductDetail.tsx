@@ -68,7 +68,7 @@ export default function ProductDetail({
   product: Product;
   related: Product[];
 }) {
-  const { addItem } = useCart();
+  const { addItem, openCart } = useCart();
   const { formatAmount } = useCurrency();
   const [activeImg,     setActiveImg]     = useState(0);
   const [quantity,      setQuantity]      = useState(1);
@@ -102,10 +102,11 @@ export default function ProductDetail({
   const handleAdd = () => {
     if (isOutOfStock) return;
     for (let i = 0; i < quantity; i++) {
-      addItem({ id: product.id, name: cartName, price: displayPrice, image: product.image });
+      addItem({ id: product.id, name: cartName, price: displayPrice, image: product.image, source: "product", variant: selectedSize ?? undefined });
     }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+    openCart();
   };
 
   return (
@@ -182,14 +183,14 @@ export default function ProductDetail({
             <p className="text-gold text-[11px] uppercase tracking-[0.2em] font-body font-semibold mb-2">
               {product.category.replace(/-/g, " ")}
             </p>
-            <h1 className="font-heading italic text-2xl sm:text-3xl lg:text-4xl font-400 text-deep-brown mb-3 leading-tight">
+            <h1 className="font-ios text-xl sm:text-2xl lg:text-3xl font-700 text-deep-brown mb-3 leading-tight">
               {product.name}
             </h1>
 
             <StarRating rating={product.rating} count={product.reviewCount} />
 
             <div className="flex items-baseline gap-3 mt-4 mb-5">
-              <span className="text-2xl font-bold text-brown">{formatAmount(displayPrice)}</span>
+              <span className="font-ios text-xl font-700 text-brown">{formatAmount(displayPrice)}</span>
               {product.originalPrice && displayPrice === product.price && (
                 <>
                   <span className="text-base text-taupe-dark line-through">{formatAmount(product.originalPrice)}</span>

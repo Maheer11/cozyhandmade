@@ -1,14 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
-import ProductCard from "@/components/ProductCard";
 import NewsletterForm from "@/components/NewsletterForm";
 import ScrollReveal from "@/components/ScrollReveal";
 import SocialProofSection from "@/components/SocialProofSection";
 import HeroSlider from "@/components/HeroSlider";
 import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
-import { categories } from "@/lib/products";
+import OurStorySection from "@/components/OurStorySection";
+import NewInSection, { type NewInCardData } from "@/components/NewInSection";
 import { createClient } from "@/lib/supabase/server";
-import { mapProduct, type DbProduct } from "@/lib/db-products";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
 
 /* ─── Marquee strip — refined, emoji-free ─────────── */
@@ -57,20 +56,20 @@ export default async function HomePage() {
   const supabase = await createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
-  const { data: dbFeatured } = await db
-    .from("products")
-    .select("*")
-    .eq("featured", true)
-    .order("created_at", { ascending: false })
-    .limit(6);
-
   const { data: dbCustom } = await db
     .from("custom_products")
     .select("*")
     .order("display_order", { ascending: true });
 
-  const featured = ((dbFeatured ?? []) as DbProduct[]).map(mapProduct).slice(0, 6);
+  // New In is a fully standalone collection now — no join, own price/stock.
+  const { data: dbNewIn } = await db
+    .from("new_in_items")
+    .select("id, name, product_image, lifestyle_image, sold_out, price, discount_price")
+    .order("display_order", { ascending: true })
+    .limit(10);
+
   const customProducts = ((dbCustom ?? []) as DbCustomProduct[]).map(mapCustomProduct);
+  const newInItems = (dbNewIn ?? []) as NewInCardData[];
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
   return (
@@ -84,6 +83,9 @@ export default async function HomePage() {
         <div className="lg:hidden flex flex-col">
           <div className="relative h-[60vh]">
             <HeroSlider />
+            {/* Top dissolve — blends into the navbar's cream-dark background */}
+            <div className="absolute top-0 left-0 w-full h-20 z-10 pointer-events-none
+                            bg-gradient-to-b from-cream-dark via-cream-dark/50 to-transparent" />
             {/* Bottom dissolve into milk text panel */}
             <div className="absolute bottom-0 left-0 w-full h-28 z-10 pointer-events-none
                             bg-gradient-to-t from-cream-dark via-cream-dark/50 to-transparent" />
@@ -196,6 +198,9 @@ export default async function HomePage() {
             {/* Wide dissolve — image bleeds into milk panel */}
             <div className="absolute top-0 left-0 h-full w-72 xl:w-96 z-10 pointer-events-none
                             bg-gradient-to-r from-cream-dark via-cream-dark/60 to-transparent" />
+            {/* Top dissolve — blends into the navbar's cream-dark background */}
+            <div className="absolute top-0 left-0 w-full h-24 z-10 pointer-events-none
+                            bg-gradient-to-b from-cream-dark via-cream-dark/50 to-transparent" />
           </div>
 
         </div>
@@ -296,111 +301,9 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          CATEGORIES — "Find Your Perfect Piece"
+          NEW IN — admin-managed via /admin/new-in
       ══════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden py-14 lg:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ScrollReveal className="mb-10 lg:mb-14 text-center">
-            <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
-              ✦ Browse
-            </p>
-            <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown">
-              Find Your Perfect Piece
-            </h2>
-          </ScrollReveal>
-
-          {/* Horizontal scroll on mobile, 3×2 grid on desktop */}
-          <ScrollReveal>
-            <div
-              className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory
-                          lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:pb-0 lg:mx-0 lg:px-0"
-            >
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/products?category=${cat.id}`}
-                  className="group relative rounded-2xl overflow-hidden shrink-0 block
-                             w-48 h-36 sm:w-56 sm:h-44 snap-start
-                             lg:w-auto lg:h-auto lg:aspect-4/3
-                             hover:shadow-2xl hover:-translate-y-1
-                             transition-all duration-300 ease-out
-                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                  style={{ touchAction: "manipulation" }}
-                >
-                  <Image
-                    src={cat.image}
-                    alt={cat.name}
-                    fill
-                    loading="lazy"
-                    sizes="(max-width: 640px) 192px, (max-width: 1024px) 224px, 33vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-deep-brown/80 via-deep-brown/20 to-transparent
-                                  group-hover:from-deep-brown/70 transition-all duration-300" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3 lg:p-5">
-                    <h3 className="font-heading italic text-cream font-400 text-sm lg:text-xl leading-tight">
-                      {cat.name}
-                    </h3>
-                    <p className="text-cream/70 text-[10px] lg:text-xs mt-0.5 hidden lg:block font-body">
-                      {cat.description}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════
-          FEATURED PRODUCTS — "Our Beloved Pieces"
-      ══════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden py-14 lg:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ScrollReveal className="text-center mb-12 lg:mb-16">
-            <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
-              ✦ Curated with care
-            </p>
-            <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown mb-4">
-              Our Beloved Pieces
-            </h2>
-            {/* Hand-stitch SVG underline decoration */}
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <svg width="120" height="12" viewBox="0 0 120 12" fill="none" aria-hidden="true">
-                <path
-                  d="M2 6 Q10 2 18 6 Q26 10 34 6 Q42 2 50 6 Q58 10 66 6 Q74 2 82 6 Q90 10 98 6 Q106 2 114 6 Q118 8 120 6"
-                  stroke="#D49AA8" strokeWidth="1.5" strokeLinecap="round" fill="none"
-                />
-              </svg>
-              <span className="text-taupe text-sm" aria-hidden="true">✦</span>
-              <svg width="120" height="12" viewBox="0 0 120 12" fill="none" aria-hidden="true">
-                <path
-                  d="M2 6 Q10 10 18 6 Q26 2 34 6 Q42 10 50 6 Q58 2 66 6 Q74 10 82 6 Q90 2 98 6 Q106 10 114 6 Q118 4 120 6"
-                  stroke="#D49AA8" strokeWidth="1.5" strokeLinecap="round" fill="none"
-                />
-              </svg>
-            </div>
-            <div className="flex justify-end max-w-7xl mx-auto px-4">
-              <Link
-                href="/products"
-                className="text-sm font-semibold text-gold hover:text-gold-dark
-                           transition-colors duration-200 flex items-center gap-1.5"
-              >
-                View all pieces
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-          </ScrollReveal>
-
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-7">
-            {featured.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <NewInSection items={newInItems} />
 
       {/* ══════════════════════════════════════════════
           OUR BELOVED PIECES — Apple-style Showcase
@@ -410,111 +313,7 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           ABOUT — "Stitched with Soul"
       ══════════════════════════════════════════════ */}
-      <section
-        id="about"
-        className="relative overflow-hidden py-14 lg:py-28"
-        style={{ backgroundColor: "#FBF0E4" }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-20 lg:items-center gap-10">
-
-            {/* Image */}
-            <ScrollReveal>
-              <div className="relative">
-                <div className="rounded-2xl lg:rounded-3xl overflow-hidden aspect-4/3 lg:aspect-[4/5] relative shadow-2xl">
-                  <Image
-                    src="/images/our-story.jpg"
-                    alt="Chunky burgundy yarn and handmade blanket — the beginning of Cozi Handmade"
-                    fill
-                    loading="lazy"
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    className="object-cover hover:scale-105 transition-transform duration-700 ease-out"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-deep-brown/25 to-transparent" />
-                </div>
-                {/* Floating stat card */}
-                <div
-                  className="absolute -bottom-5 right-4 lg:-bottom-7 lg:-right-7
-                              bg-cream rounded-2xl p-5 shadow-2xl border border-taupe/20"
-                >
-                  <p className="font-heading italic text-4xl font-400 text-deep-brown">Made</p>
-                  <p className="text-xs text-taupe-dark mt-1 font-body tracking-wide">with love & intention</p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-            {/* Text */}
-            <ScrollReveal className="pt-8 lg:pt-0">
-              <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
-                ✦ Our story
-              </p>
-              <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown mb-5 leading-tight">
-                Where Every Stitch Began
-              </h2>
-              <p className="text-deep-brown/80 leading-relaxed mb-5 text-sm sm:text-base font-medium">
-                It all began as a quiet curiosity, a ball of yarn, and a desire
-                to create something warm with my own hands. What started as a
-                simple attempt to learn crochet slowly became a comforting hobby.
-              </p>
-
-              <p className="text-deep-brown/80 leading-relaxed mb-5 text-sm sm:text-base font-medium">
-                With each stitch, I discovered more than just a craft — I found
-                patience, creativity, and joy in turning simple threads into
-                something meaningful. My early pieces were far from perfect, but
-                they carried something special: care, time, and intention.
-              </p>
-
-              {/* Pull-quote */}
-              <blockquote className="border-l-4 border-gold pl-5 py-1 mb-6">
-                <p className="font-heading italic text-xl sm:text-2xl font-400 text-deep-brown leading-snug">
-                  &ldquo;Every blanket I create is more than a product — it is
-                  a piece of that journey.&rdquo;
-                </p>
-              </blockquote>
-
-              <p className="text-deep-brown/70 leading-relaxed mb-7 text-sm sm:text-base font-medium">
-                As my skills grew, so did my love for making cozy blankets. Today,
-                every piece is made slowly and thoughtfully — soft, warm, and made
-                to be lived in — with the hope that it brings warmth and comfort
-                into someone else&apos;s home.
-              </p>
-
-              <div className="grid grid-cols-2 gap-5 mb-8">
-                {[
-                  { value: "100%", label: "Handmade" },
-                  { value: "Made", label: "with intention" },
-                  { value: "Soft", label: "Warm & Cozy" },
-                  { value: "Each", label: "Piece is Unique" },
-                ].map(({ value, label }) => (
-                  <div key={label} className="border-l-2 border-gold pl-4">
-                    <p className="font-heading italic text-2xl font-500 text-deep-brown">
-                      {value}
-                    </p>
-                    <p className="text-[11px] text-taupe-dark mt-0.5 font-body tracking-wide">
-                      {label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <Link
-                href="/products"
-                className="inline-flex items-center justify-center h-14 px-9 rounded-none
-                           bg-gold text-cream font-semibold text-sm tracking-wide
-                           hover:bg-gold-dark hover:-translate-y-0.5
-                           hover:shadow-xl hover:shadow-gold/20
-                           active:translate-y-0
-                           transition-all duration-300 shadow-lg shadow-gold/15
-                           sm:h-auto sm:py-4"
-                style={{ touchAction: "manipulation" }}
-              >
-                Explore the Collection
-              </Link>
-            </ScrollReveal>
-
-          </div>
-        </div>
-      </section>
+      <OurStorySection />
 
       {/* ══════════════════════════════════════════════
           TESTIMONIALS — Social Proof
@@ -526,26 +325,88 @@ export default async function HomePage() {
       ══════════════════════════════════════════════ */}
       <section
         id="newsletter"
-        className="relative overflow-hidden py-14 lg:py-28 bg-deep-brown"
+        className="relative overflow-hidden py-14 lg:py-24 bg-cream-dark"
       >
-        <ScrollReveal className="max-w-xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
-            ✦ Join the Circle
-          </p>
-          <h2 className="font-heading italic text-3xl sm:text-4xl font-400 mb-4" style={{ color: "#F0DFC8" }}>
-            Letters from our Studio
-          </h2>
-          <p className="text-taupe/80 text-base leading-relaxed mb-9 font-body">
-            New pieces, knitting stories, and seasonal inspiration — delivered
-            gently to your inbox.
-          </p>
-          <NewsletterForm />
-          <p className="text-taupe/45 text-xs mt-5 font-body">
-            No spam, ever. Unsubscribe anytime.
-          </p>
+        <ScrollReveal className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="lg:grid lg:grid-cols-[1fr_1.1fr] lg:gap-10 lg:items-center">
+
+            {/* Scattered postcard collage — desktop only. Three photos at
+                staggered rotations/sizes instead of one flat static box,
+                like photos pinned to a corkboard. */}
+            <div className="hidden lg:block relative h-[420px]">
+              <div className="absolute left-2 top-2 w-[62%] h-[70%] rotate-[-6deg] rounded-2xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(26,8,16,0.35)] border-4 border-white z-10">
+                <Image
+                  src="/images/blanket-room2.jpg"
+                  alt="A handmade Cozi piece styled in a cozy room"
+                  fill
+                  sizes="30vw"
+                  className="object-cover"
+                />
+              </div>
+              <div className="absolute right-4 top-0 w-[46%] h-[52%] rotate-[5deg] rounded-2xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(26,8,16,0.3)] border-4 border-white z-20">
+                <Image
+                  src="/images/newhome2.jpg"
+                  alt="Cozi handmade detail"
+                  fill
+                  sizes="20vw"
+                  className="object-cover"
+                />
+              </div>
+              <div className="absolute right-10 bottom-2 w-[42%] h-[42%] rotate-[-3deg] rounded-2xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(26,8,16,0.3)] border-4 border-white z-30">
+                <Image
+                  src="/images/baby-blanket.jpg"
+                  alt="A cozy handmade baby blanket"
+                  fill
+                  sizes="20vw"
+                  className="object-cover"
+                />
+              </div>
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-8deg] z-40
+                               bg-white/95 shadow-md px-4 py-1.5 rounded text-gold font-heading italic text-sm
+                               border border-taupe/20">
+                handmade with love
+              </span>
+            </div>
+
+            {/* Postcard/letter card — stitched-dash left edge echoes the mobile
+                nav drawer's accent, tying "Letters from our Studio" to an
+                actual handwritten-letter feel instead of a generic dark band. */}
+            <div className="relative bg-white rounded-3xl shadow-[0_20px_50px_-15px_rgba(26,8,16,0.25)] overflow-hidden lg:flex lg:flex-col lg:justify-center">
+              {/* Stitched border accent */}
+              <div
+                className="absolute left-0 top-0 bottom-0 w-1"
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(180deg, #8B2035 0px, #8B2035 8px, transparent 8px, transparent 14px)",
+                }}
+              />
+
+              <div className="text-center lg:text-left px-6 sm:px-14 lg:px-14 py-10 sm:py-14">
+                {/* Wax-seal style mark */}
+                <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold/10 text-gold text-lg mb-5">
+                  ✦
+                </span>
+
+                <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
+                  Join the Circle
+                </p>
+                <h2 className="font-heading italic text-3xl sm:text-4xl font-400 mb-4 text-deep-brown">
+                  Letters from our Studio
+                </h2>
+                <p className="text-brown/70 text-base leading-relaxed mb-9 font-body max-w-md mx-auto lg:mx-0">
+                  New pieces, knitting stories, and seasonal inspiration — delivered
+                  gently to your inbox.
+                </p>
+                <div className="lg:mx-0 mx-auto max-w-md">
+                  <NewsletterForm />
+                </div>
+                <p className="text-taupe-dark text-xs mt-5 font-body">
+                  No spam, ever. Unsubscribe anytime.
+                </p>
+              </div>
+            </div>
+          </div>
         </ScrollReveal>
- 
- 
       </section>
     </>
   );

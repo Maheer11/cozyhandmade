@@ -29,14 +29,14 @@ export default function NewsletterForm() {
         type="email"
         placeholder="Your email address"
         required
-        className="flex-1 px-5 py-3.5 rounded-full bg-brown-light/40 text-cream placeholder:text-taupe/60
-                   border border-taupe/30 focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30
+        className="flex-1 px-5 py-3.5 rounded-xl bg-cream-dark/60 text-deep-brown placeholder:text-taupe-dark/70
+                   border border-taupe/25 focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20
                    text-sm transition-all duration-200"
       />
       <button
         type="submit"
-        className="px-7 py-3.5 rounded-full bg-terracotta text-cream font-medium text-sm
-                   hover:bg-gold hover:scale-[1.02] active:scale-[0.99]
+        className="px-7 py-3.5 rounded-xl bg-gold text-cream font-medium text-sm
+                   hover:bg-gold-dark hover:scale-[1.02] active:scale-[0.99]
                    transition-all duration-200 focus-visible:outline-none
                    focus-visible:ring-2 focus-visible:ring-gold whitespace-nowrap"
       >

@@ -24,7 +24,7 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function ProductCard({ product }: { product: Product }) {
-  const { addItem } = useCart();
+  const { addItem, openCart } = useCart();
   const { formatAmount, isLoading } = useCurrency();
 
   // Determine display price: if sizes have per-size prices, show the lowest as "From X"
@@ -35,7 +35,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
-    addItem({ id: product.id, name: product.name, price: lowestPrice, image: product.image });
+    addItem({ id: product.id, name: product.name, price: lowestPrice, image: product.image, source: "product" });
+    openCart();
   };
 
   return (
@@ -82,7 +83,7 @@ export default function ProductCard({ product }: { product: Product }) {
           <span className="text-[10px] text-taupe-dark">({product.reviewCount})</span>
         </div>
 
-        <h3 className="font-heading italic font-400 text-deep-brown text-sm sm:text-base leading-snug mb-2 line-clamp-2">
+        <h3 className="font-ios font-600 text-deep-brown text-xs sm:text-sm leading-snug mb-2 line-clamp-2">
           {product.name}
         </h3>
 
@@ -94,7 +95,7 @@ export default function ProductCard({ product }: { product: Product }) {
               {pricesVary && (
                 <span className="text-xs text-taupe-dark font-normal">From</span>
               )}
-              <span className="text-base font-semibold text-brown">{formatAmount(lowestPrice)}</span>
+              <span className="font-ios text-sm font-600 text-brown">{formatAmount(lowestPrice)}</span>
               {product.originalPrice && !pricesVary && (
                 <span className="text-xs text-taupe-dark line-through">{formatAmount(product.originalPrice)}</span>
               )}
