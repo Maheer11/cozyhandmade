@@ -31,7 +31,7 @@ export interface UserRegion {
   countryCode: string; // ISO 3166-1 alpha-2
   continent: string;
   checkoutMode: "nigerian" | "international";
-  detectedVia: "profile" | "localStorage" | "ip" | "browser" | "default";
+  detectedVia: "profile" | "explicit" | "default";
 }
 
 export interface PricedItem {

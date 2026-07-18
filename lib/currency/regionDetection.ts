@@ -16,10 +16,11 @@ function countryToCurrency(countryCode: string): CurrencyCode {
 function buildRegion(
   countryCode: string,
   detectedVia: UserRegion["detectedVia"],
+  currency?: CurrencyCode,
 ): UserRegion {
   const upper = countryCode.toUpperCase();
   return {
-    currency: countryToCurrency(upper),
+    currency: currency ?? countryToCurrency(upper),
     countryCode: upper,
     continent: NIGERIAN_CHECKOUT_COUNTRIES.has(upper) ? "Africa" : "International",
     checkoutMode: NIGERIAN_CHECKOUT_COUNTRIES.has(upper) ? "nigerian" : "international",
@@ -28,6 +29,10 @@ function buildRegion(
 }
 
 // ─── Detection layers ─────────────────────────────────────────────────────────
+// No IP/browser-locale based auto-detection — a visitor's location never
+// silently overrides the storefront's default currency. Only an explicit,
+// remembered choice (their own past pick, or a signed-in profile
+// preference) can move them off the EUR default.
 
 /** Layer 1: User's saved profile from auth session (passed in from server) */
 export function fromUserProfile(profile: {
@@ -42,47 +47,20 @@ export function fromUserProfile(profile: {
   return region;
 }
 
-/** Layer 2: localStorage persisted region from a previous session */
-export function fromLocalStorage(): UserRegion | null {
+/** Layer 2: an explicit currency pick this visitor made in a previous session */
+export function fromExplicitChoice(): UserRegion | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(LS_REGION_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as UserRegion;
+    const region = JSON.parse(raw) as UserRegion;
+    return region.detectedVia === "explicit" ? region : null;
   } catch {
     return null;
   }
 }
 
-/** Layer 3: IP geolocation via our own API route (avoids CORS) */
-export async function fromIPGeolocation(): Promise<UserRegion | null> {
-  try {
-    const res = await fetch("/api/user/region", {
-      signal: AbortSignal.timeout(4000),
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const { countryCode } = (await res.json()) as { countryCode: string };
-    if (!countryCode) return null;
-    return buildRegion(countryCode, "ip");
-  } catch {
-    return null;
-  }
-}
-
-/** Layer 4: Browser language/locale heuristic (client only) */
-export function fromBrowserLocale(): UserRegion | null {
-  if (typeof navigator === "undefined") return null;
-  const lang = navigator.language ?? navigator.languages?.[0] ?? "";
-  // e.g. "en-NG", "en-GB", "fr-FR"
-  const parts = lang.split("-");
-  const countryHint = parts.length >= 2 ? parts[parts.length - 1] : "";
-  if (countryHint.length !== 2) return null;
-  if (!COUNTRY_CURRENCY_MAP[countryHint.toUpperCase()]) return null;
-  return buildRegion(countryHint, "browser");
-}
-
-/** Layer 5: Default fallback — EUR */
+/** Layer 3: Default fallback — EUR, for every visitor with no explicit choice */
 export function defaultRegion(): UserRegion {
   return buildRegion("DE", "default");
 }
@@ -90,7 +68,7 @@ export function defaultRegion(): UserRegion {
 // ─── Main cascade ─────────────────────────────────────────────────────────────
 
 /**
- * Full detection cascade: profile → localStorage → IP → browser → default.
+ * Full detection cascade: profile → this visitor's own past explicit pick → default.
  * Call once on app boot; store the result in CurrencyContext.
  */
 export async function detectRegion(
@@ -98,9 +76,7 @@ export async function detectRegion(
 ): Promise<UserRegion> {
   return (
     fromUserProfile(userProfile) ??
-    fromLocalStorage() ??
-    (await fromIPGeolocation()) ??
-    fromBrowserLocale() ??
+    fromExplicitChoice() ??
     defaultRegion()
   );
 }
@@ -117,16 +93,15 @@ export function persistRegion(region: UserRegion): void {
   }
 }
 
+/** User manually changes currency via the picker — remembered for next visit. */
 export function persistCurrencyOverride(currency: CurrencyCode): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(LS_CURRENCY_KEY, currency);
     const raw = localStorage.getItem(LS_REGION_KEY);
-    if (raw) {
-      const region = JSON.parse(raw) as UserRegion;
-      region.currency = currency;
-      localStorage.setItem(LS_REGION_KEY, JSON.stringify(region));
-    }
+    const prev = raw ? (JSON.parse(raw) as UserRegion) : null;
+    const region = buildRegion(prev?.countryCode ?? "DE", "explicit", currency);
+    localStorage.setItem(LS_REGION_KEY, JSON.stringify(region));
   } catch {
     // quota — silent
   }

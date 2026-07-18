@@ -55,7 +55,7 @@ const testimonials = [
 
 /* ─── Trust strip ────────────────────────────────── */
 const trustItems = [
-  { title: "Free UK Shipping", subtitle: "On orders over €80" },
+  { title: "Premium Quality", subtitle: "Custom order tailored for you" },
   { title: "100% Natural Wool", subtitle: "Merino & Shetland fleece" },
   { title: "Gift Wrapped", subtitle: "Ready to give on arrival" },
   { title: "Handcrafted with Care", subtitle: "A skilled Creative in the world of needle and thread" },
@@ -136,13 +136,21 @@ export default async function HomePage() {
               <div className="flex flex-col gap-3 animate-fade-up delay-300">
                 <Link
                   href="/products"
-                  className="flex items-center justify-center h-13 px-8 rounded-none
-                             bg-gold text-cream font-semibold text-sm tracking-wide
-                             hover:bg-gold-dark active:bg-gold-dark active:scale-[0.98]
-                             transition-all duration-200 shadow-lg shadow-gold/25"
+                  className="group flex items-center justify-center gap-2.5 h-13 px-8 rounded-none
+                             border-2 border-gold text-gold font-semibold text-sm tracking-wide
+                             hover:bg-gold hover:text-cream active:bg-gold active:text-cream active:scale-[0.98]
+                             transition-all duration-200"
                   style={{ touchAction: "manipulation" }}
                 >
-                  Browse the Collection →
+                  {/* Same iOS-style filled bag glyph + "S" mark as the navbar's Shop icon —
+                      the bag turns milk (cream-dark) on hover so it still reads against the gold fill */}
+                  <span className="relative w-5 h-5 shrink-0 inline-flex items-center justify-center">
+                    <svg className="w-5 h-5 absolute inset-0 fill-gold group-hover:fill-cream-dark transition-colors duration-200" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M7.5 5.25a4.5 4.5 0 119 0V6h1.628a2.25 2.25 0 012.244 2.077l.807 10.5A2.25 2.25 0 0118.933 21H5.067a2.25 2.25 0 01-2.246-2.423l.807-10.5A2.25 2.25 0 015.872 6H7.5v-.75zM9 6h6v-.75a3 3 0 10-6 0V6zm-.75 3.75a.75.75 0 011.5 0 2.25 2.25 0 004.5 0 .75.75 0 011.5 0 3.75 3.75 0 01-7.5 0z" />
+                    </svg>
+                    <span className="relative text-white group-hover:text-gold text-[8px] font-bold mt-0.5 transition-colors duration-200">S</span>
+                  </span>
+                  Browse the Collection
                 </Link>
                 <Link
                   href="/#about"
@@ -188,14 +196,21 @@ export default async function HomePage() {
               <div className="flex gap-4 mb-10 animate-fade-up delay-300">
                 <Link
                   href="/products"
-                  className="inline-flex items-center justify-center px-8 py-4 rounded-none
-                             bg-gold text-cream font-semibold text-sm tracking-wide
-                             hover:bg-gold-dark hover:-translate-y-0.5
-                             hover:shadow-2xl hover:shadow-gold/30
+                  className="group inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-none
+                             border-2 border-gold text-gold font-semibold text-sm tracking-wide
+                             hover:bg-gold hover:text-cream hover:-translate-y-0.5
                              active:translate-y-0
-                             transition-all duration-300 shadow-lg shadow-gold/20"
+                             transition-all duration-300"
                 >
-                  Browse the Collection →
+                  {/* Same iOS-style filled bag glyph + "S" mark as the navbar's Shop icon —
+                      the bag turns milk (cream-dark) on hover so it still reads against the gold fill */}
+                  <span className="relative w-5 h-5 shrink-0 inline-flex items-center justify-center">
+                    <svg className="w-5 h-5 absolute inset-0 fill-gold group-hover:fill-cream-dark transition-colors duration-200" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M7.5 5.25a4.5 4.5 0 119 0V6h1.628a2.25 2.25 0 012.244 2.077l.807 10.5A2.25 2.25 0 0118.933 21H5.067a2.25 2.25 0 01-2.246-2.423l.807-10.5A2.25 2.25 0 015.872 6H7.5v-.75zM9 6h6v-.75a3 3 0 10-6 0V6zm-.75 3.75a.75.75 0 011.5 0 2.25 2.25 0 004.5 0 .75.75 0 011.5 0 3.75 3.75 0 01-7.5 0z" />
+                    </svg>
+                    <span className="relative text-white group-hover:text-gold text-[8px] font-bold mt-0.5 transition-colors duration-200">S</span>
+                  </span>
+                  Browse the Collection
                 </Link>
                 <Link
                   href="/#about"
@@ -209,7 +224,7 @@ export default async function HomePage() {
               </div>
 
               <p className="text-deep-brown/75 text-xs tracking-wide font-body animate-fade-up delay-400">
-                ✦ Free Shipping over €150 &nbsp;·&nbsp; ✦ Each piece unique
+                ✦ Get Premium Quality &nbsp;·&nbsp; ✦ Each piece unique
                 &nbsp;·&nbsp; ✦ Gift wrap available
               </p>
             </div>

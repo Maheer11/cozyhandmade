@@ -1,6 +1,5 @@
 import { Fragment } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import ScrollReveal from "@/components/ScrollReveal";
 
 interface StoryRow {
@@ -161,18 +160,6 @@ export default function OurStorySection() {
                       </p>
                     )}
                     {row.extra}
-                    {i === rows.length - 1 && (
-                      <Link
-                        href="/products"
-                        className="inline-flex items-center justify-center h-11 px-6 mt-1
-                                   border-2 border-deep-brown text-deep-brown font-bold text-xs uppercase tracking-widest
-                                   hover:bg-deep-brown hover:text-cream
-                                   transition-colors duration-300"
-                        style={{ touchAction: "manipulation" }}
-                      >
-                        Explore the Collection
-                      </Link>
-                    )}
                   </div>
 
                 </div>

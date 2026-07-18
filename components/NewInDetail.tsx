@@ -350,8 +350,7 @@ export default function NewInDetail({ item }: { item: NewInDetailData }) {
               Not sure which size or colour is right?{" "}
               <a href="mailto:mahhir09@gmail.com" className="text-gold font-semibold hover:text-gold-dark underline">
                 Email us
-              </a>{" "}
-              — every piece is made to order, and we&apos;re happy to help you choose.
+              </a>. Every piece is made to order, and we&apos;re happy to help you choose.
             </p>
           </div>
         </div>

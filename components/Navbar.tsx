@@ -116,25 +116,29 @@ export default function Navbar() {
       >
         <div className="flex items-center justify-between h-20 px-4 sm:px-6 lg:px-10 max-w-7xl mx-auto">
 
-          {/* ── Mobile: hamburger ── */}
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="lg:hidden w-11 h-11 -ml-2 flex items-center justify-center
-                       text-brown active:bg-cream-dark rounded-xl transition-colors duration-150"
-            aria-label="Open menu"
-            aria-expanded={menuOpen}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
-            </svg>
-          </button>
+          {/* ── Mobile: hamburger ──
+              Wrapped in a flex-1 zone (mirrored by the right-side icon zone
+              below) so the logo — a normal flex child between them, not
+              absolutely positioned — is centered by the flex layout itself.
+              That guarantees it can never overlap the icon cluster on the
+              right, unlike absolute-centering over the full header width,
+              which doesn't account for how wide that cluster actually is. */}
+          <div className="flex-1 flex lg:hidden">
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="w-11 h-11 -ml-2 flex items-center justify-center
+                         text-brown active:bg-cream-dark rounded-xl transition-colors duration-150"
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+              </svg>
+            </button>
+          </div>
 
           {/* ── Logo ── */}
-          <Link
-            href="/"
-            className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0
-                       flex items-center group"
-          >
+          <Link href="/" className="flex items-center group shrink-0">
             <CoziLogo className="w-36 h-12 transition-opacity duration-200 group-hover:opacity-75" />
           </Link>
 
@@ -154,8 +158,12 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* ── Desktop right: Currency + Shop Now + Cart ── */}
-          <div className="flex items-center gap-3">
+          {/* ── Right: Currency + Shop Now + Cart ──
+              flex-1 + justify-end mirrors the hamburger zone above so the
+              logo lands centered between two equal-width flex zones — see
+              the note above the hamburger for why that matters. Reverts to
+              a normal (non-growing) box at lg, matching the old desktop layout. */}
+          <div className="flex-1 lg:flex-none flex items-center justify-end gap-3">
             {/* Currency picker — desktop only */}
             <div className="hidden lg:block">
               <CurrencyPicker />
@@ -163,7 +171,7 @@ export default function Navbar() {
             {/* Shop Now — icon only, no background, visible on mobile and desktop */}
             <Link
               href="/products"
-              className="inline-flex items-center px-2 py-2.5 ml-2 lg:ml-0
+              className="inline-flex items-center px-2 py-2.5
                          hover:opacity-75 active:opacity-75 transition-opacity duration-200"
               aria-label="Shop Now"
             >
