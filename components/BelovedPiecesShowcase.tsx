@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCart } from "./CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { Product } from "@/lib/products";
+import { parseDescription } from "@/lib/parse-new-in-description";
 
 interface BelovedPiecesShowcaseProps {
   products: Product[];
@@ -130,9 +131,12 @@ export default function BelovedPiecesShowcase({ products }: BelovedPiecesShowcas
               </div>
             </div>
 
-            {/* Description */}
+            {/* Description — intro block only; named sections live on the
+                product page's dropdowns */}
             <p className="text-taupe-dark text-lg leading-relaxed mb-8 font-medium">
-              {currentProduct.description}
+              {parseDescription(currentProduct.description ?? "")
+                .find((s) => s.heading === null)
+                ?.lines.join(" ") ?? currentProduct.description}
             </p>
 
             {/* Price */}
@@ -159,7 +163,7 @@ export default function BelovedPiecesShowcase({ products }: BelovedPiecesShowcas
                          transition-all duration-200 ease-out mb-4
                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gold"
             >
-              {currentProduct.inStock ? "Add to Basket" : "Out of Stock"}
+              {currentProduct.inStock ? "Add to Cart" : "Out of Stock"}
             </button>
 
             {/* View details link */}
@@ -181,7 +185,7 @@ export default function BelovedPiecesShowcase({ products }: BelovedPiecesShowcas
                 <ul className="space-y-2">
                   {currentProduct.details.slice(0, 4).map((detail, idx) => (
                     <li key={idx} className="text-sm text-taupe-dark flex items-start gap-2">
-                      <span className="text-gold mt-1 flex-shrink-0">✓</span>
+                      <span className="text-gold mt-0.5 shrink-0">✦</span>
                       <span>{detail}</span>
                     </li>
                   ))}

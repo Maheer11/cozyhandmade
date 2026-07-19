@@ -33,7 +33,6 @@ const TIER_JOURNEY_LABELS: Record<TierKey, string> = {
 
 const TIER_BENEFITS: Record<TierKey, string[]> = {
   bronze: [
-    "Free standard delivery on orders over €75",
     "Full order tracking & history",
     "Member-only newsletter & updates",
   ],
@@ -45,13 +44,11 @@ const TIER_BENEFITS: Record<TierKey, string[]> = {
   ],
   gold: [
     "10% discount on all orders",
-    "Free express delivery on all orders",
     "Early access to new collections",
     "All Silver benefits",
   ],
   vip: [
     "15% discount on all orders",
-    "Free express delivery worldwide",
     "Personal stylist consultation",
     "Exclusive product previews",
     "Complimentary gift wrapping",

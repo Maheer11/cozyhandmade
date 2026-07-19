@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "./CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import ProductCard from "./ProductCard";
 import type { Product } from "@/lib/products";
+import { parseDescription } from "@/lib/parse-new-in-description";
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
   return (
@@ -35,8 +36,8 @@ const trustPoints = [
     ),
   },
   {
-    label: "Free Shipping",
-    description: "On orders over €150",
+    label: "Tracked Delivery",
+    description: "Included on every order",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v11.177m0-11.177L12 3.75 3 12l9 8.25" />
@@ -75,7 +76,24 @@ export default function ProductDetail({
   const [added,         setAdded]         = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(product.colors[0] ?? null);
   const [selectedSize,  setSelectedSize]  = useState<string | null>(product.sizes[0] ?? null);
-  const [detailsOpen,   setDetailsOpen]   = useState(true);
+  const [detailsOpen,   setDetailsOpen]   = useState(false);
+  const [descExpanded,  setDescExpanded]  = useState(false);
+  const [openSections,  setOpenSections]  = useState<Set<number>>(new Set());
+
+  // Same description convention as New In items: an untitled intro block,
+  // then known headings ("Why You'll Love It", "Product Details", …) each
+  // rendered as an independent dropdown.
+  const descSections  = useMemo(() => parseDescription(product.description ?? ""), [product.description]);
+  const introSection  = descSections.find((s) => s.heading === null) ?? null;
+  const namedSections = useMemo(() => descSections.filter((s) => s.heading !== null), [descSections]);
+
+  const toggleSection = (i: number) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+  };
 
   const hasVariants = product.colors.length > 0 || product.sizes.length > 0;
 
@@ -213,7 +231,89 @@ export default function ProductDetail({
               )}
             </div>
 
-            <p className="text-brown/75 leading-relaxed text-sm sm:text-base mb-6">{product.description}</p>
+            {/* Intro — the untitled first block of the description, truncated
+                with a Read more/less toggle. Same treatment as New In items. */}
+            {introSection && (
+              <div className="mb-2">
+                <p className={`text-brown/75 leading-relaxed text-sm sm:text-base ${descExpanded ? "" : "line-clamp-3"}`}>
+                  {introSection.lines.join(" ")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setDescExpanded((o) => !o)}
+                  className="text-xs font-semibold text-gold hover:text-gold-dark mt-1.5 transition-colors"
+                >
+                  {descExpanded ? "Read less ▴" : "Read more ▾"}
+                </button>
+              </div>
+            )}
+
+            {/* Named description sections — each an independent dropdown,
+                closed by default, identical to the New In detail page. */}
+            {namedSections.length > 0 && (
+              <div className="mb-6">
+                {namedSections.map((section, i) => {
+                  const open = openSections.has(i);
+                  return (
+                    <div key={i} className="border-b border-taupe/20 first:border-t">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(i)}
+                        className="w-full flex items-center justify-between gap-3 py-3.5 text-left"
+                      >
+                        <span className="font-ios font-700 text-xs uppercase tracking-widest text-deep-brown">
+                          {section.heading}
+                        </span>
+                        <span
+                          className="w-6 h-6 flex items-center justify-center border border-taupe/40 text-gold text-base font-medium leading-none transition-transform duration-300 shrink-0"
+                          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+                        >
+                          {open ? "−" : "+"}
+                        </span>
+                      </button>
+
+                      <div
+                        className="grid transition-all duration-300 ease-in-out"
+                        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+                      >
+                        <div className="overflow-hidden">
+                          <div className="pb-4">
+                            {section.type === "bullets" && (
+                              <ul className="space-y-2">
+                                {section.lines.map((line, j) => (
+                                  <li key={j} className="flex items-start gap-2 text-sm text-brown/75 leading-relaxed animate-fade-up">
+                                    <span className="text-gold mt-0.5 shrink-0">✦</span>
+                                    {line}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            {section.type === "specs" && (
+                              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+                                {section.lines.map((line, j) => {
+                                  const [label, ...rest] = line.split(":");
+                                  return (
+                                    <Fragment key={j}>
+                                      <dt className="text-taupe-dark font-medium whitespace-nowrap">{label.trim()}</dt>
+                                      <dd className="text-deep-brown">{rest.join(":").trim()}</dd>
+                                    </Fragment>
+                                  );
+                                })}
+                              </dl>
+                            )}
+                            {section.type === "paragraph" && (
+                              <p className="text-sm sm:text-base text-brown/75 leading-relaxed">
+                                {section.lines.join(" ")}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Trust strip — real, site-wide claims, not per-product fabrication */}
             <div className="grid grid-cols-3 gap-3 mb-6 py-4 border-y border-taupe/20">
@@ -342,14 +442,15 @@ export default function ProductDetail({
               </button>
             </div>
 
-            {/* Specs — visible by default so buyers can see what they're actually getting */}
+            {/* Details list — same dropdown treatment as the description sections */}
             {product.details.length > 0 && (
-              <div className="border-t border-b border-taupe/30 mt-2">
+              <div className="border-t border-b border-taupe/20 mt-2">
                 <button
+                  type="button"
                   onClick={() => setDetailsOpen((o) => !o)}
                   className="w-full flex items-center justify-between gap-3 py-3.5 text-left"
                 >
-                  <span className="font-heading italic text-base text-deep-brown">Details &amp; Specifications</span>
+                  <span className="font-ios font-700 text-xs uppercase tracking-widest text-deep-brown">Details &amp; Specifications</span>
                   <span
                     className="w-6 h-6 flex items-center justify-center border border-taupe/40 text-gold text-base font-medium leading-none transition-transform duration-300 shrink-0"
                     style={{ transform: detailsOpen ? "rotate(180deg)" : "rotate(0deg)" }}
@@ -364,9 +465,9 @@ export default function ProductDetail({
                   style={{ gridTemplateRows: detailsOpen ? "1fr" : "0fr" }}
                 >
                   <div className="overflow-hidden">
-                    <ul className="space-y-2 pb-5 pt-1">
+                    <ul className="space-y-2 pb-4">
                       {product.details.map((d) => (
-                        <li key={d} className="flex items-start gap-2 text-sm text-brown/75 animate-fade-up">
+                        <li key={d} className="flex items-start gap-2 text-sm text-brown/75 leading-relaxed animate-fade-up">
                           <span className="text-gold mt-0.5 shrink-0">✦</span>
                           {d}
                         </li>

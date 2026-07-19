@@ -1,7 +1,7 @@
 // Turns a single free-text `new_in_items.description` field into structured
 // sections for display — no second "short description" field, per spec.
 // Recognizes a simple convention: known section headings on their own line,
-// "•"/"-" bulleted lines under a heading, and "Label: value" lines under a
+// "•"/"-"/"–" bulleted lines under a heading, and "Label: value" lines under a
 // "Product Details" heading rendered as a spec sheet. Anything before the
 // first recognized heading is the intro paragraph.
 
@@ -27,7 +27,7 @@ function cleanLine(line: string): string {
 }
 
 function stripBullet(line: string): string {
-  return line.replace(/^[•\-*]+\s*/, "").trim();
+  return line.replace(/^[•\-*–—]+\s*/, "").trim();
 }
 
 export function parseDescription(raw: string): DescriptionSection[] {
@@ -38,7 +38,7 @@ export function parseDescription(raw: string): DescriptionSection[] {
   const flush = () => {
     const content = current.lines.filter(Boolean);
     if (!content.length) return;
-    const bulletCount = content.filter((l) => /^[•\-*]/.test(l)).length;
+    const bulletCount = content.filter((l) => /^[•\-*–—]/.test(l)).length;
     const isBullets = bulletCount >= Math.ceil(content.length / 2);
     const isSpecs = current.heading?.toLowerCase() === "product details" && content.every((l) => l.includes(":"));
     sections.push({

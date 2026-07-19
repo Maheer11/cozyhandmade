@@ -6,8 +6,6 @@ import { useRef, useState, useEffect } from "react";
 import { useCart, CartItem } from "./CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 
-const FREE_SHIP_NGN = 50000;
-const SHIPPING_NGN = 6000;
 
 function DrawerItem({
   item,
@@ -130,11 +128,10 @@ function DrawerItem({
 
 export default function CartDrawer() {
   const { items, removeItem, updateQuantity, total, itemCount, isOpen, closeCart } = useCart();
-  const { priceCheckout, formatAmount } = useCurrency();
+  const { priceCheckout } = useCurrency();
 
-  const shippingNGN = total >= FREE_SHIP_NGN ? 0 : SHIPPING_NGN;
-  const pricing = priceCheckout(total, shippingNGN);
-  const remaining = FREE_SHIP_NGN - total;
+  // Drawer shows the subtotal only — shipping is added at checkout.
+  const pricing = priceCheckout(total, 0);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -229,16 +226,6 @@ export default function CartDrawer() {
               className="shrink-0 border-t border-taupe/20 bg-cream px-4 sm:px-5 pt-4"
               style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))" }}
             >
-              {remaining > 0 ? (
-                <div className="mb-3 bg-gold/10 rounded-xl px-3 py-2 text-xs text-brown text-center">
-                  Add <span className="font-semibold">{formatAmount(remaining)}</span> more for free shipping
-                </div>
-              ) : (
-                <div className="mb-3 bg-green-50 rounded-xl px-3 py-2 text-xs text-green-700 text-center font-medium">
-                  ✓ You&apos;ve unlocked free shipping
-                </div>
-              )}
-
               <div className="flex justify-between items-baseline mb-3">
                 <span className="text-sm text-brown/75">Subtotal</span>
                 <span className="font-semibold text-deep-brown text-base">{pricing.formattedSubtotal}</span>

@@ -118,7 +118,7 @@ export default function ProductCard({ product }: { product: Product }) {
                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           style={{ touchAction: "manipulation" }}
         >
-          {product.inStock ? "Add to Basket" : "Out of Stock"}
+          {product.inStock ? "Add to Cart" : "Out of Stock"}
         </button>
       </div>
     </Link>

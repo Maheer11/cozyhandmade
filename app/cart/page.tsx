@@ -257,17 +257,14 @@ function SwipeableItem({
 /* ─────────────────────────────────────────────────────────
    CART PAGE
 ───────────────────────────────────────────────────────── */
-const FREE_SHIP_EUR = 75;  // €75 — most items qualify
-const SHIPPING_EUR  = 5;   // €5 shipping when below threshold
+const SHIPPING_EUR = 5; // flat €5 shipping
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total, itemCount } = useCart();
-  const { currency, priceCheckout, formatAmount } = useCurrency();
+  const { currency, priceCheckout } = useCurrency();
 
-  const isNGN      = currency === "NGN";
-  const shippingEUR  = total >= FREE_SHIP_EUR ? 0 : SHIPPING_EUR;
-  const pricing      = priceCheckout(total, shippingEUR);
-  const remaining    = FREE_SHIP_EUR - total; // EUR remaining for free shipping
+  const isNGN   = currency === "NGN";
+  const pricing = priceCheckout(total, SHIPPING_EUR);
 
   if (items.length === 0) {
     return (
@@ -380,15 +377,8 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-brown/75">
                   <span>Shipping</span>
-                  <span className={shippingEUR === 0 ? "text-green-600 font-semibold" : ""}>
-                    {shippingEUR === 0 ? "✓ FREE" : pricing.formattedShipping}
-                  </span>
+                  <span>{pricing.formattedShipping}</span>
                 </div>
-                {remaining > 0 && (
-                  <p className="text-xs text-taupe-dark bg-cream-dark rounded-lg px-3 py-2">
-                    Add {formatAmount(remaining)} more for free shipping
-                  </p>
-                )}
               </div>
 
               <div className="border-t border-taupe/20 pt-4 flex justify-between
@@ -440,12 +430,6 @@ export default function CartPage() {
                    bg-cream border-t border-taupe/20 px-4 pt-3 shadow-2xl"
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
       >
-        {remaining > 0 && (
-          <div className="mb-2 bg-gold/10 rounded-xl px-3 py-1.5 text-xs text-brown text-center">
-            Add <span className="font-semibold">{formatAmount(remaining)}</span> for free shipping
-          </div>
-        )}
-
         {/* Scrollable payment logos on mobile — currency-aware */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none">
           {isNGN ? (
@@ -476,10 +460,7 @@ export default function CartPage() {
         <div className="flex items-center justify-between mb-1.5">
           <div>
             <p className="text-xs text-taupe-dark">
-              {itemCount} items · Shipping{" "}
-              <span className={shippingEUR === 0 ? "text-green-600 font-medium" : ""}>
-                {shippingEUR === 0 ? "FREE" : pricing.formattedShipping}
-              </span>
+              {itemCount} items · Shipping {pricing.formattedShipping}
             </p>
             <p className="font-semibold text-deep-brown text-base">
               Total: {pricing.formattedTotal}

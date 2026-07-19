@@ -53,10 +53,10 @@ const testimonials = [
 
 /* ─── Trust strip ────────────────────────────────── */
 const trustItems = [
-  { title: "Premium Quality", subtitle: "Custom order tailored for you" },
-  { title: "100% Natural Wool", subtitle: "Merino & Shetland fleece" },
-  { title: "Gift Wrapped", subtitle: "Ready to give on arrival" },
-  { title: "Handcrafted with Care", subtitle: "A skilled Creative in the world of needle and thread" },
+  { title: "Creative Lifestyle Company", subtitle: "Helping people create, connect & find comfort" },
+  { title: "Handmade Products", subtitle: "Each piece stitched by hand, one at a time" },
+  { title: "Creative Workshops", subtitle: "Slow down through hands-on making" },
+  { title: "Inspire Talents", subtitle: "Helping young people discover theirs" },
 ];
 
 export default async function HomePage() {
@@ -173,8 +173,7 @@ export default async function HomePage() {
               </div>
 
               <p className="text-deep-brown/35 text-[10px] tracking-wide font-body mt-6 animate-fade-up delay-400">
-                ✦ We also offer Free Shipping over €300 &nbsp;·&nbsp; ✦ Gift
-                wrapped
+                ✦ Each piece unique &nbsp;·&nbsp; ✦ Gift wrapped
               </p>
             </div>
           </div>

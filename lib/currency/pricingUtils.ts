@@ -104,7 +104,7 @@ export function priceCheckout(
     currency: toCurrency,
     symbol: config.symbol,
     formattedSubtotal: formatCurrency(subtotalConverted, config),
-    formattedShipping: shippingConverted === 0 ? "Free" : formatCurrency(shippingConverted, config),
+    formattedShipping: formatCurrency(shippingConverted, config),
     formattedTotal: formatCurrency(totalConverted, config),
     rate: rate.rate,
     rateSource: rate.source,

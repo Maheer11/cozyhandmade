@@ -41,7 +41,7 @@ type ShipInfo = {
 const BANK: Record<string, { label: string; network: string; fields: [string, string][] }> = {
   EUR: {
     label:   "EUR — SEPA Transfer",
-    network: "SEPA · arrives same/next business day · free to receive",
+    network: "SEPA · arrives same/next business day",
     fields:  [
       ["IBAN",     process.env.NEXT_PUBLIC_BANK_EUR_IBAN ?? ""],
       ["BIC/SWIFT",process.env.NEXT_PUBLIC_BANK_EUR_BIC  ?? ""],
@@ -50,7 +50,7 @@ const BANK: Record<string, { label: string; network: string; fields: [string, st
   },
   GBP: {
     label:   "GBP — UK Bank Transfer",
-    network: "Faster Payments · arrives within hours · free to receive",
+    network: "Faster Payments · arrives within hours",
     fields:  [
       ["Sort Code", process.env.NEXT_PUBLIC_BANK_GBP_SORT    ?? ""],
       ["Account",   process.env.NEXT_PUBLIC_BANK_GBP_ACCOUNT ?? ""],
@@ -59,7 +59,7 @@ const BANK: Record<string, { label: string; network: string; fields: [string, st
   },
   USD: {
     label:   "USD — US Bank Transfer (ACH)",
-    network: "ACH · arrives 1–2 business days · free to receive",
+    network: "ACH · arrives 1–2 business days",
     fields:  [
       ["Routing No.", process.env.NEXT_PUBLIC_BANK_USD_ROUTING ?? ""],
       ["Account No.", process.env.NEXT_PUBLIC_BANK_USD_ACCOUNT ?? ""],
@@ -82,8 +82,7 @@ const NG_STATES = [
   "Taraba","Yobe","Zamfara",
 ];
 
-const FREE_SHIP_EUR = 75;
-const SHIPPING_EUR  = 5;
+const SHIPPING_EUR = 5; // flat €5 shipping on every order
 
 /* ═════════════════════════════════════════════════════════
    TERMS & CONDITIONS MODAL
@@ -574,10 +573,7 @@ function OrderSummary({ items, pricing, mode, orderRef }: {
               </div>
               <div className="flex justify-between text-xs font-body" style={{ color: "#7A2030" }}>
                 <span>Shipping</span>
-                <span className={pricing.shippingEUR === 0 ? "font-semibold" : ""}
-                      style={{ color: pricing.shippingEUR === 0 ? "#008751" : "#7A2030" }}>
-                  {pricing.formattedShipping}
-                </span>
+                <span>{pricing.formattedShipping}</span>
               </div>
             </div>
 
@@ -1308,7 +1304,7 @@ export default function CheckoutPage() {
   // `chargedTotal` is the properly-converted amount in the customer's
   // selected currency — that's what's actually charged/displayed/transferred
   // (NGN via Paystack/bank transfer when mode === "nigerian").
-  const shippingEUR   = total >= FREE_SHIP_EUR ? 0 : SHIPPING_EUR;
+  const shippingEUR   = SHIPPING_EUR;
   const orderTotalEUR = total + shippingEUR;
   const pricing       = priceCheckout(total, shippingEUR);
   const chargedTotal  = pricing.totalConverted;
