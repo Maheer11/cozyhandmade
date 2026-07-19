@@ -458,6 +458,31 @@ export default function Navbar() {
             </a>
           </div>
 
+          {/* Developer contact — same as the footer's web app enquiries block */}
+          <div className="pt-3 border-t border-taupe/20 flex flex-col items-center gap-1.5 text-center">
+            <p className="text-xs uppercase tracking-[0.15em] font-body font-semibold text-taupe-dark">
+              Web App &amp; Website Enquiries
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm font-body text-brown/80">
+              <a
+                href="https://maheero.pages.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="active:text-gold transition-colors duration-150"
+              >
+                maheero.pages.dev
+              </a>
+              <span className="text-taupe" aria-hidden="true">·</span>
+              <a href="mailto:mahhir09@gmail.com" className="active:text-gold transition-colors duration-150">
+                mahhir09@gmail.com
+              </a>
+              <span className="text-taupe" aria-hidden="true">·</span>
+              <a href="tel:08037646510" className="active:text-gold transition-colors duration-150">
+                0803 764 6510
+              </a>
+            </div>
+          </div>
+
           <p className="text-xs text-taupe-dark text-center font-body italic">
             est. 2018 · handcrafted with ♡
           </p>

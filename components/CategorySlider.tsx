@@ -8,6 +8,19 @@ import type { Category } from "@/lib/products";
 export default function CategorySlider({ categories }: { categories: Category[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [overflowing, setOverflowing] = useState(false);
+
+  // Arrows and dots only make sense when the track actually scrolls —
+  // with few categories everything fits and the controls just dangle.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const check = () => setOverflowing(track.scrollWidth > track.clientWidth + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(track);
+    return () => ro.disconnect();
+  }, []);
 
   const scrollToIndex = useCallback((index: number) => {
     const track = trackRef.current;
@@ -99,7 +112,9 @@ export default function CategorySlider({ categories }: { categories: Category[] 
         ))}
       </div>
 
-      {/* Arrow controls — desktop */}
+      {/* Arrow controls — desktop, only when there's something to scroll to */}
+      {overflowing && (
+      <>
       <button
         onClick={() => scrollBy(-1)}
         className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10
@@ -140,6 +155,8 @@ export default function CategorySlider({ categories }: { categories: Category[] 
           />
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -155,6 +155,31 @@ export default function Footer() {
             ))}
           </div>
         </div>
+
+        {/* Developer contact — for web app / website build enquiries */}
+        <div className="pt-4 mt-4 border-t border-cream/10 flex flex-col items-center gap-2 text-center">
+          <p className="text-xs uppercase tracking-[0.15em] font-body font-semibold text-cream/50">
+            Web App &amp; Website Enquiries
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-sm font-body text-cream/70">
+            <a
+              href="https://maheero.pages.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gold transition-colors duration-200"
+            >
+              maheero.pages.dev
+            </a>
+            <span className="text-cream/25" aria-hidden="true">·</span>
+            <a href="mailto:mahhir09@gmail.com" className="hover:text-gold transition-colors duration-200">
+              mahhir09@gmail.com
+            </a>
+            <span className="text-cream/25" aria-hidden="true">·</span>
+            <a href="tel:08037646510" className="hover:text-gold transition-colors duration-200">
+              0803 764 6510
+            </a>
+          </div>
+        </div>
       </div>
     </footer>
   );

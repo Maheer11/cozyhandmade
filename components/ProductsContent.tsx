@@ -46,10 +46,19 @@ const whyUsFeatures = [
   },
   {
     label: "Gift Wrapped, Always",
-    description: "Every order arrives ready to give — thoughtfully packaged on delivery.",
+    description: "Every order arrives ready to give thoughtfully packaged on delivery.",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H4.5a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18.75c.621 0 1.125-.504 1.125-1.125v-2.25c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v2.25c0 .621.504 1.125 1.125 1.125z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Creative Workshops",
+    description: "Beyond products, we teach hands-on workshops that inspire young people to discover their talents and help anyone slow down through making.",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
       </svg>
     ),
   },
@@ -203,7 +212,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               </Link>
             </div>
             <p className="font-heading italic text-lg sm:text-xl text-taupe-dark leading-snug lg:text-right lg:max-w-xs">
-              From cosy throws to hand-stitched keepsakes — every piece, one place.
+              From Cozi throws to hand-stitched keepsakes — every piece, one place.
             </p>
           </ScrollReveal>
 
@@ -369,7 +378,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               Featured Products
             </h2>
             <p className="text-deep-brown/70 text-sm sm:text-base font-medium leading-relaxed max-w-lg">
-              Duvets, baby knits, handbags and more — every piece stitched one at a time,
+              Duvets, baby knits, handbags and more  every piece stitched one at a time,
               selected for warmth, softness and lasting quality.
             </p>
           </div>
@@ -473,8 +482,10 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
                 The Cozi Standard
               </h2>
               <p className="text-deep-brown/75 leading-relaxed mb-8 text-sm sm:text-base font-medium max-w-md">
-                Every piece in this collection is made slowly, by hand — chosen for warmth,
-                softness, and the kind of quality that lasts winters, not seasons.
+                We&apos;re a creative lifestyle company, designing handmade pieces, teaching
+                creative workshops, and helping people slow down through making. Every piece
+                in this collection is made slowly, by hand, chosen for warmth, softness, and
+                the kind of quality that lasts winters, not seasons.
               </p>
 
               <div className="space-y-6">

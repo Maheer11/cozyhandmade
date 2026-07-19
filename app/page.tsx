@@ -24,7 +24,7 @@ interface DbReview {
 const marqueeItems: { text: string; icon: "star" | "diamond" }[] = [
   { text: "Handcrafted in Ireland",    icon: "star" },
   { text: "Premium Materials",         icon: "diamond" },
-  { text: "Cozy Blankets & Handbags",  icon: "star" },
+  { text: "Cozi Blankets & Handbags",  icon: "star" },
   { text: "Baby Keepsakes",            icon: "diamond" },
   { text: "Creative Patterns",         icon: "star" },
 ];

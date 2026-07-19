@@ -47,7 +47,7 @@ export const NewInCard = memo(function NewInCard({
                  active:translate-y-0 active:shadow-sm
                  transition-all duration-300 ease-out
                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold
-                 ${variant === "rail" ? "shrink-0 snap-start w-[42vw] sm:w-72 lg:w-80" : "w-full"}`}
+                 ${variant === "rail" ? "shrink-0 snap-start w-[68vw] max-w-[280px] sm:w-72 lg:w-80" : "w-full"}`}
     >
       {/* Image stage — square, per spec */}
       <div className="relative w-full aspect-square bg-cream-dark overflow-hidden">
@@ -56,7 +56,7 @@ export const NewInCard = memo(function NewInCard({
           alt={item.name}
           fill
           loading="lazy"
-          sizes="(max-width: 640px) 42vw, (max-width: 1024px) 288px, 320px"
+          sizes="(max-width: 640px) 68vw, (max-width: 1024px) 288px, 320px"
           className={`object-cover transition-all duration-500 ease-out
                      ${revealed ? "opacity-0 scale-105" : "opacity-100 scale-100"}`}
         />
@@ -67,7 +67,7 @@ export const NewInCard = memo(function NewInCard({
             alt={`${item.name} — in use`}
             fill
             loading="lazy"
-            sizes="(max-width: 640px) 42vw, (max-width: 1024px) 288px, 320px"
+            sizes="(max-width: 640px) 68vw, (max-width: 1024px) 288px, 320px"
             className={`object-cover absolute inset-0 transition-all duration-500 ease-out
                        ${revealed ? "opacity-100 scale-100" : "opacity-0 scale-105"}`}
           />
@@ -96,18 +96,18 @@ export const NewInCard = memo(function NewInCard({
       </div>
 
       {/* Info */}
-      <div className="flex flex-col gap-1 p-3 sm:p-5">
-        <p className="font-ios font-600 text-deep-brown text-sm sm:text-lg leading-snug truncate">
+      <div className="flex flex-col gap-1 p-4 sm:p-5">
+        <p className="font-ios font-600 text-deep-brown text-base sm:text-lg leading-snug truncate">
           {item.name}
         </p>
-        <div className="flex items-baseline gap-1.5 sm:gap-2 font-ios">
+        <div className="flex items-baseline gap-2 font-ios">
           {item.discount_price ? (
             <>
-              <span className="text-xs sm:text-sm font-600 text-brown">{formatAmount(item.discount_price)}</span>
-              <span className="text-[10px] sm:text-xs text-taupe-dark line-through">{formatAmount(item.price)}</span>
+              <span className="text-sm font-600 text-brown">{formatAmount(item.discount_price)}</span>
+              <span className="text-xs text-taupe-dark line-through">{formatAmount(item.price)}</span>
             </>
           ) : (
-            <span className="text-xs sm:text-sm font-600 text-brown">{formatAmount(item.price)}</span>
+            <span className="text-sm font-600 text-brown">{formatAmount(item.price)}</span>
           )}
         </div>
       </div>
@@ -121,19 +121,19 @@ const ViewAllTile = memo(function ViewAllTile() {
       href="/new-in"
       style={{ touchAction: "manipulation" }}
       className="group relative flex flex-col items-center justify-center gap-3 shrink-0 snap-start
-                 w-[42vw] sm:w-72 lg:w-80 aspect-square sm:aspect-auto sm:h-auto
+                 w-[68vw] max-w-[280px] sm:w-72 lg:w-80 aspect-square sm:aspect-auto sm:h-auto
                  rounded-3xl overflow-hidden bg-cream-dark border border-cream-darker
                  hover:-translate-y-1.5 hover:shadow-2xl active:translate-y-0
                  transition-all duration-300 ease-out
                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
     >
-      <span className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-white flex items-center justify-center shadow-sm
+      <span className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white flex items-center justify-center shadow-sm
                        group-hover:translate-x-1 transition-transform duration-300">
-        <svg className="w-4 h-4 sm:w-6 sm:h-6 text-brown" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-brown" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
         </svg>
       </span>
-      <span className="font-heading italic text-deep-brown text-sm sm:text-xl text-center px-2">View all New In →</span>
+      <span className="font-heading italic text-deep-brown text-lg sm:text-xl text-center px-2">View all New In →</span>
     </Link>
   );
 });
@@ -195,7 +195,7 @@ export default function NewInSection({ items }: { items: NewInCardData[] }) {
         <ScrollReveal>
           <div
             ref={railRef}
-            className="flex items-stretch gap-3 sm:gap-6 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory"
+            className="flex items-stretch gap-4 sm:gap-6 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory"
           >
             {items.map((item, i) => (
               <Fragment key={item.id}>

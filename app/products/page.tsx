@@ -49,5 +49,13 @@ export default async function ProductsPage() {
   // Merge custom products first, then regular products
   const allProducts = [...customProducts, ...regularProducts];
 
-  return <ProductsContent products={allProducts} categories={categories} reviews={reviews} />;
+  // Only show categories that actually have a product in them — the
+  // Curated Categories slider should reflect real inventory, not the full
+  // hardcoded list. A category reappears on its own the moment a product
+  // is added to it, no code change needed.
+  const availableCategories = categories.filter((cat) =>
+    allProducts.some((p) => p.category === cat.id)
+  );
+
+  return <ProductsContent products={allProducts} categories={availableCategories} reviews={reviews} />;
 }
