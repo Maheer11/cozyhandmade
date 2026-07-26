@@ -18,27 +18,13 @@ function PaymentLogos({ isNGN }: { isNGN: boolean }) {
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {isNGN ? (
           <>
-            {/* Paystack */}
+            {/* Bank transfer — Nigeria is bank-transfer-only */}
             <div className="flex items-center gap-1 px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7">
-              <svg viewBox="0 0 10 10" className="w-2.5 h-2.5 shrink-0"><circle cx="5" cy="5" r="5" fill="#0BA4DB" /></svg>
-              <span style={{ fontFamily: "Arial", fontWeight: 700, fontSize: "10px", color: "#0BA4DB" }}>Paystack</span>
-            </div>
-            {/* Visa */}
-            <div className="flex items-center justify-center px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 min-w-[40px]">
-              <svg viewBox="0 0 50 16" className="h-3 w-auto">
-                <text x="1" y="12" fontFamily="Arial" fontWeight="bold" fontSize="13" fill="#1A1F71" fontStyle="italic">VISA</text>
+              <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none"
+                   stroke="#008751" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2.25 21h19.5m-18-18l2.25 2.25m0 0l2.25 2.25M6.75 5.25l-2.25 2.25M21 21l-2.25-2.25m0 0l-2.25-2.25M17.25 18.75l2.25-2.25M3 3l3.75 3.75M21 3l-3.75 3.75M3 21l3.75-3.75"/>
               </svg>
-            </div>
-            {/* Mastercard */}
-            <div className="flex items-center justify-center px-2 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 gap-0.5">
-              <div className="w-3.5 h-3.5 rounded-full bg-[#EB001B]" />
-              <div className="w-3.5 h-3.5 rounded-full bg-[#F79E1B] -ml-1.5" />
-            </div>
-            {/* Verve */}
-            <div className="flex items-center justify-center px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 min-w-[44px]">
-              <svg viewBox="0 0 54 14" className="h-3 w-auto">
-                <text x="1" y="11" fontFamily="Arial" fontWeight="bold" fontSize="11" fill="#008751">Verve</text>
-              </svg>
+              <span style={{ fontFamily: "Arial", fontWeight: 700, fontSize: "10px", color: "#008751" }}>Bank Transfer</span>
             </div>
           </>
         ) : (
@@ -91,8 +77,8 @@ function TrustBadges() {
           <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <div>
-          <p className="text-[11px] font-semibold text-stone-800 leading-tight">Verified Processors</p>
-          <p className="text-[10px] text-stone-500 leading-tight">Stripe & Paystack</p>
+          <p className="text-[11px] font-semibold text-stone-800 leading-tight">Verified Processor</p>
+          <p className="text-[10px] text-stone-500 leading-tight">Stripe</p>
         </div>
       </div>
       {/* Neutral: policy info */}
@@ -297,7 +283,7 @@ export default function CartPage() {
             <rect x="3" y="11" width="18" height="11" rx="2" />
             <path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>
-          Secure checkout · SSL encrypted · Powered by Paystack &amp; Stripe
+          Secure checkout · SSL encrypted · Powered by Stripe
         </p>
       </div>
 
@@ -433,28 +419,25 @@ export default function CartPage() {
         {/* Scrollable payment logos on mobile — currency-aware */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none">
           {isNGN ? (
+            <div className="flex-none flex items-center gap-1 px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 text-[9px] font-bold whitespace-nowrap" style={{ color: "#008751" }}>
+              Bank Transfer
+            </div>
+          ) : (
             <>
-              <div className="flex-none flex items-center gap-1 px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 text-[9px] font-bold whitespace-nowrap" style={{ color: "#0BA4DB" }}>
-                Paystack
+              <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 text-[9px] font-bold whitespace-nowrap" style={{ color: "#635BFF" }}>
+                Stripe
               </div>
-              <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 text-[9px] font-bold whitespace-nowrap" style={{ color: "#008751" }}>
-                Verve
+              <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 gap-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#EB001B]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[#F79E1B] -ml-1" />
+              </div>
+              <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6">
+                <svg viewBox="0 0 48 14" className="h-2.5 w-auto">
+                  <text x="1" y="11" fontFamily="Arial" fontWeight="bold" fontSize="12" fill="#1A1F71" fontStyle="italic">VISA</text>
+                </svg>
               </div>
             </>
-          ) : (
-            <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 text-[9px] font-bold whitespace-nowrap" style={{ color: "#635BFF" }}>
-              Stripe
-            </div>
           )}
-          <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 gap-0.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#EB001B]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[#F79E1B] -ml-1" />
-          </div>
-          <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6">
-            <svg viewBox="0 0 48 14" className="h-2.5 w-auto">
-              <text x="1" y="11" fontFamily="Arial" fontWeight="bold" fontSize="12" fill="#1A1F71" fontStyle="italic">VISA</text>
-            </svg>
-          </div>
         </div>
 
         <div className="flex items-center justify-between mb-1.5">

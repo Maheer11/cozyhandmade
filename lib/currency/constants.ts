@@ -83,7 +83,7 @@ export const COUNTRY_CURRENCY_MAP: Record<string, CurrencyCode> = {
   US: "USD",
 };
 
-/** Countries that use Nigerian checkout (Paystack) */
+/** Countries that use Nigerian checkout (bank transfer only) */
 export const NIGERIAN_CHECKOUT_COUNTRIES = new Set<string>(["NG"]);
 
 /** Rate cache duration — 6 hours in ms */

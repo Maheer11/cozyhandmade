@@ -12,18 +12,13 @@ const shopLinks = [
 ];
 
 const helpLinks = [
-  { href: "#", label: "Shipping & Returns" },
-  { href: "#", label: "Care Instructions" },
-  { href: "#", label: "FAQs" },
-  { href: "#", label: "Contact Us" },
-  { href: "#", label: "Wholesale Enquiries" },
+  { href: "/faq", label: "FAQs" },
+  { href: "/contact", label: "Contact Us" },
+
 ];
 
 const aboutLinks = [
   { href: "/#about", label: "Our Story" },
-  { href: "#", label: "Our Artisans" },
-  { href: "#", label: "Sustainability" },
-  { href: "#", label: "Press" },
   { href: "/#newsletter", label: "Journal" },
 ];
 

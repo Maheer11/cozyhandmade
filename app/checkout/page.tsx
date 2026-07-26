@@ -1,37 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { getStripePromise } from "@/lib/stripe/client";
 import { useCart } from "@/components/CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { } from "@/lib/products";
 import type { CheckoutPricing } from "@/lib/currency/types";
 
-/* ─── Paystack inline script loader ─────────────────────── */
-interface PaystackHandler {
-  setup: (config: {
-    key: string; email: string; amount: number; currency: string; ref: string;
-    callback: (response: { reference: string }) => void;
-    onClose: () => void;
-  }) => { openIframe: () => void };
-}
-function loadPaystack(): Promise<PaystackHandler> {
-  return new Promise((resolve, reject) => {
-    const win = window as unknown as { PaystackPop?: PaystackHandler };
-    if (win.PaystackPop) { resolve(win.PaystackPop); return; }
-    const script = document.createElement("script");
-    script.src = "https://js.paystack.co/v1/inline.js";
-    script.onload  = () => win.PaystackPop ? resolve(win.PaystackPop) : reject(new Error("PaystackPop not found"));
-    script.onerror = () => reject(new Error("Failed to load Paystack script"));
-    document.head.appendChild(script);
-  });
-}
-
 /* ─── Types ─────────────────────────────────────────────── */
-type CheckoutMode      = "nigerian" | "international";
-type Step              = "shipping" | "payment" | "confirmation";
-type NigerianPayMethod = "bank-transfer" | "card";
-type IntlPayMethod     = "bank-transfer" | "stripe-card";
+type CheckoutMode  = "nigerian" | "international";
+type Step          = "shipping" | "payment" | "confirmation";
+type IntlPayMethod = "bank-transfer" | "stripe-card";
 type ShipInfo = {
   firstName: string; lastName: string; email: string; phone: string;
   address: string; city: string; postcode: string; country: string; state: string;
@@ -135,7 +116,7 @@ function TermsModal({ onClose }: { onClose: () => void }) {
             },
             {
               title: "3. Pricing & Payment",
-              body: `Prices are displayed in your selected currency and are subject to change without notice. For Nigerian customers, payment is processed in Nigerian Naira (NGN) via Paystack or local bank transfer. For international customers, payment is processed in your selected currency via Stripe. All transactions are encrypted. We reserve the right to cancel any order if payment cannot be verified.`,
+              body: `Prices are displayed in your selected currency and are subject to change without notice. For Nigerian customers, payment is processed in Nigerian Naira (NGN) via local bank transfer. For international customers, payment is processed in your selected currency via Stripe or bank transfer. All transactions are encrypted. We reserve the right to cancel any order if payment cannot be verified.`,
             },
             {
               title: "4. Bank Transfer Orders",
@@ -163,7 +144,7 @@ function TermsModal({ onClose }: { onClose: () => void }) {
             },
             {
               title: "10. Privacy",
-              body: `We collect only the personal information necessary to process your order (name, address, email, phone number). We do not sell or share your data with third parties except payment processors (Paystack, Stripe) and courier services required to fulfil your order. Your data is stored securely and handled in accordance with applicable data protection laws.`,
+              body: `We collect only the personal information necessary to process your order (name, address, email, phone number). We do not sell or share your data with third parties except our payment processor (Stripe) and courier services required to fulfil your order. Your data is stored securely and handled in accordance with applicable data protection laws.`,
             },
             {
               title: "11. Governing Law",
@@ -304,19 +285,6 @@ function LogoStripe() {
     </svg>
   );
 }
-function LogoPaystack() {
-  return (
-    <span className="inline-flex items-center gap-1">
-      <svg viewBox="0 0 12 12" className="w-3 h-3 shrink-0">
-        <circle cx="6" cy="6" r="6" fill="#0BA4DB" />
-      </svg>
-      <svg viewBox="0 0 72 14" className="h-3 w-auto">
-        <text x="0" y="11" fontFamily="system-ui,-apple-system,Helvetica,sans-serif"
-              fontWeight="700" fontSize="12" fill="#0BA4DB">paystack</text>
-      </svg>
-    </span>
-  );
-}
 function LogoBadge({ children }: { children: React.ReactNode }) {
   return (
     <div className="px-3 py-1.5 bg-white rounded-lg border border-stone-200 shadow-sm h-8 flex items-center justify-center">
@@ -407,8 +375,8 @@ function SelectField({ id, label, value, onChange, children, span2 = false }:
 function TrustBadges({ mode }: { mode: CheckoutMode }) {
   const badges = [
     { ico: <IcoShield />, label: "SSL Secured",    sub: "256-bit encryption",                         green: true  },
-    { ico: <IcoBadge />,  label: mode === "nigerian" ? "CBN Licensed" : "PCI-DSS Level 1",
-                           sub:  mode === "nigerian" ? "via Paystack"  : "Stripe certified",           green: true  },
+    { ico: <IcoBadge />,  label: mode === "nigerian" ? "Bank Verified" : "PCI-DSS Level 1",
+                           sub:  mode === "nigerian" ? "Manual transfer" : "Stripe certified",         green: true  },
     { ico: <IcoTruck />,  label: "Tracked Delivery", sub: "Real-time updates",                        green: false },
     { ico: <IcoReturn />, label: "Easy Returns",    sub: "30-day guarantee",                          green: false },
   ];
@@ -444,7 +412,6 @@ function PaymentLogos({ mode }: { mode: CheckoutMode }) {
       <div className="flex items-center justify-center gap-2 flex-wrap">
         {mode === "nigerian" ? (
           <>
-            <LogoBadge><LogoPaystack /></LogoBadge>
             <LogoBadge><LogoVisa /></LogoBadge>
             <LogoBadge><LogoMastercard /></LogoBadge>
           </>
@@ -591,7 +558,7 @@ function OrderSummary({ items, pricing, mode, orderRef }: {
             {/* Payment method note */}
             <p className="text-[9px] text-center mt-3 font-body" style={{ color: "#D49AA8" }}>
               {mode === "nigerian"
-                ? "Processed via Paystack · CBN Licensed · NGN"
+                ? "Processed via Bank Transfer · NGN"
                 : `Processed via Stripe · PCI-DSS Level 1 · ${pricing.currency}`}
             </p>
 
@@ -710,15 +677,13 @@ function ShippingStep({ mode, ship, setShip, onNext }: {
 }
 
 /* ═════════════════════════════════════════════════════════
-   NIGERIAN PAYMENT STEP  — Paystack / Bank Transfer (always NGN)
+   NIGERIAN PAYMENT STEP  — Bank Transfer only (always NGN)
 ═════════════════════════════════════════════════════════ */
-function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNigerianMethod, onBack, onBankTransferConfirm, onPaystackConfirm, isSubmitting, submitError, termsAccepted, setTermsAccepted, onShowTerms }: {
+function NigerianPaymentStep({ orderTotalNGN, orderRef, onBack, onBankTransferConfirm, isSubmitting, submitError, termsAccepted, setTermsAccepted, onShowTerms }: {
   orderTotalNGN: number;
   orderRef: string;
-  nigerianMethod: NigerianPayMethod; setNigerianMethod: (m: NigerianPayMethod) => void;
   onBack: () => void;
   onBankTransferConfirm: () => void;
-  onPaystackConfirm: () => void;
   isSubmitting: boolean;
   submitError: string;
   termsAccepted: boolean; setTermsAccepted: (v: boolean) => void; onShowTerms: () => void;
@@ -744,163 +709,76 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNiger
   return (
     <div className="bg-white rounded-2xl border border-cream-darker shadow-sm p-5 sm:p-6">
       <h2 className="font-heading font-600 text-deep-brown text-xl mb-2">Payment</h2>
-      <p className="text-xs text-taupe-dark mb-5">Select how you&apos;d like to complete your payment.</p>
+      <p className="text-xs text-taupe-dark mb-5">Complete your payment by bank transfer.</p>
 
-      {/* Tabs */}
-      <div className="flex border border-stone-200 rounded-none overflow-hidden mb-6">
-        <button onClick={() => setNigerianMethod("bank-transfer")}
-          className={`flex-1 py-3 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2
-                      ${nigerianMethod === "bank-transfer" ? "text-white" : "bg-white text-stone-600 hover:bg-stone-50"}`}
-          style={nigerianMethod === "bank-transfer" ? { backgroundColor: "#008751" } : {}}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18l2.25 2.25m0 0l2.25 2.25M6.75 5.25l-2.25 2.25M21 21l-2.25-2.25m0 0l-2.25-2.25M17.25 18.75l2.25-2.25M3 3l3.75 3.75M21 3l-3.75 3.75M3 21l3.75-3.75M12 12h.008v.008H12V12z"/>
+      <div>
+        <p className="text-sm text-stone-600 mb-4 leading-relaxed">
+          Transfer the <strong>exact amount</strong> below and include your reference number so we can
+          match your payment. Orders are processed within 1–2 hours of confirmation.
+        </p>
+
+        <div className="rounded-2xl overflow-hidden shadow-sm border border-stone-200 mb-4">
+          <div className="flex items-center gap-3 px-5 py-3 bg-white border-b border-stone-100">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                 style={{ backgroundColor: "#FEF3C7" }}>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"
+                   stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-stone-800 text-xs font-semibold">Nigerian Bank Transfer</p>
+              <p className="text-stone-400 text-[10px]">NGN · Any local bank accepted</p>
+            </div>
+          </div>
+          <div className="bg-white px-5 py-4 space-y-3.5">
+            {BANK.map(([label, value, key]) => (
+              <div key={key} className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
+                  <p className={`text-sm font-semibold truncate ${key === "ref" ? "text-gold" : "text-stone-900"}`}>
+                    {value}
+                  </p>
+                </div>
+                <button onClick={() => copyText(value, key)}
+                  className={`shrink-0 text-[10px] px-2.5 py-1 rounded font-medium transition-all duration-200
+                              ${copied === key ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500 hover:bg-stone-200"}`}>
+                  {copied === key ? "Copied" : "Copy"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+          <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
           </svg>
-          Bank Transfer
-        </button>
-        <div className="w-px bg-stone-200" />
-        <button onClick={() => setNigerianMethod("card")}
-          className={`flex-1 py-3 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2
-                      ${nigerianMethod === "card" ? "text-white" : "bg-white text-stone-600 hover:bg-stone-50"}`}
-          style={nigerianMethod === "card" ? { backgroundColor: "#0BA4DB" } : {}}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
-          </svg>
-          Pay with Card
+          <p className="text-xs text-amber-800 leading-relaxed">
+            Always include your <strong>reference number</strong> in the transfer narration. We&apos;ll send a WhatsApp confirmation once received.
+          </p>
+        </div>
+
+        <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
+
+        {submitError && (
+          <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+            {submitError}
+          </p>
+        )}
+
+        <button onClick={onBankTransferConfirm} disabled={!termsAccepted || isSubmitting}
+          className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
+                     rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
+                     disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
+                     enabled:hover:-translate-y-px enabled:shadow-sm"
+          style={{ backgroundColor: "#008751" }}>
+          {isSubmitting ? "Saving order…" : <>I&apos;ve Sent the Payment <IcoCheck /></>}
         </button>
       </div>
-
-      {/* ── Bank Transfer ── */}
-      {nigerianMethod === "bank-transfer" && (
-        <div>
-          <p className="text-sm text-stone-600 mb-4 leading-relaxed">
-            Transfer the <strong>exact amount</strong> below and include your reference number so we can
-            match your payment. Orders are processed within 1–2 hours of confirmation.
-          </p>
-
-          <div className="rounded-2xl overflow-hidden shadow-sm border border-stone-200 mb-4">
-            <div className="flex items-center gap-3 px-5 py-3 bg-white border-b border-stone-100">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                   style={{ backgroundColor: "#FEF3C7" }}>
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"
-                     stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0110 0v4" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-stone-800 text-xs font-semibold">Nigerian Bank Transfer</p>
-                <p className="text-stone-400 text-[10px]">NGN · Any local bank accepted</p>
-              </div>
-            </div>
-            <div className="bg-white px-5 py-4 space-y-3.5">
-              {BANK.map(([label, value, key]) => (
-                <div key={key} className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
-                    <p className={`text-sm font-semibold truncate ${key === "ref" ? "text-gold" : "text-stone-900"}`}>
-                      {value}
-                    </p>
-                  </div>
-                  <button onClick={() => copyText(value, key)}
-                    className={`shrink-0 text-[10px] px-2.5 py-1 rounded font-medium transition-all duration-200
-                                ${copied === key ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500 hover:bg-stone-200"}`}>
-                    {copied === key ? "Copied" : "Copy"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
-            <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
-                 stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round"
-                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-            </svg>
-            <p className="text-xs text-amber-800 leading-relaxed">
-              Always include your <strong>reference number</strong> in the transfer narration. We&apos;ll send a WhatsApp confirmation once received.
-            </p>
-          </div>
-
-          <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
-
-          {submitError && (
-            <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
-              {submitError}
-            </p>
-          )}
-
-          <button onClick={onBankTransferConfirm} disabled={!termsAccepted || isSubmitting}
-            className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
-                       rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
-                       disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
-                       enabled:hover:-translate-y-px enabled:shadow-sm"
-            style={{ backgroundColor: "#008751" }}>
-            {isSubmitting ? "Saving order…" : <>I&apos;ve Sent the Payment <IcoCheck /></>}
-          </button>
-        </div>
-      )}
-
-      {/* ── Card / Paystack ── */}
-      {nigerianMethod === "card" && (
-        <div>
-          {/* Paystack header */}
-          <div className="rounded-t-xl px-4 py-3 flex items-center gap-2" style={{ backgroundColor: "#0BA4DB" }}>
-            <LogoPaystack />
-            <div className="ml-auto flex items-center gap-2">
-              <div className="px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white">Verve</div>
-              <svg viewBox="0 0 34 12" className="h-2.5 w-auto">
-                <text x="0" y="10" fontStyle="italic" fontWeight="800" fontSize="11" fill="white">VISA</text>
-              </svg>
-              <div className="flex items-center">
-                <div className="w-3.5 h-3.5 rounded-full bg-red-500" />
-                <div className="w-3.5 h-3.5 rounded-full bg-amber-400 -ml-2 opacity-90" />
-              </div>
-            </div>
-          </div>
-
-          {/* Info panel — no fake card form, Paystack handles card entry in its popup */}
-          <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl px-5 py-5 mb-5">
-            <p className="text-sm text-stone-600 leading-relaxed mb-4">
-              Clicking <strong>Pay now</strong> opens a secure Paystack popup where you enter your card details.
-              Your card information is handled entirely by Paystack and is never stored on our servers.
-            </p>
-            <div className="space-y-2">
-              {[
-                ["CBN Licensed payment processor", <IcoBadge key="b" />],
-                ["3D Secure (3DS) authentication", <IcoShield key="s" />],
-                ["Accepts Visa · Mastercard · Verve · USSD · Bank Transfer", <IcoCheck key="c" />],
-              ].map(([label, icon]) => (
-                <div key={label as string} className="flex items-center gap-2 text-xs text-stone-500">
-                  <span className="text-emerald-600 w-3.5 h-3.5 shrink-0">{icon}</span>
-                  {label}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
-
-          {submitError && (
-            <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
-              {submitError}
-            </p>
-          )}
-
-          <button onClick={onPaystackConfirm} disabled={!termsAccepted || isSubmitting}
-            className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
-                       rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
-                       disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
-                       enabled:hover:-translate-y-px"
-            style={{ backgroundColor: "#0BA4DB" }}>
-            {isSubmitting ? "Verifying payment…" : <>Pay {formattedNGN} with Paystack <IcoArrow /></>}
-          </button>
-          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-600">
-            <div className="text-emerald-600"><IcoShield /></div>
-            Secured by Paystack · CBN Licensed
-          </div>
-        </div>
-      )}
 
       <div className="hidden lg:flex mt-6">
         <button onClick={onBack}
@@ -917,11 +795,109 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, nigerianMethod, setNiger
 }
 
 /* ═════════════════════════════════════════════════════════
+   STRIPE CARD FORM — mounted inside <Elements>, owns confirmPayment +
+   the post-payment "wait for webhook to actually create the order" poll.
+   The webhook is the only thing that ever creates an order — this only
+   calls onSuccess once /api/payments/stripe/status confirms it happened.
+═════════════════════════════════════════════════════════ */
+function StripeCardForm({ formattedTotal, termsAccepted, setTermsAccepted, onShowTerms, onSuccess }: {
+  formattedTotal: string;
+  termsAccepted: boolean;
+  setTermsAccepted: (v: boolean) => void;
+  onShowTerms: () => void;
+  onSuccess: (orderId: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [waitingForOrder, setWaitingForOrder] = useState(false);
+
+  async function pollForOrder(paymentIntentId: string) {
+    setWaitingForOrder(true);
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        const res = await fetch(`/api/payments/stripe/status?payment_intent_id=${encodeURIComponent(paymentIntentId)}`);
+        const data = await res.json();
+        if (data.status === "completed" && data.order_id) {
+          onSuccess(data.order_id);
+          return;
+        }
+      } catch {
+        // transient — keep polling
+      }
+    }
+    setWaitingForOrder(false);
+    setError("Payment succeeded but confirming your order is taking longer than expected. We'll email you shortly — contact us if you don't hear back.");
+  }
+
+  async function handleSubmit() {
+    if (!stripe || !elements) return;
+    setError("");
+    setSubmitting(true);
+    try {
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: "if_required",
+      });
+
+      if (confirmError) {
+        setError(confirmError.message ?? "Payment failed. Please check your card details and try again.");
+        return;
+      }
+      if (paymentIntent?.status !== "succeeded") {
+        setError(`Payment status: ${paymentIntent?.status ?? "unknown"}. Please try again.`);
+        return;
+      }
+
+      await pollForOrder(paymentIntent.id);
+    } catch {
+      setError("Network error — please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const busy = submitting || waitingForOrder;
+
+  return (
+    <div>
+      <PaymentElement />
+
+      <div className="mt-4">
+        <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
+      </div>
+
+      {error && (
+        <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+          {error}
+        </p>
+      )}
+
+      <button type="button" onClick={handleSubmit} disabled={!termsAccepted || !stripe || busy}
+        className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
+                   rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
+                   disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
+                   enabled:hover:-translate-y-px"
+        style={{ backgroundColor: "#635BFF" }}>
+        {waitingForOrder ? "Confirming your order…" : submitting ? "Processing payment…" : <>Pay {formattedTotal} with Stripe <IcoArrow /></>}
+      </button>
+      <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-600">
+        <div className="text-emerald-600"><IcoShield /></div>
+        PCI-DSS Level 1 compliant · Stripe certified
+      </div>
+    </div>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════
    INTERNATIONAL PAYMENT STEP  — Bank Transfer or Stripe
 ═════════════════════════════════════════════════════════ */
 function InternationalPaymentStep({
   formattedTotal, currency, intlMethod, setIntlMethod,
-  onBack, onTransferConfirm, onStripeConfirm,
+  onBack, onTransferConfirm,
+  clientSecret, intentError, onStripeSuccess,
   isSubmitting, submitError,
   termsAccepted, setTermsAccepted, onShowTerms,
 }: {
@@ -931,18 +907,16 @@ function InternationalPaymentStep({
   setIntlMethod: (m: IntlPayMethod) => void;
   onBack: () => void;
   onTransferConfirm: () => void;
-  onStripeConfirm: () => void;
+  clientSecret: string | null;
+  intentError: string | null;
+  onStripeSuccess: (orderId: string) => void;
   isSubmitting: boolean;
   submitError: string;
   termsAccepted: boolean;
   setTermsAccepted: (v: boolean) => void;
   onShowTerms: () => void;
 }) {
-  const [cardNum,  setCardNum]  = useState("");
-  const [expiry,   setExpiry]   = useState("");
-  const [cvv,      setCvv]      = useState("");
-  const [cardName, setCardName] = useState("");
-  const [copied,   setCopied]   = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   // Pick the matching bank account, fall back to EUR (the home currency)
   const bankInfo  = BANK[currency] ?? BANK.EUR;
@@ -1102,56 +1076,30 @@ function InternationalPaymentStep({
             </div>
           </div>
 
-          <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl p-5 space-y-4 mb-5">
-            <div>
-              <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Card Number</label>
-              <input type="text" placeholder="1234 5678 9012 3456" value={cardNum}
-                onChange={(e) => { const n = e.target.value.replace(/\D/g,"").slice(0,16); setCardNum(n.replace(/(.{4})/g,"$1 ").trim()); }}
-                className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                           placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
-                           focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Expiry</label>
-                <input type="text" placeholder="MM / YY" value={expiry}
-                  onChange={(e) => { const n = e.target.value.replace(/\D/g,"").slice(0,4); setExpiry(n.length>2?`${n.slice(0,2)} / ${n.slice(2)}`:n); }}
-                  className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                             placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
-                             focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
+          <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl p-5 mb-5">
+            {intentError ? (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                {intentError}
+              </p>
+            ) : !clientSecret ? (
+              <div className="flex items-center gap-2 text-xs text-stone-500 py-6 justify-center">
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Preparing secure payment…
               </div>
-              <div>
-                <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">CVV</label>
-                <input type="password" placeholder="•••" value={cvv}
-                  onChange={(e) => setCvv(e.target.value.replace(/\D/g,"").slice(0,4))}
-                  className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                             placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
-                             focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">Name on Card</label>
-              <input type="text" placeholder="JANE SMITH" value={cardName}
-                onChange={(e) => setCardName(e.target.value)}
-                className="w-full h-12 px-4 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm
-                           placeholder:text-stone-300 focus:outline-none focus:border-[#635BFF]
-                           focus:ring-2 focus:ring-[#635BFF]/20 transition-all duration-200" />
-            </div>
-          </div>
-
-          <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
-
-          <button type="button" onClick={onStripeConfirm} disabled={!termsAccepted}
-            className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
-                       rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
-                       disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
-                       enabled:hover:-translate-y-px"
-            style={{ backgroundColor: "#635BFF" }}>
-            Pay {formattedTotal} with Stripe <IcoArrow />
-          </button>
-          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-600">
-            <div className="text-emerald-600"><IcoShield /></div>
-            PCI-DSS Level 1 compliant · Stripe certified
+            ) : (
+              <Elements stripe={getStripePromise()} options={{ clientSecret }}>
+                <StripeCardForm
+                  formattedTotal={formattedTotal}
+                  termsAccepted={termsAccepted}
+                  setTermsAccepted={setTermsAccepted}
+                  onShowTerms={onShowTerms}
+                  onSuccess={onStripeSuccess}
+                />
+              </Elements>
+            )}
           </div>
         </div>
       )}
@@ -1173,13 +1121,17 @@ function InternationalPaymentStep({
 /* ═════════════════════════════════════════════════════════
    CONFIRMATION SCREEN
 ═════════════════════════════════════════════════════════ */
-function ConfirmationScreen({ mode, nigerianMethod, orderRef, firstName, pricing, orderTotalNGN, clearCart }: {
-  mode: CheckoutMode; nigerianMethod: NigerianPayMethod;
+function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, orderTotalNGN, clearCart }: {
+  mode: CheckoutMode; intlMethod: IntlPayMethod;
   orderRef: string; firstName: string;
   pricing: CheckoutPricing; orderTotalNGN: number;
   clearCart: () => void;
 }) {
-  const isPending = mode === "nigerian" && nigerianMethod === "bank-transfer";
+  // Nigeria is bank-transfer-only, so every Nigerian order is "pending" until
+  // manually confirmed. International Stripe orders only ever reach this
+  // screen once the webhook has confirmed the charge, so they're never
+  // pending; international bank-transfer orders are pending like Nigeria's.
+  const isPending = mode === "nigerian" || (mode === "international" && intlMethod === "bank-transfer");
   const displayAmount = isPending
     ? `₦${orderTotalNGN.toLocaleString("en-NG")}`
     : pricing.formattedTotal;
@@ -1228,8 +1180,8 @@ function ConfirmationScreen({ mode, nigerianMethod, orderRef, firstName, pricing
               ["Order Ref",  orderRef],
               [isPending ? "Amount to Transfer" : "Total Paid", displayAmount],
               ["Payment via", mode === "nigerian"
-                ? nigerianMethod === "bank-transfer" ? "Bank Transfer (NGN)" : "Paystack Card (NGN)"
-                : `Stripe (${pricing.currency})`],
+                ? "Bank Transfer (NGN)"
+                : intlMethod === "bank-transfer" ? `Bank Transfer (${pricing.currency})` : `Stripe (${pricing.currency})`],
               ["Estimated Delivery", mode === "nigerian" ? "2–5 business days" : "2–14 working days"],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
@@ -1294,7 +1246,7 @@ export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const { currency, priceCheckout } = useCurrency();
 
-  // NGN → Nigerian checkout (Paystack + local bank transfer). Any other currency → Stripe international.
+  // NGN → Nigerian checkout (bank transfer only). Any other currency → international (Stripe or bank transfer).
   const mode: CheckoutMode = currency === "NGN" ? "nigerian" : "international";
   const accent = mode === "nigerian" ? "#008751" : "#8B2035";
 
@@ -1303,27 +1255,76 @@ export default function CheckoutPage() {
   // order's canonical ledger amount regardless of how the customer pays.
   // `chargedTotal` is the properly-converted amount in the customer's
   // selected currency — that's what's actually charged/displayed/transferred
-  // (NGN via Paystack/bank transfer when mode === "nigerian").
+  // (NGN via bank transfer when mode === "nigerian"). Stripe re-verifies and
+  // recomputes this same total server-side before ever charging a card —
+  // this figure is only ever used for display and for the (unverified)
+  // bank-transfer path.
   const shippingEUR   = SHIPPING_EUR;
   const orderTotalEUR = total + shippingEUR;
   const pricing       = priceCheckout(total, shippingEUR);
   const chargedTotal  = pricing.totalConverted;
 
-  const [step,           setStep]           = useState<Step>("shipping");
-  const [nigerianMethod, setNigerianMethod] = useState<NigerianPayMethod>("bank-transfer");
-  const [intlMethod,     setIntlMethod]     = useState<IntlPayMethod>("bank-transfer");
-  const [termsAccepted,  setTermsAccepted]  = useState(false);
-  const [showTerms,      setShowTerms]      = useState(false);
-  const [submitting,     setSubmitting]     = useState(false);
-  const [submitError,    setSubmitError]    = useState("");
-  const [savedOrderId,   setSavedOrderId]   = useState<string | null>(null);
-  const [orderRef]                          = useState(() =>
+  const [step,          setStep]          = useState<Step>("shipping");
+  const [intlMethod,    setIntlMethod]    = useState<IntlPayMethod>("bank-transfer");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTerms,     setShowTerms]     = useState(false);
+  const [submitting,    setSubmitting]    = useState(false);
+  const [submitError,   setSubmitError]   = useState("");
+  const [savedOrderId,  setSavedOrderId]  = useState<string | null>(null);
+  const [orderRef]                        = useState(() =>
     `WIL-${Math.random().toString(36).slice(2, 10).toUpperCase()}`
   );
   const [ship, setShip] = useState<ShipInfo>({
     firstName: "", lastName: "", email: "", phone: "",
     address: "", city: "", postcode: "", country: mode === "nigerian" ? "NG" : "GB", state: "",
   });
+
+  // Stripe PaymentIntent — created once the customer reaches the Card/Stripe
+  // tab. The server re-prices from the cart here (never trusts client
+  // totals), so this is also the point where a stale/tampered cart would be
+  // caught, before any card details are even collected.
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [intentError,  setIntentError]  = useState<string | null>(null);
+
+  useEffect(() => {
+    if (mode !== "international" || step !== "payment" || intlMethod !== "stripe-card") return;
+    if (clientSecret || intentError) return; // already have one, or already failed — don't refetch on every render
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/payments/stripe/create-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: items.map((item) => ({
+              product_id: item.id,
+              product_name: item.name,
+              product_image: item.image,
+              quantity: item.quantity,
+              unit_price: item.price,
+              source: item.source ?? "product",
+              variant: item.variant,
+            })),
+            delivery_address: ship,
+            currency,
+          }),
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setIntentError(data.error ?? "Could not start secure payment. Please try again.");
+          return;
+        }
+        setClientSecret(data.client_secret);
+      } catch {
+        if (!cancelled) setIntentError("Network error — please check your connection and try again.");
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, step, intlMethod]);
 
   async function handleBankTransferConfirm() {
     setSubmitting(true);
@@ -1364,63 +1365,11 @@ export default function CheckoutPage() {
     }
   }
 
-  async function handlePaystackPayment() {
-    if (!ship.email) {
-      setSubmitError("Please enter your email in the shipping step first.");
-      return;
-    }
-    setSubmitError("");
-    try {
-      const PaystackPop = await loadPaystack();
-      const handler = PaystackPop.setup({
-        key:      process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? "",
-        email:    ship.email,
-        amount:   Math.round(chargedTotal * 100), // Paystack works in kobo (1/100 of NGN) — chargedTotal is already EUR→NGN converted
-        currency: "NGN",
-        ref:      orderRef,
-        callback: async (response) => {
-          setSubmitting(true);
-          try {
-            const res = await fetch("/api/payments/paystack/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                reference:        response.reference,
-                items:            items.map((item) => ({
-                  product_id:    item.id,
-                  product_name:  item.name,
-                  product_image: item.image,
-                  quantity:      item.quantity,
-                  unit_price:    item.price,
-                  source:        item.source ?? "product",
-                  variant:       item.variant,
-                })),
-                total_amount:     orderTotalEUR,
-                delivery_address: ship,
-                currency:         "NGN",
-              }),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-              setSubmitError(data.error ?? `Payment went through but order save failed. Keep your ref: ${response.reference}`);
-              return;
-            }
-            setSavedOrderId(data.order_id);
-            setStep("confirmation");
-          } catch {
-            setSubmitError(`Verification failed. Payment may have gone through — contact us with ref: ${response.reference}`);
-          } finally {
-            setSubmitting(false);
-          }
-        },
-        onClose: () => {
-          // customer closed popup without paying — no action needed
-        },
-      });
-      handler.openIframe();
-    } catch {
-      setSubmitError("Could not load Paystack. Please check your connection and try again.");
-    }
+  // The webhook is what actually creates the order — this just runs once
+  // StripeCardForm's own polling has confirmed that's happened.
+  function handleStripeSuccess(orderId: string) {
+    setSavedOrderId(orderId);
+    setStep("confirmation");
   }
 
   async function handleInternationalTransferConfirm() {
@@ -1480,7 +1429,7 @@ export default function CheckoutPage() {
   if (step === "confirmation") {
     return (
       <ConfirmationScreen
-        mode={mode} nigerianMethod={nigerianMethod}
+        mode={mode} intlMethod={intlMethod}
         orderRef={orderRef} firstName={ship.firstName}
         pricing={pricing} orderTotalNGN={chargedTotal}
         clearCart={clearCart}
@@ -1503,7 +1452,7 @@ export default function CheckoutPage() {
           </div>
           <p className="text-xs font-medium tracking-wide pl-6 sm:pl-0" style={{ color: accent }}>
             {mode === "nigerian"
-              ? "Nigerian Orders · Paystack & Bank Transfer"
+              ? "Nigerian Orders · Bank Transfer"
               : `International · Stripe · ${currency}`}
           </p>
         </div>
@@ -1521,10 +1470,8 @@ export default function CheckoutPage() {
             {step === "payment" && mode === "nigerian" && (
               <NigerianPaymentStep
                 orderTotalNGN={chargedTotal} orderRef={orderRef}
-                nigerianMethod={nigerianMethod} setNigerianMethod={setNigerianMethod}
                 onBack={() => { setStep("shipping"); setTermsAccepted(false); setSubmitError(""); }}
                 onBankTransferConfirm={handleBankTransferConfirm}
-                onPaystackConfirm={handlePaystackPayment}
                 isSubmitting={submitting}
                 submitError={submitError}
                 termsAccepted={termsAccepted}
@@ -1540,7 +1487,9 @@ export default function CheckoutPage() {
                 setIntlMethod={setIntlMethod}
                 onBack={() => { setStep("shipping"); setTermsAccepted(false); setSubmitError(""); }}
                 onTransferConfirm={handleInternationalTransferConfirm}
-                onStripeConfirm={() => setStep("confirmation")}
+                clientSecret={clientSecret}
+                intentError={intentError}
+                onStripeSuccess={handleStripeSuccess}
                 isSubmitting={submitting}
                 submitError={submitError}
                 termsAccepted={termsAccepted}
@@ -1589,25 +1538,31 @@ export default function CheckoutPage() {
                          font-medium text-sm active:bg-stone-100 transition-all duration-150 shrink-0">
               ← Back
             </button>
-            <button type="button"
-              onClick={
-                mode === "nigerian" && nigerianMethod === "bank-transfer"
-                  ? handleBankTransferConfirm
-                  : mode === "international" && intlMethod === "bank-transfer"
-                    ? handleInternationalTransferConfirm
-                    : () => setStep("confirmation")
-              }
-              disabled={!termsAccepted || submitting}
-              className="flex-1 h-12 rounded-none text-white font-semibold text-sm
-                         active:scale-[0.98] transition-all duration-150 shadow-sm
-                         disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: accent }}>
-              {submitting ? "Saving…"
-                : (mode === "nigerian" && nigerianMethod === "bank-transfer") ||
-                  (mode === "international" && intlMethod === "bank-transfer")
-                  ? "Confirm Order"
-                  : `Pay ${pricing.formattedTotal}`}
-            </button>
+            {mode === "international" && intlMethod === "stripe-card" ? (
+              // The real Stripe submit button lives inline next to the card
+              // fields (StripeCardForm, inside <Elements>) — a detached
+              // sticky-bar button can't reach that context, and putting a
+              // pay button anywhere but right next to the card form is
+              // confusing anyway. This is just a pointer to it.
+              <div className="flex-1 h-12 rounded-none border-2 border-taupe/30 flex items-center justify-center
+                              text-xs text-taupe-dark px-3 text-center">
+                ↑ Enter card details above to pay
+              </div>
+            ) : (
+              <button type="button"
+                onClick={
+                  mode === "nigerian"
+                    ? handleBankTransferConfirm
+                    : handleInternationalTransferConfirm
+                }
+                disabled={!termsAccepted || submitting}
+                className="flex-1 h-12 rounded-none text-white font-semibold text-sm
+                           active:scale-[0.98] transition-all duration-150 shadow-sm
+                           disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ backgroundColor: accent }}>
+                {submitting ? "Saving…" : "Confirm Order"}
+              </button>
+            )}
           </div>
         )}
         {submitError && step === "payment" && (
@@ -1616,7 +1571,7 @@ export default function CheckoutPage() {
 
         <div className="flex items-center justify-center gap-1.5 mt-2 text-[10px] text-stone-500">
           <span className="text-emerald-500"><IcoShield /></span>
-          {mode === "nigerian" ? "CBN Licensed · Paystack secured" : "PCI-DSS Level 1 · Stripe secured"}
+          {mode === "nigerian" ? "Bank transfer secured" : "PCI-DSS Level 1 · Stripe secured"}
         </div>
       </div>
     </div>

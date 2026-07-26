@@ -146,15 +146,15 @@ export default async function HomePage() {
                 >
                   {/* Same iOS-style filled bag glyph + "S" mark as the navbar's Shop icon —
                       the bag turns milk (cream-dark) on hover so it still reads against the gold fill */}
-                  <span className="relative w-5 h-5 shrink-0 inline-flex items-center justify-center">
+                  <span className="relative w-7 h-7 shrink-0 inline-flex items-center justify-center">
                     <svg
-                      className="w-5 h-5 absolute inset-0 fill-gold group-hover:fill-cream-dark transition-colors duration-200"
+                      className="w-7 h-7 absolute inset-0 fill-gold group-hover:fill-cream-dark transition-colors duration-200"
                       viewBox="0 0 24 24"
                       aria-hidden="true"
                     >
                       <path d="M7.5 5.25a4.5 4.5 0 119 0V6h1.628a2.25 2.25 0 012.244 2.077l.807 10.5A2.25 2.25 0 0118.933 21H5.067a2.25 2.25 0 01-2.246-2.423l.807-10.5A2.25 2.25 0 015.872 6H7.5v-.75zM9 6h6v-.75a3 3 0 10-6 0V6zm-.75 3.75a.75.75 0 011.5 0 2.25 2.25 0 004.5 0 .75.75 0 011.5 0 3.75 3.75 0 01-7.5 0z" />
                     </svg>
-                    <span className="relative text-white group-hover:text-gold text-[8px] font-bold mt-0.5 transition-colors duration-200">
+                    <span className="relative text-white group-hover:text-gold text-[10px] font-bold mt-1 transition-colors duration-200">
                       S
                     </span>
                   </span>
@@ -211,15 +211,15 @@ export default async function HomePage() {
                 >
                   {/* Same iOS-style filled bag glyph + "S" mark as the navbar's Shop icon —
                       the bag turns milk (cream-dark) on hover so it still reads against the gold fill */}
-                  <span className="relative w-5 h-5 shrink-0 inline-flex items-center justify-center">
+                  <span className="relative w-7 h-7 shrink-0 inline-flex items-center justify-center">
                     <svg
-                      className="w-5 h-5 absolute inset-0 fill-gold group-hover:fill-cream-dark transition-colors duration-200"
+                      className="w-7 h-7 absolute inset-0 fill-gold group-hover:fill-cream-dark transition-colors duration-200"
                       viewBox="0 0 24 24"
                       aria-hidden="true"
                     >
                       <path d="M7.5 5.25a4.5 4.5 0 119 0V6h1.628a2.25 2.25 0 012.244 2.077l.807 10.5A2.25 2.25 0 0118.933 21H5.067a2.25 2.25 0 01-2.246-2.423l.807-10.5A2.25 2.25 0 015.872 6H7.5v-.75zM9 6h6v-.75a3 3 0 10-6 0V6zm-.75 3.75a.75.75 0 011.5 0 2.25 2.25 0 004.5 0 .75.75 0 011.5 0 3.75 3.75 0 01-7.5 0z" />
                     </svg>
-                    <span className="relative text-white group-hover:text-gold text-[8px] font-bold mt-0.5 transition-colors duration-200">
+                    <span className="relative text-white group-hover:text-gold text-[10px] font-bold mt-1 transition-colors duration-200">
                       S
                     </span>
                   </span>

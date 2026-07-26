@@ -92,7 +92,7 @@ export async function PATCH(
     if (notes !== undefined) update.notes = notes;
 
     // Stock is decremented exactly once, atomically, by checkout_verified_order()
-    // at payment-verification time (app/api/payments/paystack/verify/route.ts).
+    // at payment-verification time (app/api/payments/stripe/webhook/route.ts).
     // Admin status transitions never touch stock_quantity — the old "read stock,
     // then separately update stock" logic that used to live here on the "paid"
     // transition has been removed; it was a second, redundant race-condition path

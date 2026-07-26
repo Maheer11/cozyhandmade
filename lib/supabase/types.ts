@@ -165,7 +165,8 @@ export interface Database {
           id: string;
           order_id: string | null;
           user_id: string | null;
-          paystack_reference: string | null;
+          stripe_session_id: string | null;
+          stripe_payment_intent_id: string | null;
           amount: number;
           currency: string;
           status: TransactionStatus;
@@ -177,7 +178,8 @@ export interface Database {
           id?: string;
           order_id?: string | null;
           user_id?: string | null;
-          paystack_reference?: string | null;
+          stripe_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
           amount: number;
           currency?: string;
           status?: TransactionStatus;
@@ -189,8 +191,41 @@ export interface Database {
           status?: TransactionStatus;
           payment_channel?: string | null;
           paid_at?: string | null;
-          paystack_reference?: string | null;
+          stripe_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
         };
+      };
+      pending_stripe_orders: {
+        Row: {
+          payment_intent_id: string;
+          user_id: string | null;
+          items: Json;
+          delivery_address: Json;
+          total_amount: number;
+          currency: string;
+          created_at: string;
+        };
+        Insert: {
+          payment_intent_id: string;
+          user_id?: string | null;
+          items: Json;
+          delivery_address: Json;
+          total_amount: number;
+          currency: string;
+          created_at?: string;
+        };
+        Update: never;
+      };
+      stripe_webhook_events: {
+        Row: {
+          event_id: string;
+          created_at: string;
+        };
+        Insert: {
+          event_id: string;
+          created_at?: string;
+        };
+        Update: never;
       };
       new_in_items: {
         Row: {

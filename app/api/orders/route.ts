@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { updateSpendTier } from "@/lib/checkout/updateSpendTier";
 import { NextResponse } from "next/server";
 
 interface OrderItemInput {
@@ -13,10 +14,10 @@ interface OrderItemInput {
 
 interface CreateOrderBody {
   items: OrderItemInput[];
-  total_amount: number; // base GBP total — stored on orders.total_amount
+  total_amount: number; // base EUR total — stored on orders.total_amount
   charged_amount?: number; // actual amount charged/instructed in `currency` — stored on transactions.amount; falls back to total_amount
   delivery_address: Record<string, string>;
-  payment_method: "bank_transfer" | "paystack_card" | "stripe_card" | "swift_transfer";
+  payment_method: "bank_transfer" | "swift_transfer";
   order_ref: string;
   currency: string;
 }
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
       .insert({
         order_id: order.id,
         user_id: user?.id ?? null,
-        paystack_reference: body.order_ref,
+        stripe_session_id: body.order_ref,
         amount: body.charged_amount ?? body.total_amount,
         currency: body.currency,
         status: "pending",
@@ -94,24 +95,7 @@ export async function POST(request: Request) {
 
     // 4. Update logged-in user's total_spent and tier
     if (user) {
-      const { data: profile } = await db
-        .from("profiles")
-        .select("total_spent")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        const newTotal = (profile.total_spent ?? 0) + body.total_amount;
-        const newTier  = newTotal >= 750 ? "vip"
-                       : newTotal >= 400 ? "gold"
-                       : newTotal >= 100 ? "silver"
-                       : "bronze";
-
-        await db
-          .from("profiles")
-          .update({ total_spent: newTotal, tier: newTier })
-          .eq("id", user.id);
-      }
+      await updateSpendTier(db, user.id, body.total_amount);
     }
 
     return NextResponse.json({

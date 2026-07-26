@@ -36,21 +36,21 @@ export async function GET(
   // Pull latest transaction for payment channel + reference
   const { data: tx } = await db
     .from("transactions")
-    .select("payment_channel, paystack_reference")
+    .select("payment_channel, stripe_session_id")
     .eq("order_id", id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   const invoiceData = {
-    orderId:            order.id,
-    createdAt:          order.created_at,
-    status:             order.status,
-    items:              order.order_items ?? [],
-    total_amount:       order.total_amount,
-    delivery_address:   order.delivery_address ?? null,
-    payment_channel:    tx?.payment_channel  ?? null,
-    paystack_reference: tx?.paystack_reference ?? null,
+    orderId:           order.id,
+    createdAt:         order.created_at,
+    status:            order.status,
+    items:             order.order_items ?? [],
+    total_amount:      order.total_amount,
+    delivery_address:  order.delivery_address ?? null,
+    payment_channel:   tx?.payment_channel    ?? null,
+    payment_reference: tx?.stripe_session_id  ?? null,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

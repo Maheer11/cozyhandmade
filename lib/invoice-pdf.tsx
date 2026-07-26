@@ -93,7 +93,7 @@ export interface InvoiceData {
   total_amount:      number;
   delivery_address:  Record<string, string> | null;
   payment_channel:   string | null;
-  paystack_reference: string | null;
+  payment_reference: string | null;
 }
 
 /* ─── document ────────────────────────────────────── */
@@ -151,8 +151,8 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
             <Text style={s.metaLabel}>Order Details</Text>
             <Text style={s.metaValue}>Date: {dateStr}</Text>
             <Text style={s.metaValue}>Order: #{ref}</Text>
-            {data.paystack_reference && data.paystack_reference !== data.orderId && (
-              <Text style={s.metaValue}>Ref: {data.paystack_reference.slice(-10)}</Text>
+            {data.payment_reference && data.payment_reference !== data.orderId && (
+              <Text style={s.metaValue}>Ref: {data.payment_reference.slice(-10)}</Text>
             )}
             {data.payment_channel && (
               <Text style={s.metaValue}>

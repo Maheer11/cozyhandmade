@@ -103,20 +103,62 @@ create table if not exists order_items (
 
 
 -- TABLE 5: transactions
--- Payment records from Paystack.
--- paystack_reference is the unique ID Paystack gives each payment.
+-- Payment records — one per successful/attempted charge.
+-- stripe_session_id is the UNIQUE idempotency/reference column — despite the
+-- name (a holdover from an earlier Stripe Checkout Session design that was
+-- since replaced with PaymentIntent + PaymentElement), it now holds the
+-- Stripe PaymentIntent id for card payments, or a client-generated order ref
+-- for manual bank transfers. checkout_verified_order()'s p_stripe_reference
+-- param writes here. stripe_payment_intent_id is a separate, non-unique
+-- column kept in sync with the same value for anyone querying by that name.
 create table if not exists transactions (
-  id                  uuid primary key default gen_random_uuid(),
-  order_id            uuid references orders(id) on delete set null,
-  user_id             uuid references profiles(id) on delete set null,
-  paystack_reference  text unique,
-  amount              numeric not null,
-  currency            text default 'NGN',
-  status              text default 'pending'
-                        check (status in ('pending', 'success', 'failed')),
-  payment_channel     text,
-  paid_at             timestamptz,
-  created_at          timestamptz default now()
+  id                       uuid primary key default gen_random_uuid(),
+  order_id                 uuid references orders(id) on delete set null,
+  user_id                  uuid references profiles(id) on delete set null,
+  stripe_session_id        text unique,
+  stripe_payment_intent_id text,
+  amount                   numeric not null,
+  currency                 text default 'NGN',
+  status                   text default 'pending'
+                             check (status in ('pending', 'success', 'failed')),
+  payment_channel          text,
+  paid_at                  timestamptz,
+  created_at               timestamptz default now()
+);
+
+
+-- TABLE 6: pending_stripe_orders
+-- Short-lived staging row created when a Stripe PaymentIntent is created
+-- (before the customer has actually paid), consumed by
+-- app/api/payments/stripe/webhook/route.ts once payment_intent.succeeded
+-- fires. Holds the server-verified cart items + delivery address, since the
+-- webhook is a server-to-server callback from Stripe with no access to the
+-- customer's original request. No anon/authenticated RLS policies — only
+-- ever touched by the service-role admin client, same as transactions/orders.
+create table if not exists pending_stripe_orders (
+  payment_intent_id text primary key,
+  user_id            uuid references profiles(id) on delete set null,
+  items              jsonb not null,
+  delivery_address   jsonb not null,
+  total_amount       numeric not null,
+  currency           text not null,
+  created_at         timestamptz not null default now()
+);
+
+
+-- TABLE 7: stripe_webhook_events
+-- Idempotency ledger for Stripe webhook deliveries. Stripe guarantees
+-- at-least-once delivery, not exactly-once — the webhook route inserts
+-- event.id here BEFORE doing any order-creating work, and a duplicate
+-- delivery hits this UNIQUE constraint and is rejected by the database
+-- itself (no read-then-write race window). If processing that event then
+-- fails for a retry-worthy reason, the row is deleted before responding
+-- with a non-200 status, so Stripe's automatic retry of the same event.id
+-- is allowed to attempt again — only a *successfully processed* event
+-- permanently blocks reprocessing.
+create table if not exists stripe_webhook_events (
+  event_id   text primary key,
+  created_at timestamptz not null default now()
 );
 
 
@@ -125,10 +167,12 @@ create table if not exists transactions (
 -- Customers can only see their own data. Never anyone else's.
 -- ============================================================
 
-alter table profiles     enable row level security;
-alter table orders       enable row level security;
-alter table order_items  enable row level security;
-alter table transactions enable row level security;
+alter table profiles              enable row level security;
+alter table orders                enable row level security;
+alter table order_items           enable row level security;
+alter table transactions          enable row level security;
+alter table pending_stripe_orders enable row level security;
+alter table stripe_webhook_events enable row level security;
 alter table products     enable row level security;
 
 -- Profiles: users read/update only their own row
@@ -225,9 +269,9 @@ create trigger new_in_items_updated_at
 -- function call is implicitly atomic — if it raises, everything it did
 -- is rolled back, including earlier writes in the same call).
 --
--- Called via RPC from app/api/payments/paystack/verify/route.ts using the
+-- Called via RPC from app/api/payments/stripe/webhook/route.ts using the
 -- service-role client, AFTER that route has already recomputed and verified
--- the real total against Paystack's confirmed charge. This function trusts
+-- the real total against Stripe's confirmed charge. This function trusts
 -- its caller on price (already verified) but re-checks stock itself and
 -- locks the relevant rows (SELECT ... FOR UPDATE) so two concurrent
 -- checkouts for the same item can never both succeed on the last unit.
@@ -242,18 +286,19 @@ create trigger new_in_items_updated_at
 -- Raises 'OUT_OF_STOCK:<name>' if any item can't be fulfilled — the whole
 -- call rolls back automatically (nothing is created, nothing decremented).
 create or replace function public.checkout_verified_order(
-  p_user_id            uuid,
-  p_total_amount       numeric,
-  p_delivery_address   jsonb,
-  p_currency           text,
-  p_paystack_reference text,
-  p_payment_channel    text,
-  p_items              jsonb,  -- [{item_type, ref_id, product_name, product_image, quantity, unit_price}, ...]
-  p_charged_amount     numeric default null  -- actual amount charged in p_currency; falls back to p_total_amount (GBP) when same-currency
+  p_user_id          uuid,
+  p_total_amount     numeric,
+  p_delivery_address jsonb,
+  p_currency         text,
+  p_stripe_reference text,
+  p_payment_channel  text,
+  p_items            jsonb,  -- [{item_type, ref_id, product_name, product_image, quantity, unit_price}, ...]
+  p_charged_amount   numeric default null  -- actual amount charged in p_currency; falls back to p_total_amount (EUR) when same-currency
 )
 returns uuid
 language plpgsql
 security definer
+set search_path to 'public'
 as $$
 declare
   v_order_id     uuid;
@@ -324,16 +369,24 @@ begin
          (elem->>'unit_price')::numeric
   from jsonb_array_elements(p_items) elem;
 
-  -- transactions.paystack_reference is UNIQUE — a duplicate/retried call with
-  -- the same reference raises a unique-violation here, which rolls back the
-  -- whole function (order + order_items + stock decrement included). That
-  -- gives idempotency against double-submitted verify requests for free.
-  insert into transactions (order_id, user_id, paystack_reference, amount, currency, status, payment_channel, paid_at)
-  values (v_order_id, p_user_id, p_paystack_reference, coalesce(p_charged_amount, p_total_amount), p_currency, 'success', p_payment_channel, now());
+  -- transactions.stripe_session_id is UNIQUE — a duplicate/retried call with
+  -- the same reference (e.g. a retried Stripe webhook delivery) raises a
+  -- unique-violation here, which rolls back the whole function (order +
+  -- order_items + stock decrement included). That gives idempotency against
+  -- double-submitted/duplicated payment confirmations for free — on top of,
+  -- not instead of, the dedicated stripe_webhook_events ledger the webhook
+  -- route checks before ever calling this function.
+  insert into transactions (order_id, user_id, stripe_session_id, amount, currency, status, payment_channel, paid_at)
+  values (v_order_id, p_user_id, p_stripe_reference, coalesce(p_charged_amount, p_total_amount), p_currency, 'success', p_payment_channel, now());
 
   return v_order_id;
 end;
 $$;
+
+-- Locked down to service_role/postgres only — no anon/authenticated grant.
+-- The webhook route (and it alone) calls this via the service-role client.
+revoke all on function public.checkout_verified_order from public, anon, authenticated;
+grant execute on function public.checkout_verified_order to service_role;
 
 
 -- ============================================================

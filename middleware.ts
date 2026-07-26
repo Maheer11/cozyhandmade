@@ -33,6 +33,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Excludes the Stripe webhook too — it's an unauthenticated server-to-server
+    // callback, so refreshing an auth session cookie for it is wasted work.
+    "/((?!_next/static|_next/image|favicon.ico|api/payments/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
