@@ -20,6 +20,7 @@ export interface NewInItem {
   sku: string | null;
   stock_quantity: number;
   variant_price: Record<string, number>;
+  shipping_weight_grams: number | null;
 }
 
 interface FormState {
@@ -37,6 +38,7 @@ interface FormState {
   sku: string;
   stock_quantity: string;
   variantPrice: Record<string, string>; // size -> price string, e.g. "With Stand": "215.00"
+  shipping_weight_grams: string;
 }
 
 function defaultState(item?: NewInItem): FormState {
@@ -57,6 +59,7 @@ function defaultState(item?: NewInItem): FormState {
     variantPrice:    Object.fromEntries(
       Object.entries(item?.variant_price ?? {}).map(([k, v]) => [k, v.toString()])
     ),
+    shipping_weight_grams: item?.shipping_weight_grams?.toString() ?? "",
   };
 }
 
@@ -238,6 +241,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
       sku:             form.sku.trim() || null,
       stock_quantity:  parseInt(form.stock_quantity) || 0,
       variant_price,
+      shipping_weight_grams: form.shipping_weight_grams.trim() ? parseInt(form.shipping_weight_grams) : null,
     };
 
     const res = await fetch(
@@ -382,6 +386,23 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
           rows={5}
           className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
           placeholder="Full product description shown on the detail page…"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Shipping weight (grams)</label>
+        <p className="text-xs text-gray-400 mb-1.5">
+          Billable weight in grams. Blankets are bulky and light, so carriers usually charge on
+          volumetric weight rather than actual weight. Enter whatever weight your carrier actually
+          bills for this item, not what the scales say.
+        </p>
+        <input
+          type="number"
+          min={0}
+          value={form.shipping_weight_grams}
+          onChange={(e) => set("shipping_weight_grams", e.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+          placeholder="e.g. 450"
         />
       </div>
 

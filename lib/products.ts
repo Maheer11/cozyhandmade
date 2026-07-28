@@ -19,6 +19,11 @@ export interface Product {
   sizes: string[];
   variantStock: Record<string, number>;
   variantPrice: Record<string, number>;
+  // Billable shipping weight — null/undefined means unknown (custom_products
+  // has no such column at all; regular products may not have it filled in
+  // yet). lib/checkout/shipping.ts's calculateShipping() treats both the
+  // same way: fall back to DEFAULT_ITEM_WEIGHT_GRAMS, never to 0.
+  shippingWeightGrams?: number | null;
 }
 
 export interface Category {

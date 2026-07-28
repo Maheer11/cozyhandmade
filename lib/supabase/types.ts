@@ -59,6 +59,7 @@ export interface Database {
           sizes: string[];
           variant_stock: Record<string, number>;
           variant_price: Record<string, number>;
+          shipping_weight_grams: number | null;
           created_at: string;
         };
         Insert: {
@@ -81,6 +82,7 @@ export interface Database {
           variant_price?: Record<string, number>;
           featured?: boolean;
           is_handmade?: boolean;
+          shipping_weight_grams?: number | null;
           created_at?: string;
         };
         Update: {
@@ -102,6 +104,7 @@ export interface Database {
           variant_price?: Record<string, number>;
           featured?: boolean;
           is_handmade?: boolean;
+          shipping_weight_grams?: number | null;
         };
       };
       orders: {
@@ -202,6 +205,8 @@ export interface Database {
           items: Json;
           delivery_address: Json;
           total_amount: number;
+          subtotal_amount: number | null;
+          shipping_amount: number | null;
           currency: string;
           created_at: string;
         };
@@ -211,6 +216,8 @@ export interface Database {
           items: Json;
           delivery_address: Json;
           total_amount: number;
+          subtotal_amount?: number | null;
+          shipping_amount?: number | null;
           currency: string;
           created_at?: string;
         };
@@ -246,6 +253,7 @@ export interface Database {
           updated_at: string;
           variant_price: Record<string, number>;
           is_handmade: boolean;
+          shipping_weight_grams: number | null;
         };
         Insert: {
           id?: string;
@@ -265,6 +273,7 @@ export interface Database {
           updated_at?: string;
           variant_price?: Record<string, number>;
           is_handmade?: boolean;
+          shipping_weight_grams?: number | null;
         };
         Update: {
           name?: string;
@@ -282,6 +291,7 @@ export interface Database {
           updated_at?: string;
           variant_price?: Record<string, number>;
           is_handmade?: boolean;
+          shipping_weight_grams?: number | null;
         };
       };
       custom_products: {

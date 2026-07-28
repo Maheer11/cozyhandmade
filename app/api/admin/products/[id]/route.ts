@@ -38,6 +38,10 @@ export async function PATCH(
     if (body.is_handmade   !== undefined) update.is_handmade    = body.is_handmade;
     if (body.rating        !== undefined) update.rating         = Number(body.rating);
     if (body.review_count  !== undefined) update.review_count   = Number(body.review_count);
+    if (body.shipping_weight_grams !== undefined) {
+      update.shipping_weight_grams = body.shipping_weight_grams === null || body.shipping_weight_grams === ""
+        ? null : Number(body.shipping_weight_grams);
+    }
 
     const { error } = await db.from("products").update(update).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

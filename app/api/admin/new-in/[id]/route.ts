@@ -37,6 +37,10 @@ export async function PATCH(
     if (body.sku             !== undefined) update.sku             = body.sku?.trim() || null;
     if (body.stock_quantity  !== undefined) update.stock_quantity  = Number(body.stock_quantity);
     if (body.variant_price   !== undefined) update.variant_price   = body.variant_price;
+    if (body.shipping_weight_grams !== undefined) {
+      update.shipping_weight_grams = body.shipping_weight_grams === null || body.shipping_weight_grams === ""
+        ? null : Number(body.shipping_weight_grams);
+    }
 
     const { error } = await db.from("new_in_items").update(update).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

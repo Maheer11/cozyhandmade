@@ -19,6 +19,7 @@ interface FormState {
   in_stock: boolean;
   featured: boolean;
   is_handmade: boolean;
+  shipping_weight_grams: string;
   image: string;
   images: string[];
   colors: string[];
@@ -48,6 +49,7 @@ function defaultState(product?: DbProduct): FormState {
     in_stock:       product?.in_stock       ?? true,
     featured:       product?.featured       ?? false,
     is_handmade:    product?.is_handmade    ?? true,
+    shipping_weight_grams: product?.shipping_weight_grams?.toString() ?? "",
     image:          product?.image          ?? "",
     images:         product?.images         ?? [],
     colors:         product?.colors         ?? [],
@@ -215,6 +217,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           variant_price:  form.variant_price,
           featured:       form.featured,
           is_handmade:    form.is_handmade,
+          shipping_weight_grams: form.shipping_weight_grams.trim() ? parseInt(form.shipping_weight_grams) : null,
         };
 
     const endpoint = form.productType === "custom" ? "custom-products" : "products";
@@ -602,6 +605,27 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
               />
             </div>
           </div>
+
+          {/* Shipping weight — Regular Products Only (drives weight-based
+              shipping cost at checkout; see lib/checkout/shipping.ts) */}
+          {form.productType === "regular" && (
+            <div>
+              <label className={labelCls}>Shipping weight (grams)</label>
+              <input
+                type="number"
+                value={form.shipping_weight_grams}
+                onChange={(e) => set("shipping_weight_grams", e.target.value)}
+                className={inputCls}
+                placeholder="e.g. 1200"
+                min={0}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Billable weight in grams. Blankets are bulky and light, so carriers usually charge on
+                volumetric weight rather than actual weight. Enter whatever weight your carrier actually
+                bills for this item, not what the scales say.
+              </p>
+            </div>
+          )}
 
           {/* Category */}
           <div>

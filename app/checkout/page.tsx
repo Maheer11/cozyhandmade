@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { getStripePromise } from "@/lib/stripe/client";
 import { useCart } from "@/components/CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
+import { socialLinks, whatsappLink } from "@/lib/social-links";
+import InstagramIcon from "@/components/icons/InstagramIcon";
+import WhatsAppIcon from "@/components/icons/WhatsAppIcon";
 import type { } from "@/lib/products";
 import type { CheckoutPricing } from "@/lib/currency/types";
+import { calculateShipping, isDublinPickupEligible, type ShippingItemInput, type ShippingZone } from "@/lib/checkout/shipping";
 
 /* ─── Types ─────────────────────────────────────────────── */
 type CheckoutMode  = "nigerian" | "international";
@@ -62,8 +66,18 @@ const NG_STATES = [
   "Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto",
   "Taraba","Yobe","Zamfara",
 ];
+const NG_STATE_OPTIONS = NG_STATES.map((s) => ({ value: s, label: s }));
 
-const SHIPPING_EUR = 5; // flat €5 shipping on every order
+const COUNTRY_OPTIONS = [
+  { value: "GB", label: "United Kingdom" },
+  { value: "IE", label: "Ireland" },
+  { value: "US", label: "United States" },
+  { value: "CA", label: "Canada" },
+  { value: "AU", label: "Australia" },
+  { value: "DE", label: "Germany" },
+  { value: "FR", label: "France" },
+  { value: "Other", label: "Other" },
+];
 
 /* ═════════════════════════════════════════════════════════
    TERMS & CONDITIONS MODAL
@@ -83,7 +97,7 @@ function TermsModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between px-5 py-4 shrink-0"
              style={{ backgroundColor: "#8B2035" }}>
           <div>
-            <p className="text-[9px] uppercase tracking-[0.25em] text-white/60 font-body">Cozi Handmade</p>
+            <p className="text-[9px] uppercase tracking-[0.25em] text-white/60 font-system">Cozi Handmade</p>
             <h2 className="font-heading italic text-white text-lg font-400 leading-tight">
               Terms & Conditions
             </h2>
@@ -99,7 +113,7 @@ function TermsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-5 py-5 text-xs text-stone-700 leading-relaxed space-y-4 font-body">
+        <div className="overflow-y-auto flex-1 px-5 py-5 text-xs text-stone-700 leading-relaxed space-y-4 font-system">
 
           <p className="text-[10px] text-stone-400 uppercase tracking-widest">
             Last updated: {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
@@ -124,7 +138,7 @@ function TermsModal({ onClose }: { onClose: () => void }) {
             },
             {
               title: "5. Shipping & Delivery",
-              body: `Domestic (Nigeria): We ship to all 36 states and FCT. Estimated delivery is 2–5 business days from dispatch. International: We ship worldwide. Estimated delivery is 2–14 working days depending on your location and local customs processing. We are not responsible for delays caused by customs, border controls, or third-party couriers. Tracked shipping is included on all orders.`,
+              body: `Domestic (Nigeria): We ship to all 36 states and FCT. Estimated delivery is 2–10 business days from dispatch. International: We ship worldwide. Estimated delivery is 2–14 working days depending on your location and local customs processing. We are not responsible for delays caused by customs, border controls, or third-party couriers. Tracked shipping is included on all orders.`,
             },
             {
               title: "6. Returns & Refunds",
@@ -260,6 +274,14 @@ function IcoArrow() {
     </svg>
   );
 }
+function IcoWarning() {
+  return (
+    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round"
+            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+    </svg>
+  );
+}
 
 /* ─── Logo marks ─────────────────────────────────────────── */
 function LogoVisa() {
@@ -332,39 +354,219 @@ function StepBar({ current, mode }: { current: Step; mode: CheckoutMode }) {
 
 /* ─────────────────────────────────────────────────────────
    FORM FIELDS
+   Shared warm-neutral border/surface + a single umber (#792F00) focus
+   treatment across every field in checkout — border colour change plus a
+   soft matching ring, not a competing browser-default outline on top.
 ───────────────────────────────────────────────────────── */
-function Field({ id, label, type = "text", placeholder, value, onChange, span2 = false, accent = "#C9A96E" }:
-  { id: string; label: string; type?: string; placeholder: string;
-    value: string; onChange: (v: string) => void; span2?: boolean; accent?: string }) {
+const FIELD_BASE =
+  "w-full h-12 px-4 rounded-xl bg-[#FAF6F0] text-deep-brown text-sm font-system " +
+  "placeholder:text-[#9C8570]/70 focus:outline-none transition-colors duration-150 " +
+  "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#F0EBE3]";
+const FIELD_OK = "border border-[#E4D8C8] focus:border-[#792F00] focus:ring-2 focus:ring-[#792F00]/20";
+const FIELD_ERROR = "border-2 border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200";
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="mt-1.5 flex items-center gap-1 text-xs text-red-600 font-system">
+      <IcoWarning />
+      {message}
+    </p>
+  );
+}
+
+function Field({
+  id, label, type = "text", inputMode, autoComplete, placeholder, value, onChange, onBlur,
+  error, span2 = false,
+}: {
+  id: string; label: string; type?: string;
+  inputMode?: "text" | "email" | "tel" | "numeric" | "search" | "url" | "none" | "decimal";
+  autoComplete?: string;
+  placeholder: string;
+  value: string; onChange: (v: string) => void; onBlur?: () => void;
+  error?: string; span2?: boolean;
+}) {
+  const errorId = `${id}-error`;
   return (
     <div className={span2 ? "sm:col-span-2" : ""}>
-      <label htmlFor={id} className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5">
+      <label htmlFor={id} className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-system">
         {label}
       </label>
-      <input id={id} type={type} placeholder={placeholder} value={value}
+      <input
+        id={id} type={type} inputMode={inputMode} autoComplete={autoComplete}
+        placeholder={placeholder} value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-12 px-4 rounded-xl border border-taupe/40 bg-white text-deep-brown text-sm
-                   placeholder:text-taupe/60 focus:outline-none transition-all duration-200"
-        onFocus={(e) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}28`; }}
-        onBlur={(e)  => { e.target.style.borderColor = "";     e.target.style.boxShadow = ""; }} />
+        onBlur={onBlur}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
+        className={`${FIELD_BASE} ${error ? FIELD_ERROR : FIELD_OK}`}
+      />
+      <FieldError id={errorId} message={error} />
     </div>
   );
 }
 
-function SelectField({ id, label, value, onChange, children, span2 = false }:
-  { id: string; label: string; value: string; onChange: (v: string) => void;
-    children: React.ReactNode; span2?: boolean }) {
+interface SelectOption { value: string; label: string; }
+
+// Fully custom listbox — NOT a native <select>. Native <select> option
+// popups render as an unstyleable OS/browser list in every browser (a real
+// CSS platform limitation, not something fixable with classNames on the
+// <select> itself), which is exactly what looked out of place against the
+// rest of this hand-styled checkout form. This renders its own dropdown
+// panel so both the closed trigger AND the open option list match the
+// site's design — at the cost of implementing keyboard nav / a11y
+// ourselves instead of getting it for free from the browser.
+function SelectField({ id, label, value, onChange, onBlur, error, options, placeholder, span2 = false }: {
+  id: string; label: string; value: string; onChange: (v: string) => void; onBlur?: () => void;
+  error?: string; options: SelectOption[]; placeholder?: string; span2?: boolean;
+}) {
+  const errorId = `${id}-error`;
+  const [open, setOpen] = useState(false);
+  const [highlighted, setHighlighted] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const typeaheadRef = useRef("");
+  const typeaheadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const selectedIndex = options.findIndex((o) => o.value === value);
+  const selectedLabel = selectedIndex >= 0 ? options[selectedIndex].label : "";
+
+  // Close on outside click/tap, same as any native dropdown would.
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        onBlur?.();
+      }
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [open, onBlur]);
+
+  // Keep the highlighted option scrolled into view as it changes via keyboard.
+  useEffect(() => {
+    if (!open) return;
+    const el = listRef.current?.children[highlighted] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [open, highlighted]);
+
+  function openList() {
+    setHighlighted(selectedIndex >= 0 ? selectedIndex : 0);
+    setOpen(true);
+  }
+
+  function selectIndex(i: number) {
+    const opt = options[i];
+    if (!opt) return;
+    onChange(opt.value);
+    setOpen(false);
+    onBlur?.();
+  }
+
+  function handleTriggerKeyDown(e: React.KeyboardEvent) {
+    if (!open) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openList();
+      }
+      return;
+    }
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setHighlighted((h) => Math.min(h + 1, options.length - 1));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setHighlighted((h) => Math.max(h - 1, 0));
+        break;
+      case "Home":
+        e.preventDefault();
+        setHighlighted(0);
+        break;
+      case "End":
+        e.preventDefault();
+        setHighlighted(options.length - 1);
+        break;
+      case "Enter":
+        e.preventDefault();
+        selectIndex(highlighted);
+        break;
+      case "Escape":
+        e.preventDefault();
+        setOpen(false);
+        break;
+      case "Tab":
+        setOpen(false);
+        break;
+      default:
+        // Typeahead: typing letters jumps to the first matching option,
+        // same behaviour a native <select> gives you for free.
+        if (e.key.length === 1 && /[a-z0-9]/i.test(e.key)) {
+          if (typeaheadTimerRef.current) clearTimeout(typeaheadTimerRef.current);
+          typeaheadRef.current += e.key.toLowerCase();
+          const match = options.findIndex((o) => o.label.toLowerCase().startsWith(typeaheadRef.current));
+          if (match >= 0) setHighlighted(match);
+          typeaheadTimerRef.current = setTimeout(() => { typeaheadRef.current = ""; }, 600);
+        }
+    }
+  }
+
   return (
-    <div className={span2 ? "sm:col-span-2" : ""}>
-      <label htmlFor={id} className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5">
+    <div className={span2 ? "sm:col-span-2" : ""} ref={containerRef}>
+      <label id={`${id}-label`} htmlFor={id} className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-system">
         {label}
       </label>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full h-12 px-4 rounded-xl border border-taupe/40 bg-white text-deep-brown text-sm
-                   cursor-pointer focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30
-                   transition-all duration-200">
-        {children}
-      </select>
+      <div className="relative">
+        <button
+          type="button" id={id}
+          onClick={() => (open ? setOpen(false) : openList())}
+          onKeyDown={handleTriggerKeyDown}
+          role="combobox" aria-haspopup="listbox" aria-expanded={open}
+          aria-labelledby={`${id}-label`} aria-controls={`${id}-listbox`}
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : undefined}
+          className={`${FIELD_BASE} flex items-center justify-between text-left pr-10 cursor-pointer ${error ? FIELD_ERROR : FIELD_OK}`}>
+          <span className={selectedLabel ? "" : "text-[#9C8570]/70"}>
+            {selectedLabel || placeholder || "Select…"}
+          </span>
+        </button>
+        <svg
+          className={`pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9C8570] transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+
+        {open && (
+          <ul
+            ref={listRef} id={`${id}-listbox`} role="listbox" aria-labelledby={`${id}-label`}
+            tabIndex={-1}
+            className="absolute z-20 mt-1.5 w-full max-h-60 overflow-y-auto rounded-xl border border-[#E4D8C8]
+                       bg-white shadow-lg py-1 font-system text-sm">
+            {options.map((opt, i) => (
+              <li
+                key={opt.value}
+                role="option"
+                aria-selected={opt.value === value}
+                onMouseEnter={() => setHighlighted(i)}
+                onMouseDown={(e) => { e.preventDefault(); selectIndex(i); }}
+                className={`px-4 py-2.5 cursor-pointer flex items-center justify-between
+                            ${i === highlighted ? "bg-[#FAF6F0]" : ""}
+                            ${opt.value === value ? "text-[#792F00] font-semibold" : "text-deep-brown"}`}>
+                {opt.label}
+                {opt.value === value && (
+                  <svg className="w-3.5 h-3.5 text-[#792F00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <FieldError id={errorId} message={error} />
     </div>
   );
 }
@@ -430,168 +632,108 @@ function PaymentLogos({ mode }: { mode: CheckoutMode }) {
 /* ─────────────────────────────────────────────────────────
    ORDER SUMMARY — receipt-style, printable
 ───────────────────────────────────────────────────────── */
-function OrderSummary({ items, pricing, mode, orderRef }: {
+function OrderSummary({ items, pricing, mode, orderRef, estimatedDays, customsApplies }: {
   items: ReturnType<typeof useCart>["items"];
   pricing: CheckoutPricing;
   mode: CheckoutMode;
   orderRef: string;
+  estimatedDays: string;
+  customsApplies: boolean;
 }) {
   const { formatAmount } = useCurrency();
-  const today = new Date().toLocaleDateString("en-GB", {
-    day: "numeric", month: "long", year: "numeric",
-  });
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 font-system">
 
-      {/* ── Printable receipt ── */}
       <div id="order-receipt-wrapper">
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm"
-             style={{ border: "1px solid #E8D5C4" }}>
+        {/* Clean card — one soft border, no shadow, no receipt motifs */}
+        <div className="bg-white rounded-2xl border border-[#E4D8C8] p-5">
 
-          {/* Header — burgundy */}
-          <div className="px-5 pt-5 pb-4 text-center" style={{ backgroundColor: "#8B2035" }}>
-            <p className="text-[9px] uppercase tracking-[0.3em] text-white/60 mb-1 font-body">
-              Cozi Handmade
-            </p>
-            <p className="font-heading italic text-white text-xl font-400 leading-tight">
-              Purchase Receipt
-            </p>
-            <div className="mt-2.5 flex items-center justify-center gap-2 text-[10px] text-white/65 font-body">
-              <span>#{orderRef}</span>
-              <span className="opacity-40">·</span>
-              <span>{today}</span>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              {/* Always "Order Summary" here — this component never renders
+                  after payment is confirmed (that's ConfirmationScreen), so
+                  it must never claim to be a receipt for money not yet taken. */}
+              <h2 className="font-heading text-lg text-deep-brown leading-tight">Order Summary</h2>
+              <p className="text-[11px] text-taupe-dark mt-0.5">#{orderRef}</p>
             </div>
+            <button
+              onClick={() => window.print()}
+              className="print:hidden shrink-0 w-8 h-8 rounded-full border border-[#E4D8C8] flex items-center
+                         justify-center text-[#792F00] hover:bg-[#FAF6F0] transition-colors duration-150"
+              aria-label="Print order summary">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.056 48.056 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
+              </svg>
+            </button>
           </div>
 
-          {/* Zigzag tear edge */}
-          <div className="relative overflow-hidden h-3" style={{ backgroundColor: "#8B2035" }}>
-            <svg viewBox="0 0 400 12" preserveAspectRatio="none"
-                 className="absolute bottom-0 left-0 w-full h-3">
-              <path d="M0,12 L10,0 L20,12 L30,0 L40,12 L50,0 L60,12 L70,0 L80,12 L90,0
-                       L100,12 L110,0 L120,12 L130,0 L140,12 L150,0 L160,12 L170,0 L180,12
-                       L190,0 L200,12 L210,0 L220,12 L230,0 L240,12 L250,0 L260,12 L270,0
-                       L280,12 L290,0 L300,12 L310,0 L320,12 L330,0 L340,12 L350,0 L360,12
-                       L370,0 L380,12 L390,0 L400,12 Z" fill="white" />
-            </svg>
-          </div>
-
-          <div className="px-5 pt-3 pb-5">
-
-            {/* Column headers */}
-            <div className="grid grid-cols-12 gap-1 mb-2 pb-1.5"
-                 style={{ borderBottom: "1px solid #F0E4D8" }}>
-              <span className="col-span-1 text-[8px] uppercase tracking-wider font-semibold"
-                    style={{ color: "#8B2035" }}>Qty</span>
-              <span className="col-span-5 text-[8px] uppercase tracking-wider font-semibold"
-                    style={{ color: "#8B2035" }}>Item</span>
-              <span className="col-span-3 text-[8px] uppercase tracking-wider font-semibold"
-                    style={{ color: "#8B2035" }}>Type</span>
-              <span className="col-span-3 text-[8px] uppercase tracking-wider font-semibold text-right"
-                    style={{ color: "#8B2035" }}>Total</span>
-            </div>
-
-            {/* Item rows */}
-            <div className="space-y-3.5 mb-4">
-              {items.map((item) => {
-
-                return (
-                  <div key={item.id} className="grid grid-cols-12 gap-1 items-start">
-                    {/* Qty bubble */}
-                    <div className="col-span-1 pt-0.5">
-                      <span className="inline-flex items-center justify-center w-5 h-5
-                                       rounded-full text-[9px] font-bold text-white shrink-0"
-                            style={{ backgroundColor: "#8B2035" }}>
-                        {item.quantity}
-                      </span>
-                    </div>
-
-                    {/* Name + unit price */}
-                    <div className="col-span-5">
-                      <p className="text-[11px] font-semibold leading-snug"
-                         style={{ color: "#1A0810" }}>
-                        {item.name}
-                      </p>
-                      <p className="text-[9px] mt-0.5 font-body" style={{ color: "#9B3A50" }}>
-                        {formatAmount(item.price)} each
-                      </p>
-                    </div>
-
-                    <div className="col-span-3" />
-
-                    {/* Line total */}
-                    <p className="col-span-3 text-right text-[11px] font-bold pt-0.5"
-                       style={{ color: "#1A0810" }}>
-                      {formatAmount(item.price * item.quantity)}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Dashed divider */}
-            <div className="border-t-2 border-dashed mb-3" style={{ borderColor: "#F0E4D8" }} />
-
-            {/* Subtotals */}
-            <div className="space-y-1.5 mb-3">
-              <div className="flex justify-between text-xs font-body" style={{ color: "#7A2030" }}>
-                <span>Subtotal</span>
-                <span>{pricing.formattedSubtotal}</span>
+          {/* Line items */}
+          <div className="space-y-4">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center gap-3">
+                {/* Thumbnail — falls back to a plain tinted square if no image */}
+                <div className="w-12 h-12 rounded-lg bg-[#FAF6F0] border border-[#E4D8C8] shrink-0 overflow-hidden">
+                  {item.image && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.image} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-deep-brown leading-snug truncate">{item.name}</p>
+                  <p className="text-xs text-taupe-dark mt-0.5 tabular-nums">
+                    Qty {item.quantity} · {formatAmount(item.price)} each
+                  </p>
+                </div>
+                <p className="text-sm font-semibold text-deep-brown tabular-nums shrink-0">
+                  {formatAmount(item.price * item.quantity)}
+                </p>
               </div>
-              <div className="flex justify-between text-xs font-body" style={{ color: "#7A2030" }}>
-                <span>Shipping</span>
-                <span>{pricing.formattedShipping}</span>
-              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-[#E4D8C8] my-4" />
+
+          {/* Subtotals — small uppercase labels, larger values */}
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between items-baseline">
+              <span className="text-[10px] uppercase tracking-wide text-taupe-dark">Subtotal</span>
+              <span className="text-sm text-deep-brown tabular-nums">{pricing.formattedSubtotal}</span>
             </div>
-
-            {/* Total row — burgundy pill */}
-            <div className="flex items-center justify-between px-4 py-2.5 rounded-xl"
-                 style={{ backgroundColor: "#8B2035" }}>
-              <span className="text-xs font-bold tracking-wider text-white uppercase font-body">
-                Total to Pay
-              </span>
-              <span className="text-sm font-bold text-white font-heading">
-                {pricing.formattedTotal}
-              </span>
-            </div>
-
-            {/* Payment method note */}
-            <p className="text-[9px] text-center mt-3 font-body" style={{ color: "#D49AA8" }}>
-              {mode === "nigerian"
-                ? "Processed via Bank Transfer · NGN"
-                : `Processed via Stripe · PCI-DSS Level 1 · ${pricing.currency}`}
-            </p>
-
-            {/* Dashed footer */}
-            <div className="border-t-2 border-dashed mt-3 pt-3 text-center"
-                 style={{ borderColor: "#F0E4D8" }}>
-              <p className="text-[8px] uppercase tracking-[0.25em] font-body"
-                 style={{ color: "#D49AA8" }}>
-                est. 2018 · handcrafted with ♡
-              </p>
+            <div className="flex justify-between items-baseline">
+              <span className="text-[10px] uppercase tracking-wide text-taupe-dark">Shipping</span>
+              <span className="text-sm text-deep-brown tabular-nums">{pricing.formattedShipping}</span>
             </div>
           </div>
+
+          {/* Total — visually heaviest block, separated */}
+          <div className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ backgroundColor: "#792F00" }}>
+            <span className="text-xs font-semibold tracking-wide text-white uppercase">Total</span>
+            <span className="text-lg font-bold text-white tabular-nums">{pricing.formattedTotal}</span>
+          </div>
+
+          <p className="text-[10px] text-center mt-3 text-taupe-dark">
+            {mode === "nigerian"
+              ? "Processed via Bank Transfer · NGN"
+              : `Processed via Stripe · PCI-DSS Level 1 · ${pricing.currency}`}
+          </p>
+
+          <p className="text-[10px] text-center mt-1.5 text-taupe-dark">
+            Estimated delivery: <strong>{estimatedDays}</strong>
+          </p>
+
+          {customsApplies && (
+            <p className="mt-3 text-[10px] leading-relaxed text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              Customers outside the EU may be charged import duties or taxes on delivery.
+              These are set by your country and are not included in this price.
+            </p>
+          )}
         </div>
-
-        {/* Print button — hidden when actually printing */}
-        <button
-          onClick={() => window.print()}
-          className="print:hidden mt-2 w-full flex items-center justify-center gap-2
-                     py-2.5 rounded-xl border-2 text-xs font-semibold tracking-wide
-                     transition-all duration-200 hover:-translate-y-px font-body"
-          style={{ borderColor: "#8B2035", color: "#8B2035", backgroundColor: "transparent" }}>
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
-               stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.056 48.056 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
-          </svg>
-          Print Receipt
-        </button>
       </div>
 
       {/* Trust badges + payment logos */}
-      <div className="print:hidden bg-white rounded-2xl shadow-sm p-4"
-           style={{ border: "1px solid #E8D5C4" }}>
+      <div className="print:hidden bg-white rounded-2xl border border-[#E4D8C8] p-4">
         <TrustBadges mode={mode} />
         <PaymentLogos mode={mode} />
       </div>
@@ -602,9 +744,50 @@ function OrderSummary({ items, pricing, mode, orderRef }: {
 /* ═════════════════════════════════════════════════════════
    SHIPPING STEP
 ═════════════════════════════════════════════════════════ */
-function ShippingStep({ mode, ship, setShip, onNext }: {
+/* Pure validation — used by both the desktop "Continue" button (inside
+   ShippingStep) and the mobile sticky-bar one (in CheckoutPage), so both
+   trigger points agree on what counts as a complete, submittable address. */
+type ShipErrors = Partial<Record<keyof ShipInfo, string>>;
+
+function validateShip(ship: ShipInfo, mode: CheckoutMode): ShipErrors {
+  const errors: ShipErrors = {};
+  const isNG = mode === "nigerian";
+
+  if (!ship.firstName.trim()) errors.firstName = "First name is required.";
+  if (!ship.lastName.trim())  errors.lastName  = "Last name is required.";
+  if (!ship.email.trim()) {
+    errors.email = "Email address is required.";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ship.email.trim())) {
+    errors.email = "Enter a valid email address.";
+  }
+  if (!ship.phone.trim()) errors.phone = "Phone number is required.";
+  if (!ship.address.trim()) errors.address = "Street address is required.";
+  if (!ship.city.trim()) errors.city = "City / town is required.";
+
+  if (isNG) {
+    if (!ship.state) errors.state = "Select your state.";
+  } else {
+    if (!ship.postcode.trim()) errors.postcode = "Postcode / ZIP is required.";
+    if (!ship.country) errors.country = "Select your country.";
+  }
+
+  return errors;
+}
+
+function ShippingStep({
+  mode, ship, setShip, fieldError, onFieldBlur, onNext, estimatedDays, customsApplies,
+  pickupEligible, deliveryMethod, setDeliveryMethod,
+}: {
   mode: CheckoutMode; ship: ShipInfo;
-  setShip: (s: ShipInfo) => void; onNext: () => void;
+  setShip: (s: ShipInfo) => void;
+  fieldError: (key: keyof ShipInfo) => string | undefined;
+  onFieldBlur: (key: keyof ShipInfo) => void;
+  onNext: () => void;
+  estimatedDays: string;
+  customsApplies: boolean;
+  pickupEligible: boolean;
+  deliveryMethod: "courier" | "pickup";
+  setDeliveryMethod: (m: "courier" | "pickup") => void;
 }) {
   const accent = mode === "nigerian" ? "#008751" : "#8B2035";
   const isNG   = mode === "nigerian";
@@ -612,62 +795,95 @@ function ShippingStep({ mode, ship, setShip, onNext }: {
     <div className="bg-white rounded-2xl border border-cream-darker shadow-sm p-5 sm:p-6">
       <h2 className="font-heading font-600 text-deep-brown text-xl mb-5">Shipping Information</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field id="fn" label="First Name" placeholder={isNG ? "Amaka" : "Jane"}
-               value={ship.firstName} onChange={(v) => setShip({ ...ship, firstName: v })} accent={accent} />
-        <Field id="ln" label="Last Name"  placeholder={isNG ? "Okonkwo" : "Smith"}
-               value={ship.lastName}  onChange={(v) => setShip({ ...ship, lastName: v })}  accent={accent} />
-        <Field id="em" label="Email Address" type="email"
-               placeholder={isNG ? "amaka@gmail.com" : "jane@example.com"}
-               value={ship.email} onChange={(v) => setShip({ ...ship, email: v })} span2 accent={accent} />
-        <Field id="ph" label="Phone" type="tel"
-               placeholder={isNG ? "+234 080 0000 0000" : "+44 7700 000000"}
-               value={ship.phone} onChange={(v) => setShip({ ...ship, phone: v })} span2 accent={accent} />
-        <Field id="addr" label="Street Address"
-               placeholder={isNG ? "12 Allen Avenue, Ikeja" : "12 Willow Lane"}
-               value={ship.address} onChange={(v) => setShip({ ...ship, address: v })} span2 accent={accent} />
-        <Field id="city" label="City / Town" placeholder={isNG ? "Lagos" : "London"}
-               value={ship.city} onChange={(v) => setShip({ ...ship, city: v })} accent={accent} />
+        <Field id="fn" label="First Name" placeholder={isNG ? "e.g. Amaka" : "e.g. Jane"}
+               autoComplete="given-name"
+               value={ship.firstName} onChange={(v) => setShip({ ...ship, firstName: v })}
+               onBlur={() => onFieldBlur("firstName")} error={fieldError("firstName")} />
+        <Field id="ln" label="Last Name"  placeholder={isNG ? "e.g. Okonkwo" : "e.g. Smith"}
+               autoComplete="family-name"
+               value={ship.lastName}  onChange={(v) => setShip({ ...ship, lastName: v })}
+               onBlur={() => onFieldBlur("lastName")} error={fieldError("lastName")} />
+        <Field id="em" label="Email Address" type="email" inputMode="email" autoComplete="email"
+               placeholder={isNG ? "e.g. amaka@gmail.com" : "e.g. jane@example.com"}
+               value={ship.email} onChange={(v) => setShip({ ...ship, email: v })}
+               onBlur={() => onFieldBlur("email")} error={fieldError("email")} span2 />
+        <Field id="ph" label="Phone" type="tel" inputMode="tel" autoComplete="tel"
+               placeholder={isNG ? "e.g. +234 080 0000 0000" : "e.g. +44 7700 000000"}
+               value={ship.phone} onChange={(v) => setShip({ ...ship, phone: v })}
+               onBlur={() => onFieldBlur("phone")} error={fieldError("phone")} span2 />
+        <Field id="addr" label="Street Address" autoComplete="address-line1"
+               placeholder={isNG ? "e.g. 12 Allen Avenue, Ikeja" : "e.g. 12 Willow Lane"}
+               value={ship.address} onChange={(v) => setShip({ ...ship, address: v })}
+               onBlur={() => onFieldBlur("address")} error={fieldError("address")} span2 />
+        <Field id="city" label="City / Town" autoComplete="address-level2"
+               placeholder={isNG ? "e.g. Lagos" : "e.g. London"}
+               value={ship.city} onChange={(v) => setShip({ ...ship, city: v })}
+               onBlur={() => onFieldBlur("city")} error={fieldError("city")} />
         {isNG ? (
           <SelectField id="state" label="State" value={ship.state}
-                       onChange={(v) => setShip({ ...ship, state: v })}>
-            <option value="">Select state…</option>
-            {NG_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </SelectField>
+                       onChange={(v) => setShip({ ...ship, state: v })}
+                       onBlur={() => onFieldBlur("state")} error={fieldError("state")}
+                       options={NG_STATE_OPTIONS} placeholder="Select state…" />
         ) : (
           <>
-            <Field id="pc" label="Postcode / ZIP" placeholder="SW1A 1AA"
-                   value={ship.postcode} onChange={(v) => setShip({ ...ship, postcode: v })} accent={accent} />
+            <Field id="pc" label="Postcode / ZIP" placeholder="e.g. SW1A 1AA" autoComplete="postal-code"
+                   value={ship.postcode} onChange={(v) => setShip({ ...ship, postcode: v })}
+                   onBlur={() => onFieldBlur("postcode")} error={fieldError("postcode")} />
             <SelectField id="country" label="Country" value={ship.country}
-                         onChange={(v) => setShip({ ...ship, country: v })} span2>
-              <option value="GB">United Kingdom</option>
-              <option value="IE">Ireland</option>
-              <option value="US">United States</option>
-              <option value="CA">Canada</option>
-              <option value="AU">Australia</option>
-              <option value="DE">Germany</option>
-              <option value="FR">France</option>
-              <option value="Other">Other</option>
-            </SelectField>
+                         onChange={(v) => setShip({ ...ship, country: v })}
+                         onBlur={() => onFieldBlur("country")} error={fieldError("country")}
+                         options={COUNTRY_OPTIONS} span2 />
           </>
         )}
       </div>
 
+      {!isNG && pickupEligible && (
+        <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+          <p className="text-xs font-semibold text-emerald-800 mb-2">
+            Your address is in Dublin — how would you like to receive your order?
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <label className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-xs cursor-pointer transition-colors
+                               ${deliveryMethod === "courier" ? "border-emerald-400 bg-white" : "border-emerald-100 bg-emerald-50/50"}`}>
+              <input type="radio" name="deliveryMethod" checked={deliveryMethod === "courier"}
+                     onChange={() => setDeliveryMethod("courier")} className="accent-emerald-600" />
+              <span className="text-emerald-900 font-medium">Standard courier delivery</span>
+            </label>
+            <label className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-xs cursor-pointer transition-colors
+                               ${deliveryMethod === "pickup" ? "border-emerald-400 bg-white" : "border-emerald-100 bg-emerald-50/50"}`}>
+              <input type="radio" name="deliveryMethod" checked={deliveryMethod === "pickup"}
+                     onChange={() => setDeliveryMethod("pickup")} className="accent-emerald-600" />
+              <span className="text-emerald-900 font-medium">Pick up in Dublin — Free</span>
+            </label>
+          </div>
+        </div>
+      )}
+
       {isNG ? (
-        <div className="mt-4 flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-800">
+        <div className="mt-4 flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-800 font-system">
           <div className="w-4 h-4 shrink-0 text-emerald-600"><IcoBadge /></div>
-          We ship to all 36 Nigerian states + FCT · Delivery: 2–5 business days
+          We ship to all 36 Nigerian states + FCT · Delivery: {estimatedDays}
         </div>
       ) : (
-        <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100 text-xs text-blue-800">
-          <div className="w-4 h-4 shrink-0 text-blue-500"><IcoTruck /></div>
-          International shipping · We deliver within <strong>2–14 working days</strong> depending on your location
-        </div>
+        <>
+          <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100 text-xs text-blue-800 font-system">
+            <div className="w-4 h-4 shrink-0 text-blue-500"><IcoTruck /></div>
+            {deliveryMethod === "pickup" ? "Local pickup" : "International shipping"} · Estimated: <strong>{estimatedDays}</strong>
+          </div>
+          {customsApplies && (
+            <div className="mt-2 flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100 text-xs text-amber-800 font-system">
+              <div className="w-4 h-4 shrink-0 text-amber-500 mt-0.5"><IcoWarning /></div>
+              Customers outside the EU may be charged import duties or taxes on delivery. These are set
+              by your country and are not included in this price.
+            </div>
+          )}
+        </>
       )}
 
       <div className="hidden lg:flex justify-end mt-6">
         <button onClick={onNext}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-none text-cream font-semibold
-                     text-sm tracking-wide hover:-translate-y-px transition-all duration-200 shadow-sm"
+                     text-sm tracking-wide hover:-translate-y-px transition-all duration-200 shadow-sm font-system"
           style={{ backgroundColor: accent }}>
           Continue to Payment <IcoArrow />
         </button>
@@ -737,7 +953,7 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, onBack, onBankTransferCo
               <div key={key} className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
-                  <p className={`text-sm font-semibold truncate ${key === "ref" ? "text-gold" : "text-stone-900"}`}>
+                  <p className={`text-sm font-semibold truncate tabular-nums ${key === "ref" ? "text-gold" : "text-stone-900"}`}>
                     {value}
                   </p>
                 </div>
@@ -881,7 +1097,7 @@ function StripeCardForm({ formattedTotal, termsAccepted, setTermsAccepted, onSho
                    disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
                    enabled:hover:-translate-y-px"
         style={{ backgroundColor: "#635BFF" }}>
-        {waitingForOrder ? "Confirming your order…" : submitting ? "Processing payment…" : <>Pay {formattedTotal} with Stripe <IcoArrow /></>}
+        {waitingForOrder ? "Confirming your order…" : submitting ? "Processing payment…" : <>Pay <span className="tabular-nums">{formattedTotal}</span> with Stripe <IcoArrow /></>}
       </button>
       <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-600">
         <div className="text-emerald-600"><IcoShield /></div>
@@ -997,7 +1213,7 @@ function InternationalPaymentStep({
                 <div key={label} className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
-                    <p className="text-sm font-semibold text-stone-900 truncate">{value}</p>
+                    <p className="text-sm font-semibold text-stone-900 truncate tabular-nums">{value}</p>
                   </div>
                   <button onClick={() => copyText(value, label)}
                     className={`shrink-0 text-[10px] px-2.5 py-1 rounded font-medium transition-all duration-200
@@ -1011,7 +1227,7 @@ function InternationalPaymentStep({
               <div className="flex items-center justify-between gap-4 pt-1 border-t border-stone-100">
                 <div className="min-w-0">
                   <p className="text-[10px] text-stone-400 uppercase tracking-wide">Amount</p>
-                  <p className="text-sm font-bold text-stone-900">{formattedTotal}</p>
+                  <p className="text-sm font-bold text-stone-900 tabular-nums">{formattedTotal}</p>
                 </div>
                 <button onClick={() => copyText(formattedTotal.replace(/[^\d.]/g, ""), "amount")}
                   className={`shrink-0 text-[10px] px-2.5 py-1 rounded font-medium transition-all duration-200
@@ -1121,11 +1337,11 @@ function InternationalPaymentStep({
 /* ═════════════════════════════════════════════════════════
    CONFIRMATION SCREEN
 ═════════════════════════════════════════════════════════ */
-function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, orderTotalNGN, clearCart }: {
+function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, orderTotalNGN, estimatedDays }: {
   mode: CheckoutMode; intlMethod: IntlPayMethod;
   orderRef: string; firstName: string;
   pricing: CheckoutPricing; orderTotalNGN: number;
-  clearCart: () => void;
+  estimatedDays: string;
 }) {
   // Nigeria is bank-transfer-only, so every Nigerian order is "pending" until
   // manually confirmed. International Stripe orders only ever reach this
@@ -1137,7 +1353,7 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, or
     : pricing.formattedTotal;
 
   return (
-    <div className="min-h-screen bg-cream flex items-start justify-center px-4 pt-10 pb-24">
+    <div className="min-h-screen bg-cream flex items-start justify-center px-4 pt-10 pb-24 font-system">
       <div className="w-full max-w-md">
 
         {/* Status icon */}
@@ -1182,11 +1398,11 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, or
               ["Payment via", mode === "nigerian"
                 ? "Bank Transfer (NGN)"
                 : intlMethod === "bank-transfer" ? `Bank Transfer (${pricing.currency})` : `Stripe (${pricing.currency})`],
-              ["Estimated Delivery", mode === "nigerian" ? "2–5 business days" : "2–14 working days"],
+              ["Estimated Delivery", estimatedDays],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
                 <span className="text-taupe-dark">{label}</span>
-                <span className="font-semibold text-deep-brown text-right max-w-[55%]">{value}</span>
+                <span className="font-semibold text-deep-brown text-right max-w-[55%] tabular-nums">{value}</span>
               </div>
             ))}
           </div>
@@ -1206,29 +1422,40 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, or
               <span className="text-xs text-emerald-700">Payment confirmed · Tracked delivery included</span>
             </div>
           )}
+
+          {/* Payment security indicator — understated, only for genuine
+              Stripe-confirmed orders (never shown for bank-transfer/NGN,
+              which weren't secured "by Stripe"). */}
+          {mode === "international" && intlMethod === "stripe-card" && (
+            <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-taupe/10">
+              <div className="text-taupe-dark shrink-0"><IcoShield /></div>
+              <span className="text-[11px] text-taupe-dark">Secured by</span>
+              <LogoStripe />
+            </div>
+          )}
         </div>
 
         {/* Share */}
         <div className="bg-white rounded-2xl border border-cream-darker p-4 shadow-sm mb-4 text-center">
           <p className="text-xs font-semibold text-deep-brown mb-1">Share the love</p>
           <p className="text-[10px] text-taupe-dark mb-3">Tag us when your order arrives</p>
-          <div className="flex items-center justify-center gap-3">
-            <a href="#" className="w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all"
-               style={{ background: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)" }}>
-              <svg className="w-4 h-4" fill="white" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-              </svg>
+          <div className="flex items-center justify-center gap-4">
+            <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer"
+               aria-label="Follow Cozi Handmade on Instagram"
+               className="w-9 h-9 rounded-full flex items-center justify-center text-stone-400
+                          hover:text-[#E4405F] transition-colors duration-200">
+              <InstagramIcon className="w-5 h-5" />
             </a>
-            <a href="#" className="w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all"
-               style={{ backgroundColor: "#25D366" }}>
-              <svg className="w-4 h-4" fill="white" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-              </svg>
+            <a href={whatsappLink()} target="_blank" rel="noopener noreferrer"
+               aria-label="Chat with Cozi Handmade on WhatsApp"
+               className="w-9 h-9 rounded-full flex items-center justify-center text-stone-400
+                          hover:text-[#25D366] transition-colors duration-200">
+              <WhatsAppIcon className="w-5 h-5" />
             </a>
           </div>
         </div>
 
-        <Link href="/products" onClick={() => clearCart()}
+        <Link href="/products"
           className="flex items-center justify-center w-full h-12 rounded-none text-cream font-semibold
                      text-sm tracking-wide hover:opacity-90 transition-opacity shadow-sm"
           style={{ backgroundColor: "#8B2035" }}>
@@ -1250,20 +1477,6 @@ export default function CheckoutPage() {
   const mode: CheckoutMode = currency === "NGN" ? "nigerian" : "international";
   const accent = mode === "nigerian" ? "#008751" : "#8B2035";
 
-  // `total` (cart subtotal) is in EUR — the base currency every price is
-  // stored/entered in. `orderTotalEUR` is that same base total, used for the
-  // order's canonical ledger amount regardless of how the customer pays.
-  // `chargedTotal` is the properly-converted amount in the customer's
-  // selected currency — that's what's actually charged/displayed/transferred
-  // (NGN via bank transfer when mode === "nigerian"). Stripe re-verifies and
-  // recomputes this same total server-side before ever charging a card —
-  // this figure is only ever used for display and for the (unverified)
-  // bank-transfer path.
-  const shippingEUR   = SHIPPING_EUR;
-  const orderTotalEUR = total + shippingEUR;
-  const pricing       = priceCheckout(total, shippingEUR);
-  const chargedTotal  = pricing.totalConverted;
-
   const [step,          setStep]          = useState<Step>("shipping");
   const [intlMethod,    setIntlMethod]    = useState<IntlPayMethod>("bank-transfer");
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -1274,10 +1487,73 @@ export default function CheckoutPage() {
   const [orderRef]                        = useState(() =>
     `WIL-${Math.random().toString(36).slice(2, 10).toUpperCase()}`
   );
+  const [shipTouched, setShipTouched] = useState<Partial<Record<keyof ShipInfo, boolean>>>({});
+  const [showAllShipErrors, setShowAllShipErrors] = useState(false);
   const [ship, setShip] = useState<ShipInfo>({
     firstName: "", lastName: "", email: "", phone: "",
     address: "", city: "", postcode: "", country: mode === "nigerian" ? "NG" : "GB", state: "",
   });
+
+  // Free customer pickup — only ever offered for addresses that actually
+  // resolve to Dublin (see isDublinPickupEligible; MadeCozi's stockhouse is
+  // there). `deliveryMethod` is the customer's choice; `pickupEligible` is
+  // recomputed from the live address on every render, so if they pick
+  // "pickup" and then edit the address to somewhere else, the effective
+  // method silently falls back to the standard courier rather than staying
+  // stuck offering a pickup that no longer makes sense.
+  const [deliveryMethod, setDeliveryMethod] = useState<"courier" | "pickup">("courier");
+  const pickupEligible = isDublinPickupEligible(ship);
+  const effectiveDeliveryMethod = pickupEligible ? deliveryMethod : "courier";
+
+  // Shipping — lib/checkout/shipping.ts is the single source of truth,
+  // imported here for display AND by create-intent for the server-side
+  // charge (never a second, local implementation). Recomputed on every
+  // render so changing the delivery country immediately updates the
+  // displayed price — cheap, pure, no network call.
+  //
+  // `total` (cart subtotal) is in EUR — the base currency every price is
+  // stored/entered in. `chargedTotal` is the properly-converted amount in
+  // the customer's selected currency — that's what's actually
+  // charged/displayed/transferred (NGN via bank transfer when
+  // mode === "nigerian"). Both the Stripe path (create-intent) and the bank
+  // transfer path (/api/orders) independently recompute subtotal + shipping
+  // server-side and never trust a client-submitted total — create-intent's
+  // client_shipping_eur check additionally rejects outright if its figure
+  // and the server's ever diverge; /api/orders simply ignores the client's
+  // total_amount/charged_amount entirely and stores its own.
+  const shippingItems: ShippingItemInput[] = items.map((item) => ({
+    quantity: item.quantity,
+    shippingWeightGrams: item.shippingWeightGrams,
+    productName: item.name,
+  }));
+  const shippingQuote: { zone: ShippingZone; priceEUR: number; estimatedDays: string; customsApplies: boolean } =
+    calculateShipping(shippingItems, ship.country);
+  const shippingEUR = effectiveDeliveryMethod === "pickup" ? 0 : shippingQuote.priceEUR;
+  const estimatedDaysDisplay = effectiveDeliveryMethod === "pickup"
+    ? "Ready for pickup within 1-2 business days"
+    : shippingQuote.estimatedDays;
+  // Pickup is a local handoff, not an international shipment — never show
+  // the customs-duties notice for it even if the underlying zone would
+  // otherwise have customsApplies true (it won't for domestic/IE, but this
+  // keeps the display correct if that ever changes).
+  const customsAppliesDisplay = effectiveDeliveryMethod === "pickup" ? false : shippingQuote.customsApplies;
+  const pricing        = priceCheckout(total, shippingEUR);
+  const chargedTotal  = pricing.totalConverted;
+
+  const shipErrors = validateShip(ship, mode);
+  function shipFieldError(key: keyof ShipInfo) {
+    return (shipTouched[key] || showAllShipErrors) ? shipErrors[key] : undefined;
+  }
+  function handleShipFieldBlur(key: keyof ShipInfo) {
+    setShipTouched((t) => ({ ...t, [key]: true }));
+  }
+  function handleContinueToPayment() {
+    if (Object.keys(shipErrors).length > 0) {
+      setShowAllShipErrors(true);
+      return;
+    }
+    setStep("payment");
+  }
 
   // Stripe PaymentIntent — created once the customer reaches the Card/Stripe
   // tab. The server re-prices from the cart here (never trusts client
@@ -1308,6 +1584,14 @@ export default function CheckoutPage() {
             })),
             delivery_address: ship,
             currency,
+            // Checksum, not an input to the charge — the server recomputes
+            // shipping independently from its own weight lookup and rejects
+            // if this doesn't match. See create-intent's doc comment.
+            client_shipping_eur: shippingEUR,
+            // Server independently re-checks Dublin eligibility against
+            // delivery_address before ever honouring "pickup" — this is
+            // never trusted on its own to produce a €0 charge.
+            delivery_method: effectiveDeliveryMethod,
           }),
         });
         const data = await res.json();
@@ -1343,12 +1627,14 @@ export default function CheckoutPage() {
             source: item.source ?? "product",
             variant: item.variant,
           })),
-          total_amount: orderTotalEUR,
-          charged_amount: chargedTotal,
+          // total_amount/charged_amount are NOT sent — /api/orders recomputes
+          // both server-side (repriceItems + calculateShipping) and ignores
+          // any client-submitted total, same guarantee as the Stripe path.
           delivery_address: ship,
           payment_method: "bank_transfer",
           order_ref: orderRef,
           currency: "NGN",
+          delivery_method: effectiveDeliveryMethod,
         }),
       });
       const data = await res.json();
@@ -1357,6 +1643,7 @@ export default function CheckoutPage() {
         return;
       }
       setSavedOrderId(data.order_id);
+      clearCart(); // order now genuinely exists in the DB — safe to empty
       setStep("confirmation");
     } catch {
       setSubmitError("Network error — please check your connection and try again.");
@@ -1365,10 +1652,13 @@ export default function CheckoutPage() {
     }
   }
 
-  // The webhook is what actually creates the order — this just runs once
-  // StripeCardForm's own polling has confirmed that's happened.
+  // The webhook is what actually creates the order — this only runs once
+  // StripeCardForm's own polling has confirmed that's happened, so clearing
+  // the cart here (and not any earlier) can never empty it for a payment
+  // that hasn't actually gone through.
   function handleStripeSuccess(orderId: string) {
     setSavedOrderId(orderId);
+    clearCart();
     setStep("confirmation");
   }
 
@@ -1389,12 +1679,14 @@ export default function CheckoutPage() {
             source: item.source ?? "product",
             variant: item.variant,
           })),
-          total_amount: orderTotalEUR,
-          charged_amount: chargedTotal,
+          // total_amount/charged_amount are NOT sent — /api/orders recomputes
+          // both server-side (repriceItems + calculateShipping) and ignores
+          // any client-submitted total, same guarantee as the Stripe path.
           delivery_address: ship,
           payment_method: "swift_transfer",
           order_ref: orderRef,
           currency,
+          delivery_method: effectiveDeliveryMethod,
         }),
       });
       const data = await res.json();
@@ -1403,6 +1695,7 @@ export default function CheckoutPage() {
         return;
       }
       setSavedOrderId(data.order_id);
+      clearCart(); // order now genuinely exists in the DB — safe to empty
       setStep("confirmation");
     } catch {
       setSubmitError("Network error — please check your connection and try again.");
@@ -1414,7 +1707,7 @@ export default function CheckoutPage() {
   /* Empty cart guard */
   if (items.length === 0 && step !== "confirmation") {
     return (
-      <div className="min-h-[70vh] bg-cream flex flex-col items-center justify-center px-6 text-center">
+      <div className="min-h-[70vh] bg-cream flex flex-col items-center justify-center px-6 text-center font-system">
         <h1 className="font-heading text-2xl font-700 text-deep-brown mb-4">Nothing to check out</h1>
         <Link href="/products"
               className="inline-flex items-center justify-center px-8 py-3 rounded-none
@@ -1432,13 +1725,13 @@ export default function CheckoutPage() {
         mode={mode} intlMethod={intlMethod}
         orderRef={orderRef} firstName={ship.firstName}
         pricing={pricing} orderTotalNGN={chargedTotal}
-        clearCart={clearCart}
+        estimatedDays={estimatedDaysDisplay}
       />
     );
   }
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-cream font-system">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -1465,7 +1758,14 @@ export default function CheckoutPage() {
           {/* Form */}
           <div className="flex-1 min-w-0 space-y-4">
             {step === "shipping" && (
-              <ShippingStep mode={mode} ship={ship} setShip={setShip} onNext={() => setStep("payment")} />
+              <ShippingStep mode={mode} ship={ship} setShip={setShip}
+                fieldError={shipFieldError} onFieldBlur={handleShipFieldBlur}
+                onNext={handleContinueToPayment}
+                estimatedDays={estimatedDaysDisplay}
+                customsApplies={customsAppliesDisplay}
+                pickupEligible={pickupEligible}
+                deliveryMethod={deliveryMethod}
+                setDeliveryMethod={setDeliveryMethod} />
             )}
             {step === "payment" && mode === "nigerian" && (
               <NigerianPaymentStep
@@ -1506,7 +1806,8 @@ export default function CheckoutPage() {
 
           {/* Sidebar */}
           <div className="hidden lg:block w-72 shrink-0 sticky top-28">
-            <OrderSummary items={items} pricing={pricing} mode={mode} orderRef={orderRef} />
+            <OrderSummary items={items} pricing={pricing} mode={mode} orderRef={orderRef}
+              estimatedDays={estimatedDaysDisplay} customsApplies={customsAppliesDisplay} />
           </div>
         </div>
       </div>
@@ -1519,16 +1820,21 @@ export default function CheckoutPage() {
            style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}>
         <div className="flex items-center justify-between mb-2.5 text-sm">
           <span className="text-taupe-dark text-xs">{step === "shipping" ? "Step 1 of 2" : "Step 2 of 2"}</span>
-          <span className="font-semibold text-deep-brown">{pricing.formattedTotal}</span>
+          <span className="font-semibold text-deep-brown tabular-nums">{pricing.formattedTotal}</span>
         </div>
 
         {step === "shipping" && (
-          <button type="button" onClick={() => setStep("payment")}
+          <button type="button" onClick={handleContinueToPayment}
             className="w-full h-12 rounded-none text-white font-semibold text-sm tracking-wide
                        active:scale-[0.98] transition-all duration-150 shadow-sm"
             style={{ backgroundColor: accent }}>
             Continue to Payment →
           </button>
+        )}
+        {step === "shipping" && showAllShipErrors && Object.keys(shipErrors).length > 0 && (
+          <p className="text-[10px] text-red-600 text-center mt-1 font-system">
+            Please fix the highlighted fields above before continuing.
+          </p>
         )}
         {step === "payment" && (
           <div className="flex gap-3">

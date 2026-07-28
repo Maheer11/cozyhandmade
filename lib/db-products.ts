@@ -26,5 +26,6 @@ export function mapProduct(p: DbProduct): Product {
     sizes: p.sizes ?? [],
     variantStock: (p.variant_stock as Record<string, number>) ?? {},
     variantPrice: (p.variant_price as Record<string, number>) ?? {},
+    shippingWeightGrams: p.shipping_weight_grams ?? null,
   };
 }

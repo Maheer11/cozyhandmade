@@ -14,6 +14,8 @@ export default async function AdminProductsPage() {
     .select("*")
     .order("created_at", { ascending: false }) as { data: DbProduct[] | null };
 
+  const missingWeightCount = (products ?? []).filter((p) => p.shipping_weight_grams == null).length;
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-7">
@@ -32,6 +34,18 @@ export default async function AdminProductsPage() {
           Add Product
         </Link>
       </div>
+
+      {missingWeightCount > 0 && (
+        <div className="mb-5 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          {missingWeightCount} product{missingWeightCount === 1 ? "" : "s"} {missingWeightCount === 1 ? "has" : "have"} no shipping
+          weight set — those orders fall back to the default (high) weight and may be mispriced. Look for the
+          <span className="mx-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800">⚠ weight</span>
+          badge below.
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -64,7 +78,17 @@ export default async function AdminProductsPage() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-gray-900 truncate max-w-[200px]">{product.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium text-gray-900 truncate max-w-[200px]">{product.name}</p>
+                          {product.shipping_weight_grams == null && (
+                            <span
+                              title="No shipping weight set — this product's orders fall back to the default (high) weight and may be mispriced."
+                              className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800"
+                            >
+                              ⚠ weight
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-400 font-mono">{product.id.slice(0, 8)}</p>
                       </div>
                     </div>

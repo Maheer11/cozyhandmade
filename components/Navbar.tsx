@@ -144,7 +144,7 @@ export default function Navbar() {
 
           {/* ── Logo ── */}
           <Link href="/" className="flex items-center group shrink-0">
-            <CoziLogo className="w-36 h-12 transition-opacity duration-200 group-hover:opacity-75" />
+            <CoziLogo className="w-44 h-14 transition-opacity duration-200 group-hover:opacity-75" />
           </Link>
 
           {/* ── Desktop nav links ── */}
@@ -313,7 +313,7 @@ export default function Navbar() {
         {/* Drawer header */}
         <div className="flex items-center justify-between h-16 px-5 pl-6 border-b border-taupe/20">
           <Link href="/" onClick={() => setMenuOpen(false)}>
-            <CoziLogo className="w-28 h-10" />
+            <CoziLogo className="w-36 h-12" />
           </Link>
           <button
             onClick={() => setMenuOpen(false)}

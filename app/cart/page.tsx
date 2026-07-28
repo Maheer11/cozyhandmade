@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useCart, CartItem } from "@/components/CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
+import { calculateShipping, type ShippingItemInput } from "@/lib/checkout/shipping";
 
 /* ─────────────────────────────────────────────────────────
    PAYMENT PLATFORM LOGOS
@@ -243,14 +244,28 @@ function SwipeableItem({
 /* ─────────────────────────────────────────────────────────
    CART PAGE
 ───────────────────────────────────────────────────────── */
-const SHIPPING_EUR = 5; // flat €5 shipping
-
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total, itemCount } = useCart();
   const { currency, priceCheckout } = useCurrency();
 
-  const isNGN   = currency === "NGN";
-  const pricing = priceCheckout(total, SHIPPING_EUR);
+  const isNGN = currency === "NGN";
+
+  // No delivery address exists yet at this point in the flow — the country
+  // picker is on /checkout, not here — so this is necessarily an estimate.
+  // calculateShipping() with no country resolves to "rest_of_world" (the
+  // most expensive zone), same as its "never undercharge on ambiguity" rule
+  // for delivery. That means this preview can only ever be equal to or
+  // higher than what checkout later actually charges once a real address
+  // narrows the zone, never lower — the single hardcoded shipping module
+  // this project uses everywhere (lib/checkout/shipping.ts), not a second,
+  // separate estimate.
+  const shippingItems: ShippingItemInput[] = items.map((item) => ({
+    quantity: item.quantity,
+    shippingWeightGrams: item.shippingWeightGrams,
+    productName: item.name,
+  }));
+  const shippingEstimateEUR = calculateShipping(shippingItems, null).priceEUR;
+  const pricing = priceCheckout(total, shippingEstimateEUR);
 
   if (items.length === 0) {
     return (
@@ -362,10 +377,13 @@ export default function CartPage() {
                   <span>{pricing.formattedSubtotal}</span>
                 </div>
                 <div className="flex justify-between text-brown/75">
-                  <span>Shipping</span>
+                  <span>Shipping (estimate)</span>
                   <span>{pricing.formattedShipping}</span>
                 </div>
               </div>
+              <p className="text-[10px] text-taupe-dark -mt-3 mb-4">
+                Exact shipping is calculated at checkout once you enter your delivery address.
+              </p>
 
               <div className="border-t border-taupe/20 pt-4 flex justify-between
                               font-semibold text-deep-brown text-base mb-6">
@@ -443,7 +461,7 @@ export default function CartPage() {
         <div className="flex items-center justify-between mb-1.5">
           <div>
             <p className="text-xs text-taupe-dark">
-              {itemCount} items · Shipping {pricing.formattedShipping}
+              {itemCount} items · Shipping (est.) {pricing.formattedShipping}
             </p>
             <p className="font-semibold text-deep-brown text-base">
               Total: {pricing.formattedTotal}

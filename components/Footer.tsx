@@ -31,7 +31,7 @@ export default function Footer() {
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="block mb-3 group">
               <CoziLogo
-                className="w-24 h-9 opacity-90 group-hover:opacity-100 transition-opacity duration-200"
+                className="w-32 h-11 opacity-90 group-hover:opacity-100 transition-opacity duration-200"
                 color="#F5E6D8"
               />
             </Link>

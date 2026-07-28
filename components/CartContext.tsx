@@ -19,6 +19,13 @@ export interface CartItem {
   // per-tier pricing (new_in_items.variant_price). Lets checkout verify the
   // exact tier price server-side instead of falling back to the base price.
   variant?: string;
+  // Billable shipping weight, read from the product/new_in row at
+  // add-to-cart time. Missing/null (including carts persisted before this
+  // field existed) is treated by calculateShipping() as "unknown" and
+  // falls back to a deliberately high default — see lib/checkout/shipping.ts.
+  // Only ever used client-side to display a shipping estimate; the server
+  // re-fetches the real weight itself and never trusts this value.
+  shippingWeightGrams?: number | null;
 }
 
 interface CartContextType {

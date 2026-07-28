@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { hasLiveTestCredentials } from "../setup/testEnv";
+import { calculateShipping } from "@/lib/checkout/shipping";
 
 // Requires real Stripe TEST-mode + a real test Supabase project — see
 // .env.test.example. Skips without them.
@@ -34,6 +35,14 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe create-intent — tampered clie
     const { POST } = await import("@/app/api/payments/stripe/create-intent/route");
     const { stripe } = await import("@/lib/stripe/server");
 
+    // No shipping_weight_grams set on the fixture — falls back to
+    // DEFAULT_ITEM_WEIGHT_GRAMS. Computed here (not hardcoded) so this stays
+    // correct once real An Post rates replace today's 0 placeholders.
+    const shippingEUR = calculateShipping(
+      [{ quantity: 1, shippingWeightGrams: null }],
+      undefined,
+    ).priceEUR;
+
     const req = new Request("http://localhost/api/payments/stripe/create-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -45,6 +54,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe create-intent — tampered clie
         }],
         delivery_address: { name: "Test", email: "test@example.com" },
         currency: "EUR",
+        client_shipping_eur: shippingEUR,
       }),
     });
 
@@ -57,7 +67,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe create-intent — tampered clie
     createdPaymentIntentId = paymentIntentId;
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    // Real price (40 EUR) in minor units, not the tampered 1 cent.
-    expect(paymentIntent.amount).toBe(4000);
+    // Real price (40 EUR) + shipping, in minor units — not the tampered 1 cent.
+    expect(paymentIntent.amount).toBe(Math.round((realPrice + shippingEUR) * 100));
   });
 });

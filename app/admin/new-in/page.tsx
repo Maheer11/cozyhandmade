@@ -49,6 +49,7 @@ export default async function AdminNewInPage() {
             <tbody className="divide-y divide-gray-100">
               {(items ?? []).map((item) => {
                 const needsAttention = item.price === 0 || !item.description?.trim();
+                const missingWeight = item.shipping_weight_grams == null;
                 return (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-5 py-3">
@@ -63,7 +64,17 @@ export default async function AdminNewInPage() {
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-gray-900 truncate max-w-[200px]">{item.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium text-gray-900 truncate max-w-[200px]">{item.name}</p>
+                            {missingWeight && (
+                              <span
+                                title="No shipping weight set — this item's orders fall back to the default (high) weight and may be mispriced."
+                                className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800"
+                              >
+                                ⚠ weight
+                              </span>
+                            )}
+                          </div>
                           {needsAttention && (
                             <p className="text-xs text-amber-600">Needs price/description</p>
                           )}

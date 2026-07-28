@@ -15,6 +15,7 @@ export interface NewInCardData {
   is_handmade: boolean;
   price: number;
   discount_price: number | null;
+  shipping_weight_grams?: number | null;
 }
 
 export const NewInCard = memo(function NewInCard({

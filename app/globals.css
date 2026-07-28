@@ -29,6 +29,10 @@
   --font-body: var(--font-inter), Inter, system-ui, sans-serif;
   /* San Francisco on Apple devices, falls back to the closest system font elsewhere */
   --font-ios: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Native Apple system stack for checkout UI/body text — reads native on
+     iOS/macOS. Cormorant Garamond (--font-heading) stays for display
+     headings; this is deliberately a separate token, not a replacement. */
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 html {

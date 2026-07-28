@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { hasLiveTestCredentials } from "../setup/testEnv";
+import { calculateShipping } from "@/lib/checkout/shipping";
 
 describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — a declined test card never creates an order", () => {
   const testProductId = `test-fixture-decline-${Date.now()}`;
@@ -32,6 +33,11 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — a declined test ca
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createAdminClient() as any;
 
+    const shippingEUR = calculateShipping(
+      [{ quantity: 1, shippingWeightGrams: null }],
+      undefined,
+    ).priceEUR;
+
     const intentRes = await createIntent(new Request("http://localhost/api/payments/stripe/create-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -39,6 +45,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — a declined test ca
         items: [{ product_id: testProductId, product_name: "Decline Path Test Fixture", product_image: null, quantity: 1, unit_price: 15 }],
         delivery_address: { name: "Test Buyer", email: "test@example.com" },
         currency: "EUR",
+        client_shipping_eur: shippingEUR,
       }),
     }));
     const { client_secret } = await intentRes.json();

@@ -59,6 +59,8 @@ export async function POST(request: Request) {
         sku:             body.sku?.trim() || null,
         stock_quantity:  Number(body.stock_quantity ?? 0),
         variant_price:   body.variant_price ?? {},
+        shipping_weight_grams: body.shipping_weight_grams !== undefined && body.shipping_weight_grams !== null && body.shipping_weight_grams !== ""
+                            ? Number(body.shipping_weight_grams) : null,
       })
       .select("id")
       .single();

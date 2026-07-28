@@ -35,7 +35,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
-    addItem({ id: product.id, name: product.name, price: lowestPrice, image: product.image, source: "product" });
+    addItem({ id: product.id, name: product.name, price: lowestPrice, image: product.image, source: "product", shippingWeightGrams: product.shippingWeightGrams });
     openCart();
   };
 

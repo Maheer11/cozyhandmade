@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { hasLiveTestCredentials } from "../setup/testEnv";
+import { calculateShipping } from "@/lib/checkout/shipping";
 
 // Full happy path against real Stripe TEST mode + a real test Supabase
 // project: create-intent -> confirm with Stripe's test payment method token
@@ -46,6 +47,15 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — successful test-ca
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createAdminClient() as any;
 
+    // The test fixture has no shipping_weight_grams set, so this falls back
+    // to DEFAULT_ITEM_WEIGHT_GRAMS — computed here (not hardcoded) so the
+    // assertions below stay correct once real An Post rates replace the
+    // current 0 placeholders in lib/checkout/shipping.ts.
+    const shippingEUR = calculateShipping(
+      [{ quantity: 2, shippingWeightGrams: null }],
+      undefined,
+    ).priceEUR;
+
     const intentRes = await createIntent(new Request("http://localhost/api/payments/stripe/create-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -53,6 +63,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — successful test-ca
         items: [{ product_id: testProductId, product_name: "Success Path Test Fixture", product_image: null, quantity: 2, unit_price: 12 }],
         delivery_address: { name: "Test Buyer", email: "test@example.com" },
         currency: "EUR",
+        client_shipping_eur: shippingEUR,
       }),
     }));
     expect(intentRes.status).toBe(200);
@@ -87,7 +98,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — successful test-ca
 
     const { data: order } = await db.from("orders").select("status, total_amount").eq("id", order_id).single();
     expect(order.status).toBe("processing");
-    expect(order.total_amount).toBe(24); // 12 * 2, server-verified
+    expect(order.total_amount).toBe(24 + shippingEUR); // 12 * 2 + shipping, server-verified
 
     const { data: product } = await db.from("products").select("stock_quantity").eq("id", testProductId).single();
     expect(product.stock_quantity).toBe(3); // 5 - 2

@@ -28,6 +28,10 @@ export default function BelovedPiecesShowcase({ products }: BelovedPiecesShowcas
       name: currentProduct.name,
       price: currentProduct.price,
       image: currentProduct.image,
+      // custom_products has no shipping_weight_grams column (out of scope
+      // for this feature) — always unknown, so calculateShipping() falls
+      // back to its deliberately-high default for these items.
+      shippingWeightGrams: currentProduct.shippingWeightGrams,
     });
   };
 

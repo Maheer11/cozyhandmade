@@ -3,74 +3,46 @@ interface CoziLogoProps {
   color?: string;
 }
 
+// Needle-monogram mark: a stylized "C" swoosh threaded by a diagonal
+// needle-and-eye line, paired with the "Cozihandmade" wordmark in
+// Cormorant Garamond — the approved final mark from the logo-directions
+// design project (Cozihandmade Logo.dc.html).
 export default function CoziLogo({
   className = "",
-  color = "#7B3518",
+  color = "#612328",
 }: CoziLogoProps) {
   return (
     <svg
-      viewBox="0 0 248 84"
+      viewBox="0 0 480 110"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-label="Cozi Handmade"
       role="img"
     >
-      <defs>
-        {/* Light roughness to simulate brush-stroke texture on edges */}
-        <filter id="cozi-brush" x="-4%" y="-10%" width="108%" height="125%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.03 0.05"
-            numOctaves="3"
-            seed="12"
-            result="noise"
-          />
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="noise"
-            scale="1.2"
-            xChannelSelector="R"
-            yChannelSelector="G"
-          />
-        </filter>
-      </defs>
+      <svg x="0" y="5" width="100" height="100" viewBox="0 0 100 100">
+        <path
+          d="M78 30 C68 16 46 14 32 26 C16 40 16 64 32 76 C44 86 62 86 74 74"
+          stroke={color}
+          strokeWidth="10"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <line x1="20" y1="82" x2="84" y2="18" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
+        <circle cx="84" cy="18" r="4" fill={color} />
+      </svg>
 
-      {/*
-        "Cozi" — Cormorant Garamond 700 italic.
-        strokeWidth + paintOrder="stroke fill" widens the strokes
-        to match the thick brush-marker look in the image.
-      */}
       <text
-        x="4"
-        y="60"
+        x="112"
+        y="70"
         fontFamily="'Cormorant Garamond', Georgia, serif"
-        fontSize="68"
-        fontStyle="italic"
+        fontSize="52"
         fontWeight="700"
-        fill={color}
         stroke={color}
-        strokeWidth="2.5"
-        strokeLinejoin="round"
+        strokeWidth="1.25"
         paintOrder="stroke fill"
-        filter="url(#cozi-brush)"
-      >
-        Cozi
-      </text>
-
-      {/*
-        "HANDMADE" — Jost (the body font), clearly readable,
-        positioned bottom-right of the Cozi letterforms.
-      */}
-      <text
-        x="126"
-        y="80"
-        fontFamily="'Jost', system-ui, sans-serif"
-        fontSize="18"
-        fontWeight="600"
-        letterSpacing="3"
         fill={color}
       >
-        HANDMADE
+        Cozihandmade
       </text>
     </svg>
   );

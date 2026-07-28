@@ -22,12 +22,17 @@ export interface VerifiedItem {
   product_image: string | null;
   quantity: number;
   unit_price: number; // server-verified price
+  // Server-verified billable weight — read from the DB row here, same as
+  // unit_price, never trusted from the client. null means the admin hasn't
+  // set one yet; lib/checkout/shipping.ts's calculateShipping() is what
+  // applies the DEFAULT_ITEM_WEIGHT_GRAMS fallback for that case, not here.
+  shipping_weight_grams: number | null;
 }
 
 export class RepriceError extends Error {}
 
-type ProductRow = { id: string; name: string; price: number; variant_price: Record<string, number> | null };
-type NewInRow = { id: string; name: string; price: number; discount_price: number | null; variant_price: Record<string, number> | null };
+type ProductRow = { id: string; name: string; price: number; variant_price: Record<string, number> | null; shipping_weight_grams: number | null };
+type NewInRow = { id: string; name: string; price: number; discount_price: number | null; variant_price: Record<string, number> | null; shipping_weight_grams: number | null };
 
 /**
  * Re-fetches real prices from `products`/`new_in_items` and recomputes the
@@ -48,10 +53,10 @@ export async function repriceItems(db: any, items: CheckoutItemInput[]): Promise
 
   const [{ data: products, error: productsError }, { data: newInRows, error: newInError }] = await Promise.all([
     productIds.length
-      ? db.from("products").select("id, name, price, variant_price").in("id", productIds)
+      ? db.from("products").select("id, name, price, variant_price, shipping_weight_grams").in("id", productIds)
       : Promise.resolve({ data: [], error: null }),
     newInIds.length
-      ? db.from("new_in_items").select("id, name, price, discount_price, variant_price").in("id", newInIds)
+      ? db.from("new_in_items").select("id, name, price, discount_price, variant_price, shipping_weight_grams").in("id", newInIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -70,6 +75,7 @@ export async function repriceItems(db: any, items: CheckoutItemInput[]): Promise
   const verifiedItems: VerifiedItem[] = items.map((item) => {
     const source = item.source ?? "product";
     let realPrice: number;
+    let weightGrams: number | null;
 
     if (source === "new_in") {
       const row = newInById.get(item.product_id)!;
@@ -78,11 +84,13 @@ export async function repriceItems(db: any, items: CheckoutItemInput[]): Promise
       realPrice = (item.variant && row.variant_price?.[item.variant] !== undefined)
         ? row.variant_price[item.variant]
         : (row.discount_price ?? row.price);
+      weightGrams = row.shipping_weight_grams;
     } else {
       const row = productById.get(item.product_id)!;
       realPrice = (item.variant && row.variant_price?.[item.variant] !== undefined)
         ? row.variant_price[item.variant]
         : row.price;
+      weightGrams = row.shipping_weight_grams;
     }
 
     verifiedTotal += realPrice * item.quantity;
@@ -93,6 +101,7 @@ export async function repriceItems(db: any, items: CheckoutItemInput[]): Promise
       product_image: item.product_image,
       quantity: item.quantity,
       unit_price: realPrice,
+      shipping_weight_grams: weightGrams,
     };
   });
 
