@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { stripe } from "@/lib/stripe/server";
+import { getStripe } from "@/lib/stripe/server";
 import { getStripeWebhookSecret } from "@/lib/stripe/env";
 import { updateSpendTier } from "@/lib/checkout/updateSpendTier";
 import { NextResponse } from "next/server";
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   // request.
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(rawBody, signature, getStripeWebhookSecret());
+    event = getStripe().webhooks.constructEvent(rawBody, signature, getStripeWebhookSecret());
   } catch (err) {
     console.error("Stripe webhook signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });

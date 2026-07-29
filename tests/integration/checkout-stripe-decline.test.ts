@@ -28,7 +28,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — a declined test ca
 
   it("leaves stock untouched and creates no order/transaction when the card is declined", async () => {
     const { POST: createIntent } = await import("@/app/api/payments/stripe/create-intent/route");
-    const { stripe } = await import("@/lib/stripe/server");
+    const { getStripe } = await import("@/lib/stripe/server");
     const { createAdminClient } = await import("@/lib/supabase/admin");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createAdminClient() as any;
@@ -54,7 +54,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — a declined test ca
 
     // Stripe's documented "always declines" test payment method.
     await expect(
-      stripe.paymentIntents.confirm(paymentIntentId, { payment_method: "pm_card_visa_chargeDeclined" })
+      getStripe().paymentIntents.confirm(paymentIntentId, { payment_method: "pm_card_visa_chargeDeclined" })
     ).rejects.toThrow(/declined/i);
 
     const { data: transactions } = await db.from("transactions").select("id").eq("stripe_session_id", createdPaymentIntentId);

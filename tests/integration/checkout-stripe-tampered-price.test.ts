@@ -21,19 +21,19 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe create-intent — tampered clie
 
   afterAll(async () => {
     const { createAdminClient } = await import("@/lib/supabase/admin");
-    const { stripe } = await import("@/lib/stripe/server");
+    const { getStripe } = await import("@/lib/stripe/server");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createAdminClient() as any;
     await db.from("products").delete().eq("id", testProductId);
     if (createdPaymentIntentId) {
       await db.from("pending_stripe_orders").delete().eq("payment_intent_id", createdPaymentIntentId);
-      await stripe.paymentIntents.cancel(createdPaymentIntentId).catch(() => {});
+      await getStripe().paymentIntents.cancel(createdPaymentIntentId).catch(() => {});
     }
   });
 
   it("charges the real DB price, not a client-submitted 1-cent price", async () => {
     const { POST } = await import("@/app/api/payments/stripe/create-intent/route");
-    const { stripe } = await import("@/lib/stripe/server");
+    const { getStripe } = await import("@/lib/stripe/server");
 
     // No shipping_weight_grams set on the fixture — falls back to
     // DEFAULT_ITEM_WEIGHT_GRAMS. Computed here (not hardcoded) so this stays
@@ -65,7 +65,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe create-intent — tampered clie
 
     const paymentIntentId: string = client_secret.split("_secret_")[0];
     createdPaymentIntentId = paymentIntentId;
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
 
     // Real price (40 EUR) + shipping, in minor units — not the tampered 1 cent.
     expect(paymentIntent.amount).toBe(Math.round((realPrice + shippingEUR) * 100));

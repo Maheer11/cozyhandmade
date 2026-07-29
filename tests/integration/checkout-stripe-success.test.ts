@@ -41,7 +41,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — successful test-ca
   it("creates the order and decrements stock only after a genuine confirmed charge", async () => {
     const { POST: createIntent } = await import("@/app/api/payments/stripe/create-intent/route");
     const { POST: webhook } = await import("@/app/api/payments/stripe/webhook/route");
-    const { stripe } = await import("@/lib/stripe/server");
+    const { getStripe } = await import("@/lib/stripe/server");
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const { getStripeWebhookSecret } = await import("@/lib/stripe/env");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,7 +73,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — successful test-ca
 
     // Confirm server-side with Stripe's documented test PaymentMethod token
     // (equivalent to a customer entering 4242 4242 4242 4242 in Elements).
-    const confirmed = await stripe.paymentIntents.confirm(paymentIntentId, {
+    const confirmed = await getStripe().paymentIntents.confirm(paymentIntentId, {
       payment_method: "pm_card_visa",
     });
     expect(confirmed.status).toBe("succeeded");
@@ -84,7 +84,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — successful test-ca
       data: { object: confirmed },
     };
     const payload = JSON.stringify(event);
-    const signature = stripe.webhooks.generateTestHeaderString({ payload, secret: getStripeWebhookSecret() });
+    const signature = getStripe().webhooks.generateTestHeaderString({ payload, secret: getStripeWebhookSecret() });
 
     const webhookRes = await webhook(new Request("http://localhost/api/payments/stripe/webhook", {
       method: "POST",

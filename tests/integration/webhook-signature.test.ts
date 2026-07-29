@@ -25,7 +25,7 @@ describe("Stripe webhook — signature verification", () => {
 
   it("rejects a forged payload — a plausible payment_intent.succeeded body signed with the wrong secret — with 400 and no database write anywhere", async () => {
     const { POST } = await import("@/app/api/payments/stripe/webhook/route");
-    const { stripe } = await import("@/lib/stripe/server");
+    const { getStripe } = await import("@/lib/stripe/server");
 
     const fakePaymentIntentId = `pi_forged_${Date.now()}`;
     const payload = JSON.stringify({
@@ -34,7 +34,7 @@ describe("Stripe webhook — signature verification", () => {
       livemode: false,
       data: { object: { id: fakePaymentIntentId, status: "succeeded", amount: 5000, amount_received: 5000, currency: "eur" } },
     });
-    const forgedSignature = stripe.webhooks.generateTestHeaderString({
+    const forgedSignature = getStripe().webhooks.generateTestHeaderString({
       payload,
       secret: "whsec_this_is_not_the_real_secret",
     });
@@ -62,11 +62,11 @@ describe("Stripe webhook — signature verification", () => {
 
   it("accepts a correctly-signed payload for an event type we don't act on (acknowledges without touching the DB)", async () => {
     const { POST } = await import("@/app/api/payments/stripe/webhook/route");
-    const { stripe } = await import("@/lib/stripe/server");
+    const { getStripe } = await import("@/lib/stripe/server");
     const { getStripeWebhookSecret } = await import("@/lib/stripe/env");
 
     const payload = JSON.stringify({ id: "evt_fake", type: "payment_intent.created", livemode: false, data: { object: { id: "pi_fake" } } });
-    const signature = stripe.webhooks.generateTestHeaderString({
+    const signature = getStripe().webhooks.generateTestHeaderString({
       payload,
       secret: getStripeWebhookSecret(),
     });
@@ -82,7 +82,7 @@ describe("Stripe webhook — signature verification", () => {
 
   it("rejects a correctly-signed but wrong-livemode event (e.g. a test event delivered to a production-configured deployment)", async () => {
     const { POST } = await import("@/app/api/payments/stripe/webhook/route");
-    const { stripe } = await import("@/lib/stripe/server");
+    const { getStripe } = await import("@/lib/stripe/server");
     const { getStripeWebhookSecret } = await import("@/lib/stripe/env");
 
     // NODE_ENV is "test" under vitest, so expectedLivemode is false — a
@@ -91,7 +91,7 @@ describe("Stripe webhook — signature verification", () => {
       id: "evt_wrong_mode", type: "payment_intent.succeeded", livemode: true,
       data: { object: { id: "pi_fake_livemode" } },
     });
-    const signature = stripe.webhooks.generateTestHeaderString({ payload, secret: getStripeWebhookSecret() });
+    const signature = getStripe().webhooks.generateTestHeaderString({ payload, secret: getStripeWebhookSecret() });
 
     const req = new Request("http://localhost/api/payments/stripe/webhook", {
       method: "POST",

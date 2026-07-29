@@ -11,7 +11,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe webhook — duplicate delivery 
   let signedPayload: { payload: string; signature: string };
 
   beforeAll(async () => {
-    const { stripe } = await import("@/lib/stripe/server");
+    const { getStripe } = await import("@/lib/stripe/server");
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const { getStripeWebhookSecret } = await import("@/lib/stripe/env");
 
@@ -25,7 +25,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe webhook — duplicate delivery 
       price: 5, category: "test", stock_quantity: 10,
     });
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: 500,
       currency: "eur",
       payment_method_types: ["card"],
@@ -48,7 +48,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe webhook — duplicate delivery 
       data: { object: { ...paymentIntent, status: "succeeded", amount_received: paymentIntent.amount } },
     };
     const payload = JSON.stringify(event);
-    const signature = stripe.webhooks.generateTestHeaderString({ payload, secret: getStripeWebhookSecret() });
+    const signature = getStripe().webhooks.generateTestHeaderString({ payload, secret: getStripeWebhookSecret() });
     signedPayload = { payload, signature };
   });
 

@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { stripe } from "@/lib/stripe/server";
+import { getStripe } from "@/lib/stripe/server";
 import { repriceItems, RepriceError, type CheckoutItemInput } from "@/lib/checkout/repriceItems";
 import { calculateShipping, isDublinPickupEligible, type ShippingItemInput } from "@/lib/checkout/shipping";
 import { getServerRates } from "@/lib/currency/exchangeRateClient";
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Order total is too low to charge" }, { status: 400 });
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: amountMinorUnits,
       currency: body.currency.toLowerCase(),
       payment_method_types: ["card"],
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
     if (stageError) {
       // Nothing was charged yet (PaymentIntent isn't confirmed until the
       // client completes it), so it's safe to just fail here.
-      await stripe.paymentIntents.cancel(paymentIntent.id).catch(() => {});
+      await getStripe().paymentIntents.cancel(paymentIntent.id).catch(() => {});
       console.error("create-intent: failed to stage pending_stripe_orders row", stageError);
       return NextResponse.json({ error: "Could not start checkout — please try again" }, { status: 500 });
     }
