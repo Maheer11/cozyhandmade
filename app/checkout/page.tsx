@@ -1487,6 +1487,22 @@ export default function CheckoutPage() {
   const [orderRef]                        = useState(() =>
     `WIL-${Math.random().toString(36).slice(2, 10).toUpperCase()}`
   );
+
+  // Frozen snapshot of what was actually charged — captured once, at the
+  // exact moment a payment succeeds, BEFORE clearCart() runs. `pricing`/
+  // `chargedTotal`/`estimatedDaysDisplay` below are all live-derived from
+  // the current cart (see their own comments), which is correct while the
+  // customer is still shopping but becomes wrong the instant the cart is
+  // cleared on success — at that point they'd recompute from an empty
+  // cart instead of reflecting what was actually paid for. The
+  // confirmation screen must read ONLY from this snapshot, never from the
+  // live values, so clearing the cart (which is itself correct behaviour)
+  // can never change what the receipt displays.
+  const [confirmed, setConfirmed] = useState<{
+    pricing: CheckoutPricing;
+    orderTotalNGN: number;
+    estimatedDays: string;
+  } | null>(null);
   const [shipTouched, setShipTouched] = useState<Partial<Record<keyof ShipInfo, boolean>>>({});
   const [showAllShipErrors, setShowAllShipErrors] = useState(false);
   const [ship, setShip] = useState<ShipInfo>({
@@ -1643,6 +1659,11 @@ export default function CheckoutPage() {
         return;
       }
       setSavedOrderId(data.order_id);
+      // Snapshot BEFORE clearing — pricing/chargedTotal/estimatedDaysDisplay
+      // are still correct here (derived from the cart as it existed for
+      // this order); freezing them now is what keeps them correct after
+      // clearCart() empties the cart on the next line.
+      setConfirmed({ pricing, orderTotalNGN: chargedTotal, estimatedDays: estimatedDaysDisplay });
       clearCart(); // order now genuinely exists in the DB — safe to empty
       setStep("confirmation");
     } catch {
@@ -1658,6 +1679,7 @@ export default function CheckoutPage() {
   // that hasn't actually gone through.
   function handleStripeSuccess(orderId: string) {
     setSavedOrderId(orderId);
+    setConfirmed({ pricing, orderTotalNGN: chargedTotal, estimatedDays: estimatedDaysDisplay });
     clearCart();
     setStep("confirmation");
   }
@@ -1695,6 +1717,7 @@ export default function CheckoutPage() {
         return;
       }
       setSavedOrderId(data.order_id);
+      setConfirmed({ pricing, orderTotalNGN: chargedTotal, estimatedDays: estimatedDaysDisplay });
       clearCart(); // order now genuinely exists in the DB — safe to empty
       setStep("confirmation");
     } catch {
@@ -1718,14 +1741,22 @@ export default function CheckoutPage() {
     );
   }
 
-  /* Confirmation */
+  /* Confirmation — reads ONLY the frozen `confirmed` snapshot captured at
+     the moment of success, never the live pricing/chargedTotal/
+     estimatedDaysDisplay above (those are derived from the current cart,
+     which every success handler empties right after taking this
+     snapshot). The `confirmed ??` fallback below should never actually be
+     reached — all three success handlers set it before this step is ever
+     reached — but falls back to the live values rather than crashing if
+     that invariant is ever violated. */
   if (step === "confirmation") {
+    const display = confirmed ?? { pricing, orderTotalNGN: chargedTotal, estimatedDays: estimatedDaysDisplay };
     return (
       <ConfirmationScreen
         mode={mode} intlMethod={intlMethod}
         orderRef={orderRef} firstName={ship.firstName}
-        pricing={pricing} orderTotalNGN={chargedTotal}
-        estimatedDays={estimatedDaysDisplay}
+        pricing={display.pricing} orderTotalNGN={display.orderTotalNGN}
+        estimatedDays={display.estimatedDays}
       />
     );
   }
