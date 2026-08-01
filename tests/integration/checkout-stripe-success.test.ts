@@ -102,5 +102,21 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe checkout — successful test-ca
 
     const { data: product } = await db.from("products").select("stock_quantity").eq("id", testProductId).single();
     expect(product.stock_quantity).toBe(3); // 5 - 2
+
+    // Regression guard for the confirmation-screen "Total Paid" bug: the
+    // status endpoint the checkout page polls must return the real,
+    // DB-verified total — not just an order_id for the client to
+    // (mis)compute a display figure from separately. This is the exact
+    // response ConfirmationScreen now renders from.
+    const { GET: status } = await import("@/app/api/payments/stripe/status/route");
+    const statusRes = await status(new Request(`http://localhost/api/payments/stripe/status?payment_intent_id=${paymentIntentId}`));
+    expect(statusRes.status).toBe(200);
+    const statusBody = await statusRes.json();
+    expect(statusBody.status).toBe("completed");
+    expect(statusBody.order_id).toBe(order_id);
+    expect(statusBody.total_amount_eur).toBe(24 + shippingEUR);
+    expect(statusBody.charged_amount).toBe(24 + shippingEUR); // EUR charge, so charged_amount === total_amount_eur
+    expect(statusBody.currency).toBe("EUR");
+    expect(statusBody.payment_channel).toBe("stripe_card");
   });
 });

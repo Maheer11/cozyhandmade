@@ -140,10 +140,19 @@ export async function POST(request: Request) {
       await updateSpendTier(db, user.id, orderTotalEUR);
     }
 
+    // Same fields /api/payments/stripe/status returns on "completed" — the
+    // confirmation screen reads from these DB-verified figures for every
+    // payment path, not from a client-side recomputation, regardless of
+    // whether the order arrived via this synchronous route or via the
+    // Stripe webhook's async polling.
     return NextResponse.json({
       success: true,
       order_id: order.id,
       order_ref: body.order_ref,
+      total_amount_eur: orderTotalEUR,
+      charged_amount: chargedAmount,
+      currency: body.currency,
+      payment_channel: body.payment_method,
     });
 
   } catch (err) {

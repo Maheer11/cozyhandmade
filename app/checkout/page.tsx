@@ -10,17 +10,35 @@ import { socialLinks, whatsappLink } from "@/lib/social-links";
 import InstagramIcon from "@/components/icons/InstagramIcon";
 import WhatsAppIcon from "@/components/icons/WhatsAppIcon";
 import type { } from "@/lib/products";
-import type { CheckoutPricing } from "@/lib/currency/types";
+import type { CheckoutPricing, CurrencyCode } from "@/lib/currency/types";
+import { formatCurrency } from "@/lib/currency/pricingUtils";
+import { CURRENCIES } from "@/lib/currency/constants";
 import { calculateShipping, isDublinPickupEligible, type ShippingItemInput, type ShippingZone } from "@/lib/checkout/shipping";
 
 /* ─── Types ─────────────────────────────────────────────── */
 type CheckoutMode  = "nigerian" | "international";
-type Step          = "shipping" | "payment" | "confirmation";
+// "refunded" — the item sold out mid-checkout; the webhook already
+// refunded automatically and no order was (or ever will be) created. A
+// distinct step from "confirmation", which always implies a real order.
+type Step          = "shipping" | "payment" | "confirmation" | "refunded";
 type IntlPayMethod = "bank-transfer" | "stripe-card";
 type ShipInfo = {
   firstName: string; lastName: string; email: string; phone: string;
   address: string; city: string; postcode: string; country: string; state: string;
 };
+
+// DB-verified order summary — returned by whichever endpoint actually
+// created the order (Stripe path: /api/payments/stripe/status once the
+// webhook has run; bank-transfer paths: /api/orders directly, since those
+// create synchronously). The confirmation screen reads ONLY from this, for
+// every payment path, never from a client-side recomputed value — see the
+// "Total Paid" bug this replaces.
+interface OrderConfirmationSummary {
+  totalAmountEUR: number | null;
+  chargedAmount: number;
+  currency: CurrencyCode;
+  paymentChannel: string;
+}
 
 /* ─── International bank account details (from env) ─────── */
 const BANK: Record<string, { label: string; network: string; fields: [string, string][] }> = {
@@ -1016,12 +1034,14 @@ function NigerianPaymentStep({ orderTotalNGN, orderRef, onBack, onBankTransferCo
    The webhook is the only thing that ever creates an order — this only
    calls onSuccess once /api/payments/stripe/status confirms it happened.
 ═════════════════════════════════════════════════════════ */
-function StripeCardForm({ formattedTotal, termsAccepted, setTermsAccepted, onShowTerms, onSuccess }: {
+function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccepted, onShowTerms, onSuccess, onRefunded }: {
   formattedTotal: string;
+  orderRef: string;
   termsAccepted: boolean;
   setTermsAccepted: (v: boolean) => void;
   onShowTerms: () => void;
-  onSuccess: (orderId: string) => void;
+  onSuccess: (orderId: string, summary: OrderConfirmationSummary) => void;
+  onRefunded: (info: { reason: string; productName: string | null }) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -1037,7 +1057,21 @@ function StripeCardForm({ formattedTotal, termsAccepted, setTermsAccepted, onSho
         const res = await fetch(`/api/payments/stripe/status?payment_intent_id=${encodeURIComponent(paymentIntentId)}`);
         const data = await res.json();
         if (data.status === "completed" && data.order_id) {
-          onSuccess(data.order_id);
+          onSuccess(data.order_id, {
+            totalAmountEUR: data.total_amount_eur,
+            chargedAmount: data.charged_amount,
+            currency: data.currency,
+            paymentChannel: data.payment_channel,
+          });
+          return;
+        }
+        if (data.status === "refunded") {
+          // The item sold out before checkout_verified_order could reserve
+          // it — the webhook already refunded automatically. No order will
+          // ever exist for this payment_intent_id by design, so there is
+          // nothing to keep polling for; stop immediately rather than
+          // waiting out the rest of the loop.
+          onRefunded({ reason: data.reason, productName: data.product_name });
           return;
         }
       } catch {
@@ -1045,7 +1079,7 @@ function StripeCardForm({ formattedTotal, termsAccepted, setTermsAccepted, onSho
       }
     }
     setWaitingForOrder(false);
-    setError("Payment succeeded but confirming your order is taking longer than expected. We'll email you shortly — contact us if you don't hear back.");
+    setError(`Your payment succeeded and we're finishing your order — this is taking a little longer than usual. Contact us with order reference ${orderRef} if you don't hear from us soon.`);
   }
 
   async function handleSubmit() {
@@ -1111,13 +1145,14 @@ function StripeCardForm({ formattedTotal, termsAccepted, setTermsAccepted, onSho
    INTERNATIONAL PAYMENT STEP  — Bank Transfer or Stripe
 ═════════════════════════════════════════════════════════ */
 function InternationalPaymentStep({
-  formattedTotal, currency, intlMethod, setIntlMethod,
+  formattedTotal, orderRef, currency, intlMethod, setIntlMethod,
   onBack, onTransferConfirm,
-  clientSecret, intentError, onStripeSuccess,
+  clientSecret, intentError, onStripeSuccess, onStripeRefunded,
   isSubmitting, submitError,
   termsAccepted, setTermsAccepted, onShowTerms,
 }: {
   formattedTotal: string;
+  orderRef: string;
   currency: string;
   intlMethod: IntlPayMethod;
   setIntlMethod: (m: IntlPayMethod) => void;
@@ -1125,7 +1160,8 @@ function InternationalPaymentStep({
   onTransferConfirm: () => void;
   clientSecret: string | null;
   intentError: string | null;
-  onStripeSuccess: (orderId: string) => void;
+  onStripeSuccess: (orderId: string, summary: OrderConfirmationSummary) => void;
+  onStripeRefunded: (info: { reason: string; productName: string | null }) => void;
   isSubmitting: boolean;
   submitError: string;
   termsAccepted: boolean;
@@ -1309,10 +1345,12 @@ function InternationalPaymentStep({
               <Elements stripe={getStripePromise()} options={{ clientSecret }}>
                 <StripeCardForm
                   formattedTotal={formattedTotal}
+                  orderRef={orderRef}
                   termsAccepted={termsAccepted}
                   setTermsAccepted={setTermsAccepted}
                   onShowTerms={onShowTerms}
                   onSuccess={onStripeSuccess}
+                  onRefunded={onStripeRefunded}
                 />
               </Elements>
             )}
@@ -1337,10 +1375,10 @@ function InternationalPaymentStep({
 /* ═════════════════════════════════════════════════════════
    CONFIRMATION SCREEN
 ═════════════════════════════════════════════════════════ */
-function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, orderTotalNGN, estimatedDays }: {
+function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, summary, estimatedDays }: {
   mode: CheckoutMode; intlMethod: IntlPayMethod;
   orderRef: string; firstName: string;
-  pricing: CheckoutPricing; orderTotalNGN: number;
+  summary: OrderConfirmationSummary;
   estimatedDays: string;
 }) {
   // Nigeria is bank-transfer-only, so every Nigerian order is "pending" until
@@ -1348,9 +1386,11 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, or
   // screen once the webhook has confirmed the charge, so they're never
   // pending; international bank-transfer orders are pending like Nigeria's.
   const isPending = mode === "nigerian" || (mode === "international" && intlMethod === "bank-transfer");
-  const displayAmount = isPending
-    ? `₦${orderTotalNGN.toLocaleString("en-NG")}`
-    : pricing.formattedTotal;
+  // DB-verified — the actual amount recorded on transactions.amount, not a
+  // client-side recomputation. Formatted directly in the currency it was
+  // actually charged/instructed in, no re-conversion needed.
+  const displayAmount = formatCurrency(summary.chargedAmount, CURRENCIES[summary.currency]);
+  const isStripe = summary.paymentChannel === "stripe_card";
 
   return (
     <div className="min-h-screen bg-cream flex items-start justify-center px-4 pt-10 pb-24 font-system">
@@ -1395,9 +1435,9 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, or
             {[
               ["Order Ref",  orderRef],
               [isPending ? "Amount to Transfer" : "Total Paid", displayAmount],
-              ["Payment via", mode === "nigerian"
-                ? "Bank Transfer (NGN)"
-                : intlMethod === "bank-transfer" ? `Bank Transfer (${pricing.currency})` : `Stripe (${pricing.currency})`],
+              // DB-verified — payment_channel as actually recorded on the
+              // transaction, not inferred from local tab-selection state.
+              ["Payment via", isStripe ? `Stripe (${summary.currency})` : `Bank Transfer (${summary.currency})`],
               ["Estimated Delivery", estimatedDays],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
@@ -1425,8 +1465,9 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, or
 
           {/* Payment security indicator — understated, only for genuine
               Stripe-confirmed orders (never shown for bank-transfer/NGN,
-              which weren't secured "by Stripe"). */}
-          {mode === "international" && intlMethod === "stripe-card" && (
+              which weren't secured "by Stripe"). DB-verified via
+              payment_channel, same reasoning as "Payment via" above. */}
+          {isStripe && (
             <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-taupe/10">
               <div className="text-taupe-dark shrink-0"><IcoShield /></div>
               <span className="text-[11px] text-taupe-dark">Secured by</span>
@@ -1467,6 +1508,53 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, pricing, or
 }
 
 /* ═════════════════════════════════════════════════════════
+   SOLD OUT / AUTO-REFUNDED  — the item sold out mid-checkout;
+   checkout_verified_order raised OUT_OF_STOCK and the webhook already
+   refunded automatically. No order was created and none will be — this is
+   a resolution, not a pending/error state, so the tone and status icon are
+   deliberately different from both ConfirmationScreen's states.
+═════════════════════════════════════════════════════════ */
+function SoldOutRefundedScreen({ productName }: { productName: string | null }) {
+  return (
+    <div className="min-h-screen bg-cream flex items-start justify-center px-4 pt-10 pb-24 font-system">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-amber-100">
+            <svg className="w-10 h-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.2em] font-medium mb-1 text-amber-600">
+            Sold Out
+          </p>
+          <h1 className="font-heading text-3xl font-700 text-deep-brown mb-2">
+            You have not been charged
+          </h1>
+          <p className="text-brown/70 text-sm leading-relaxed max-w-xs mx-auto">
+            {productName ? `"${productName}" sold out` : "This item sold out"} just as your payment
+            completed — we&apos;ve automatically refunded you in full. We&apos;re sorry for the disappointment.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-cream-darker p-5 mb-4 shadow-sm">
+          <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+            <div className="text-emerald-500 shrink-0"><IcoCheck /></div>
+            <span className="text-xs text-emerald-700">Refund confirmed · Funds return in 5–10 business days, depending on your bank</span>
+          </div>
+        </div>
+
+        <Link href="/products"
+          className="flex items-center justify-center w-full h-12 rounded-none text-cream font-semibold
+                     text-sm tracking-wide hover:opacity-90 transition-opacity shadow-sm"
+          style={{ backgroundColor: "#8B2035" }}>
+          Browse Similar Pieces
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════
    MAIN PAGE  — mode auto-derived from selected currency
 ═════════════════════════════════════════════════════════ */
 export default function CheckoutPage() {
@@ -1488,21 +1576,16 @@ export default function CheckoutPage() {
     `WIL-${Math.random().toString(36).slice(2, 10).toUpperCase()}`
   );
 
-  // Frozen snapshot of what was actually charged — captured once, at the
-  // exact moment a payment succeeds, BEFORE clearCart() runs. `pricing`/
-  // `chargedTotal`/`estimatedDaysDisplay` below are all live-derived from
-  // the current cart (see their own comments), which is correct while the
-  // customer is still shopping but becomes wrong the instant the cart is
-  // cleared on success — at that point they'd recompute from an empty
-  // cart instead of reflecting what was actually paid for. The
-  // confirmation screen must read ONLY from this snapshot, never from the
-  // live values, so clearing the cart (which is itself correct behaviour)
-  // can never change what the receipt displays.
-  const [confirmed, setConfirmed] = useState<{
-    pricing: CheckoutPricing;
-    orderTotalNGN: number;
-    estimatedDays: string;
-  } | null>(null);
+  // What the confirmation screen renders from — DB-verified, returned by
+  // whichever endpoint actually created the order (never a client-side
+  // recomputed value, and never affected by clearCart() emptying the cart
+  // right after this is set, since it's a plain snapshot, not derived from
+  // live cart state). See OrderConfirmationSummary's own comment.
+  const [confirmed, setConfirmed] = useState<{ summary: OrderConfirmationSummary; estimatedDays: string } | null>(null);
+  // Set when the item sold out mid-checkout and the webhook already
+  // refunded automatically — a distinct outcome from a normal order, with
+  // no order/total to show at all.
+  const [soldOut, setSoldOut] = useState<{ reason: string; productName: string | null } | null>(null);
   const [shipTouched, setShipTouched] = useState<Partial<Record<keyof ShipInfo, boolean>>>({});
   const [showAllShipErrors, setShowAllShipErrors] = useState(false);
   const [ship, setShip] = useState<ShipInfo>({
@@ -1659,11 +1742,18 @@ export default function CheckoutPage() {
         return;
       }
       setSavedOrderId(data.order_id);
-      // Snapshot BEFORE clearing — pricing/chargedTotal/estimatedDaysDisplay
-      // are still correct here (derived from the cart as it existed for
-      // this order); freezing them now is what keeps them correct after
-      // clearCart() empties the cart on the next line.
-      setConfirmed({ pricing, orderTotalNGN: chargedTotal, estimatedDays: estimatedDaysDisplay });
+      // DB-verified figures from the same response that confirms the order
+      // was created — not a client-side recomputation, so clearing the
+      // cart on the next line can never change what the receipt displays.
+      setConfirmed({
+        summary: {
+          totalAmountEUR: data.total_amount_eur,
+          chargedAmount: data.charged_amount,
+          currency: data.currency,
+          paymentChannel: data.payment_channel,
+        },
+        estimatedDays: estimatedDaysDisplay,
+      });
       clearCart(); // order now genuinely exists in the DB — safe to empty
       setStep("confirmation");
     } catch {
@@ -1674,14 +1764,27 @@ export default function CheckoutPage() {
   }
 
   // The webhook is what actually creates the order — this only runs once
-  // StripeCardForm's own polling has confirmed that's happened, so clearing
-  // the cart here (and not any earlier) can never empty it for a payment
-  // that hasn't actually gone through.
-  function handleStripeSuccess(orderId: string) {
+  // StripeCardForm's own polling has confirmed that's happened (via
+  // /api/payments/stripe/status, which returns these same DB-verified
+  // figures), so clearing the cart here (and not any earlier) can never
+  // empty it for a payment that hasn't actually gone through.
+  function handleStripeSuccess(orderId: string, summary: OrderConfirmationSummary) {
     setSavedOrderId(orderId);
-    setConfirmed({ pricing, orderTotalNGN: chargedTotal, estimatedDays: estimatedDaysDisplay });
+    setConfirmed({ summary, estimatedDays: estimatedDaysDisplay });
     clearCart();
     setStep("confirmation");
+  }
+
+  // The item sold out mid-checkout — checkout_verified_order raised
+  // OUT_OF_STOCK and the webhook already refunded automatically (see
+  // app/api/payments/stripe/webhook/route.ts). No order exists or ever
+  // will for this attempt, so there's nothing to keep in the cart either —
+  // it's cleared the same as a genuine success, just routed to a different
+  // screen.
+  function handleStripeRefunded(info: { reason: string; productName: string | null }) {
+    setSoldOut(info);
+    clearCart();
+    setStep("refunded");
   }
 
   async function handleInternationalTransferConfirm() {
@@ -1717,7 +1820,15 @@ export default function CheckoutPage() {
         return;
       }
       setSavedOrderId(data.order_id);
-      setConfirmed({ pricing, orderTotalNGN: chargedTotal, estimatedDays: estimatedDaysDisplay });
+      setConfirmed({
+        summary: {
+          totalAmountEUR: data.total_amount_eur,
+          chargedAmount: data.charged_amount,
+          currency: data.currency,
+          paymentChannel: data.payment_channel,
+        },
+        estimatedDays: estimatedDaysDisplay,
+      });
       clearCart(); // order now genuinely exists in the DB — safe to empty
       setStep("confirmation");
     } catch {
@@ -1741,24 +1852,30 @@ export default function CheckoutPage() {
     );
   }
 
-  /* Confirmation — reads ONLY the frozen `confirmed` snapshot captured at
-     the moment of success, never the live pricing/chargedTotal/
-     estimatedDaysDisplay above (those are derived from the current cart,
-     which every success handler empties right after taking this
-     snapshot). The `confirmed ??` fallback below should never actually be
-     reached — all three success handlers set it before this step is ever
-     reached — but falls back to the live values rather than crashing if
-     that invariant is ever violated. */
+  /* Confirmation — reads ONLY the DB-verified `confirmed` snapshot set by
+     whichever success handler actually created the order, never a
+     client-side recomputed value. All three success handlers set this
+     before reaching this step, so `!confirmed` should never actually
+     happen — guarding rather than fabricating fake data if it ever did. */
   if (step === "confirmation") {
-    const display = confirmed ?? { pricing, orderTotalNGN: chargedTotal, estimatedDays: estimatedDaysDisplay };
+    if (!confirmed) return null;
     return (
       <ConfirmationScreen
         mode={mode} intlMethod={intlMethod}
         orderRef={orderRef} firstName={ship.firstName}
-        pricing={display.pricing} orderTotalNGN={display.orderTotalNGN}
-        estimatedDays={display.estimatedDays}
+        summary={confirmed.summary}
+        estimatedDays={confirmed.estimatedDays}
       />
     );
+  }
+
+  /* Sold out mid-checkout — the webhook already refunded automatically;
+     no order exists or ever will for this attempt. A distinct screen, not
+     a variant of ConfirmationScreen, since there's no order/total/delivery
+     estimate to show. */
+  if (step === "refunded") {
+    if (!soldOut) return null;
+    return <SoldOutRefundedScreen productName={soldOut.productName} />;
   }
 
   return (
@@ -1813,6 +1930,7 @@ export default function CheckoutPage() {
             {step === "payment" && mode === "international" && (
               <InternationalPaymentStep
                 formattedTotal={pricing.formattedTotal}
+                orderRef={orderRef}
                 currency={currency}
                 intlMethod={intlMethod}
                 setIntlMethod={setIntlMethod}
@@ -1821,6 +1939,7 @@ export default function CheckoutPage() {
                 clientSecret={clientSecret}
                 intentError={intentError}
                 onStripeSuccess={handleStripeSuccess}
+                onStripeRefunded={handleStripeRefunded}
                 isSubmitting={submitting}
                 submitError={submitError}
                 termsAccepted={termsAccepted}
