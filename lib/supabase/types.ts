@@ -3,6 +3,8 @@ export type Json = string | number | boolean | null | { [key: string]: Json } | 
 export type Tier = "bronze" | "silver" | "gold" | "vip";
 export type OrderStatus = "pending" | "paid" | "processing" | "shipped" | "delivered" | "cancelled";
 export type TransactionStatus = "pending" | "success" | "failed";
+export type WebhookEventStatus = "processing" | "done";
+export type RefundStatus = "pending" | "succeeded" | "failed";
 
 export interface Database {
   public: {
@@ -209,6 +211,12 @@ export interface Database {
           shipping_amount: number | null;
           currency: string;
           created_at: string;
+          // Set when this row was resolved via the out-of-stock refund path
+          // instead of a normal created order — kept (never deleted) so the
+          // items jsonb remains the historical record of what was in the
+          // cart. NULL means either still genuinely pending or resolved via
+          // a normal order (those rows are deleted, not marked).
+          resolved_at: string | null;
         };
         Insert: {
           payment_intent_id: string;
@@ -220,19 +228,76 @@ export interface Database {
           shipping_amount?: number | null;
           currency: string;
           created_at?: string;
+          resolved_at?: string | null;
         };
-        Update: never;
+        Update: {
+          resolved_at?: string | null;
+        };
       };
       stripe_webhook_events: {
         Row: {
           event_id: string;
           created_at: string;
+          // "processing" = mid-flight, a duplicate delivery should retry
+          // later (409), not short-circuit. "done" = terminal (order
+          // created OR refunded), a duplicate delivery short-circuits 200.
+          status: WebhookEventStatus;
+          // Bumped on every status transition; a "processing" row whose
+          // updated_at is stale means the delivery that owned it died
+          // mid-flight — see the route's takeover logic and the
+          // stuck_webhook_events view.
+          updated_at: string;
         };
         Insert: {
           event_id: string;
           created_at?: string;
+          status?: WebhookEventStatus;
+          updated_at?: string;
         };
-        Update: never;
+        Update: {
+          status?: WebhookEventStatus;
+          updated_at?: string;
+        };
+      };
+      refunds: {
+        Row: {
+          id: string;
+          payment_intent_id: string;
+          amount: number;
+          currency: string;
+          reason: string;
+          product_name: string | null;
+          customer_email: string | null;
+          // "pending" is written BEFORE the Stripe refund call — an honest
+          // "we attempted this" record, not a claim of success — so a
+          // persistently-failing refund still leaves a durable, queryable
+          // row instead of only an unread console.error.
+          status: RefundStatus;
+          stripe_refund_id: string | null;
+          error_message: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          payment_intent_id: string;
+          amount: number;
+          currency: string;
+          reason: string;
+          product_name?: string | null;
+          customer_email?: string | null;
+          status?: RefundStatus;
+          stripe_refund_id?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: RefundStatus;
+          stripe_refund_id?: string | null;
+          error_message?: string | null;
+          updated_at?: string;
+        };
       };
       new_in_items: {
         Row: {

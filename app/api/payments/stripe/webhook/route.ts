@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe/server";
 import { getStripeWebhookSecret } from "@/lib/stripe/env";
 import { updateSpendTier } from "@/lib/checkout/updateSpendTier";
+import { decideDuplicateDeliveryAction, STUCK_PROCESSING_THRESHOLD_MS } from "@/lib/checkout/webhookDedupe";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
@@ -25,9 +26,20 @@ type AdminClient = any;
 // non-200 response, so that Stripe's automatic retry of the SAME event.id
 // is allowed to attempt processing again — only an event that reaches a
 // successful terminal state stays permanently blocked from reprocessing.
+// Only for genuinely retry-worthy failures (transient lookup/RPC errors) —
+// OUT_OF_STOCK is handled separately below since it's permanent, not transient.
 async function failAndAllowRetry(db: AdminClient, eventId: string, body: Record<string, unknown>, status: number) {
   await db.from("stripe_webhook_events").delete().eq("event_id", eventId);
   return NextResponse.json(body, { status });
+}
+
+// Marks the dedupe row terminal — a duplicate delivery arriving after this
+// point short-circuits 200 instead of retrying. Called on every path that
+// reaches a real terminal outcome: order created, refund issued/failed*, or
+// "nothing to do" (no staged order). (*a failed refund still allows retry —
+// see the OUT_OF_STOCK branch — so this is NOT called there.)
+async function markDone(db: AdminClient, eventId: string) {
+  await db.from("stripe_webhook_events").update({ status: "done", updated_at: new Date().toISOString() }).eq("event_id", eventId);
 }
 
 export async function POST(request: Request) {
@@ -81,13 +93,72 @@ export async function POST(request: Request) {
   // rejected by the database itself, not by a read-then-write check (which
   // would have a race window between two concurrent deliveries).
   const { error: dedupeError } = await db.from("stripe_webhook_events").insert({ event_id: event.id });
+
   if (dedupeError) {
     if (dedupeError.code === "23505") {
-      // Exact-duplicate delivery of an event we already fully processed.
-      return NextResponse.json({ received: true, note: "duplicate event, already processed" });
+      // A row already exists for this event.id — figure out what that
+      // means before deciding how to respond.
+      const { data: existing, error: existingError } = await db
+        .from("stripe_webhook_events")
+        .select("status, updated_at")
+        .eq("event_id", event.id)
+        .single();
+
+      if (existingError || !existing) {
+        // Vanishingly unlikely (the row we just failed to insert because it
+        // exists would have to disappear between that failed insert and
+        // this select) — treat as transient and let Stripe retry.
+        console.error("Stripe webhook: could not read existing dedupe row after conflict", existingError);
+        return NextResponse.json({ error: "Could not verify event status" }, { status: 500 });
+      }
+
+      const action = decideDuplicateDeliveryAction(existing.status, new Date(existing.updated_at), new Date());
+
+      if (action === "short_circuit_done") {
+        return NextResponse.json({ received: true, note: "duplicate event, already processed" });
+      }
+
+      if (action === "conflict_retry_later") {
+        // Another delivery is genuinely still mid-flight (updated_at is
+        // recent) — do NOT delete the row (that would let both proceed
+        // concurrently again, reintroducing the exact race this exists to
+        // close). Tell Stripe to come back later.
+        return NextResponse.json({ error: "Event is still being processed" }, { status: 409 });
+      }
+
+      // action === "takeover": the row has been "processing" for longer
+      // than any real request takes — the delivery that owned it almost
+      // certainly crashed. Attempt to atomically claim it: this UPDATE only
+      // matches if the row is STILL "processing" and STILL stale at the
+      // moment it runs, so if two duplicate deliveries race to take over
+      // the same stale row, only one's UPDATE affects a row (ordinary
+      // Postgres row-locking — the second one's WHERE clause re-evaluates
+      // against the first one's already-committed updated_at and no longer
+      // matches). The loser falls back to 409, same as a fresh conflict.
+      const staleThreshold = new Date(Date.now() - STUCK_PROCESSING_THRESHOLD_MS).toISOString();
+      const { data: claimed, error: claimError } = await db
+        .from("stripe_webhook_events")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("event_id", event.id)
+        .eq("status", "processing")
+        .lt("updated_at", staleThreshold)
+        .select("event_id");
+
+      if (claimError || !claimed || claimed.length === 0) {
+        return NextResponse.json({ error: "Event is still being processed" }, { status: 409 });
+      }
+
+      // Claim succeeded — fall through to the normal processing logic below,
+      // exactly as if this were a fresh delivery. This is safe because every
+      // write it might redo is itself idempotent: checkout_verified_order's
+      // transactions.stripe_session_id UNIQUE constraint (handled below) and
+      // refunds.payment_intent_id UNIQUE + Stripe's own idempotency key
+      // (handled in the OUT_OF_STOCK branch) both make a redo of already-
+      // completed work a safe no-op rather than a duplicate side effect.
+    } else {
+      console.error("Stripe webhook: failed to record event dedupe row", dedupeError);
+      return NextResponse.json({ error: "Could not record event" }, { status: 500 });
     }
-    console.error("Stripe webhook: failed to record event dedupe row", dedupeError);
-    return NextResponse.json({ error: "Could not record event" }, { status: 500 });
   }
 
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
@@ -111,6 +182,8 @@ export async function POST(request: Request) {
   }
 
   if (!pending) {
+    // Terminal — nothing will ever happen for this event.id from here.
+    await markDone(db, event.id);
     return NextResponse.json({ received: true, note: "No staged order for this PaymentIntent" });
   }
 
@@ -148,13 +221,93 @@ export async function POST(request: Request) {
   if (rpcError) {
     if (rpcError.message?.startsWith("OUT_OF_STOCK:")) {
       const productName = rpcError.message.split("OUT_OF_STOCK:")[1]?.trim();
-      // TODO: trigger a refund via stripe.refunds.create({ payment_intent: paymentIntent.id })
-      // here — the charge succeeded but stock ran out before it could be
-      // reserved, so the customer needs a refund. Leaving the staging row in
-      // place (not deleting it) so this is discoverable/reconcilable.
-      console.error(`Stripe webhook: out of stock (${productName}) for intent ${paymentIntent.id} — refund needed`);
-      return failAndAllowRetry(db, event.id, { error: `Out of stock: ${productName}` }, 409);
+      console.error(`Stripe webhook: out of stock (${productName}) for intent ${paymentIntent.id} — issuing refund`);
+
+      // refunds.payment_intent_id is UNIQUE — upsert BEFORE calling Stripe.
+      // This is an honest "we are attempting this" record, not a claim of
+      // success, so a persistently-failing refund still leaves a durable,
+      // queryable row (status='failed', with a reason) instead of only an
+      // unread console.error. It also makes a takeover safe: if a prior,
+      // crashed attempt already got this to 'succeeded', we see that below
+      // and skip calling Stripe again rather than upserting over it.
+      const customerEmail = (pending.delivery_address as Record<string, string> | null)?.email ?? null;
+      const { data: refundRow, error: upsertError } = await db
+        .from("refunds")
+        .upsert(
+          {
+            payment_intent_id: paymentIntent.id,
+            amount: pending.total_amount,
+            currency: pending.currency,
+            reason: "out_of_stock",
+            product_name: productName ?? null,
+            customer_email: customerEmail,
+          },
+          { onConflict: "payment_intent_id", ignoreDuplicates: false }
+        )
+        .select("status, stripe_refund_id")
+        .single();
+
+      if (upsertError || !refundRow) {
+        console.error("Stripe webhook: failed to record refund attempt", upsertError);
+        return failAndAllowRetry(db, event.id, { error: "Could not record refund attempt" }, 500);
+      }
+
+      if (refundRow.status !== "succeeded") {
+        // Either a fresh attempt, or a prior attempt that failed/never
+        // reached Stripe — (re-)attempt the refund. The idempotency key is
+        // derived from the PaymentIntent, not event.id or this request, so
+        // a retry (whether ours or a takeover) that already reached Stripe
+        // gets back the SAME refund object instead of refunding twice.
+        try {
+          const refund = await getStripe().refunds.create(
+            { payment_intent: paymentIntent.id },
+            { idempotencyKey: `refund_${paymentIntent.id}` }
+          );
+          await db
+            .from("refunds")
+            .update({ status: "succeeded", stripe_refund_id: refund.id, updated_at: new Date().toISOString() })
+            .eq("payment_intent_id", paymentIntent.id);
+        } catch (refundErr) {
+          console.error(`Stripe webhook: refund call failed for intent ${paymentIntent.id}`, refundErr);
+          await db
+            .from("refunds")
+            .update({
+              status: "failed",
+              error_message: refundErr instanceof Error ? refundErr.message : String(refundErr),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("payment_intent_id", paymentIntent.id);
+          // The one case where retry is genuinely correct — the refund
+          // itself didn't happen, Stripe/network may succeed next time.
+          return failAndAllowRetry(db, event.id, { error: `Out of stock: ${productName} — refund attempt failed, will retry` }, 500);
+        }
+      }
+
+      // Refund succeeded (just now, or already had on a takeover) — kept,
+      // not deleted: the only record of everything that was in the cart,
+      // not just the one item that triggered OUT_OF_STOCK.
+      await db.from("pending_stripe_orders").update({ resolved_at: new Date().toISOString() }).eq("payment_intent_id", paymentIntent.id);
+      await markDone(db, event.id);
+      return NextResponse.json({ received: true, refunded: true, reason: `Out of stock: ${productName}` });
     }
+
+    if (rpcError.code === "23505") {
+      // checkout_verified_order's only unique constraint is
+      // transactions.stripe_session_id (schema.sql) — a 23505 from this
+      // specific RPC can only mean this PaymentIntent was already fully
+      // processed by an earlier call (a takeover finding the original
+      // attempt actually succeeded before it died, or the rare
+      // different-event.id case the pending-row-lookup comment above
+      // already documents). Not a real failure — finish and acknowledge.
+      const { data: existingTx } = await db
+        .from("transactions")
+        .select("order_id")
+        .eq("stripe_session_id", paymentIntent.id)
+        .maybeSingle();
+      await markDone(db, event.id);
+      return NextResponse.json({ received: true, order_id: existingTx?.order_id ?? null, note: "already processed" });
+    }
+
     console.error("Stripe webhook: checkout_verified_order RPC failed", rpcError);
     return failAndAllowRetry(db, event.id, { error: "Order creation failed" }, 500);
   }
@@ -170,5 +323,6 @@ export async function POST(request: Request) {
     await updateSpendTier(db, pending.user_id, pending.total_amount);
   }
 
+  await markDone(db, event.id);
   return NextResponse.json({ received: true, order_id: orderId });
 }
