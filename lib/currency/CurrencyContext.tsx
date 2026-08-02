@@ -39,8 +39,6 @@ export function CurrencyProvider({ children, userProfile = null }: CurrencyProvi
   const [region, setRegion] = useState<UserRegion>({
     currency: DEFAULT_CURRENCY,
     countryCode: "DE",
-    continent: "International",
-    checkoutMode: "international",
     detectedVia: "default",
   });
   const [rate, setRate] = useState<ExchangeRate | null>(null);

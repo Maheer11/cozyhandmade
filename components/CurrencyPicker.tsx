@@ -5,7 +5,11 @@ import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { CURRENCIES } from "@/lib/currency/constants";
 import type { CurrencyCode } from "@/lib/currency/types";
 
-const DISPLAYED: CurrencyCode[] = ["EUR", "GBP", "NGN", "USD"];
+// NGN is deliberately absent: Stripe (the only payment method) doesn't
+// support it, so offering it would put customers on a checkout they can't
+// pay from. The NGN entry in CURRENCIES is kept so historical NGN orders
+// still render correctly.
+const DISPLAYED: CurrencyCode[] = ["EUR", "GBP", "USD"];
 
 export default function CurrencyPicker({ dropUp = false }: { dropUp?: boolean }) {
   const { currency, setCurrency, isLoading } = useCurrency();

@@ -1,6 +1,5 @@
 import {
   COUNTRY_CURRENCY_MAP,
-  NIGERIAN_CHECKOUT_COUNTRIES,
   DEFAULT_CURRENCY,
   LS_REGION_KEY,
   LS_CURRENCY_KEY,
@@ -22,8 +21,6 @@ function buildRegion(
   return {
     currency: currency ?? countryToCurrency(upper),
     countryCode: upper,
-    continent: NIGERIAN_CHECKOUT_COUNTRIES.has(upper) ? "Africa" : "International",
-    checkoutMode: NIGERIAN_CHECKOUT_COUNTRIES.has(upper) ? "nigerian" : "international",
     detectedVia,
   };
 }

@@ -120,7 +120,7 @@ export default function ProductDetail({
   const handleAdd = () => {
     if (isOutOfStock) return;
     for (let i = 0; i < quantity; i++) {
-      addItem({ id: product.id, name: cartName, price: displayPrice, image: product.image, source: "product", variant: selectedSize ?? undefined, shippingWeightGrams: product.shippingWeightGrams });
+      addItem({ id: product.id, name: cartName, price: displayPrice, image: product.image, source: "product", variant: selectedSize ?? undefined, color: selectedColor ?? undefined, maxQuantity: maxQty, shippingWeightGrams: product.shippingWeightGrams });
     }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);

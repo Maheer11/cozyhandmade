@@ -91,9 +91,12 @@ const NIGERIA_COUNTRIES = new Set(["NG"]);
 // Post rate to quote — see lookupBandPrice's doc comment for how that's
 // handled (split into multiple parcels using these same real prices).
 //
-// estimatedDays are working estimates carried over from the existing
-// checkout copy ("2-14 working days" for all international), split out per
-// zone here now that zones exist. Adjust once real carrier data is known.
+// estimatedDays: Ireland (the fulfilment country) quotes "within 7 business
+// days"; EVERY other zone quotes the same "7-14 business days" range. These
+// are deliberately uniform across international zones rather than tuned per
+// zone — An Post publishes rates per zone, not transit SLAs, so a per-zone
+// spread would be invented precision. Revisit only with real carrier transit
+// data, not by interpolating from the price table.
 const ZONE_RATES: Record<ShippingZone, ZoneRates> = {
   domestic: {
     bands: [
@@ -105,7 +108,7 @@ const ZONE_RATES: Record<ShippingZone, ZoneRates> = {
       { maxGrams: 15000, priceEUR: 19 },
       { maxGrams: 20000, priceEUR: 20 },
     ],
-    estimatedDays: "3-5 business days",
+    estimatedDays: "within 7 business days",
     customsApplies: false,
   },
   // UK bands intentionally don't match domestic's shape — each zone's band
@@ -122,7 +125,7 @@ const ZONE_RATES: Record<ShippingZone, ZoneRates> = {
       { maxGrams: 15000, priceEUR: 32 },
       { maxGrams: 20000, priceEUR: 35 },
     ],
-    estimatedDays: "3-5 business days",
+    estimatedDays: "7-14 business days",
     customsApplies: true,
   },
   // EU bands follow An Post's own quoted breakpoints (100g/2kg/5kg/10kg/
@@ -136,7 +139,7 @@ const ZONE_RATES: Record<ShippingZone, ZoneRates> = {
       { maxGrams: 15000, priceEUR: 80 },
       { maxGrams: 20000, priceEUR: 95 },
     ],
-    estimatedDays: "3-7 business days",
+    estimatedDays: "7-14 business days",
     customsApplies: false,
   },
   // Bands follow An Post's own quoted breakpoints (500g/2kg/5kg/10kg/15kg/
@@ -150,7 +153,7 @@ const ZONE_RATES: Record<ShippingZone, ZoneRates> = {
       { maxGrams: 15000, priceEUR: 177 },
       { maxGrams: 20000, priceEUR: 227 },
     ],
-    estimatedDays: "5-10 business days",
+    estimatedDays: "7-14 business days",
     customsApplies: true,
   },
   // Bands follow An Post's own quoted breakpoints (500g/1kg/5kg/10kg/15kg/

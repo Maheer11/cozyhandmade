@@ -3,52 +3,37 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { useCart, CartItem } from "@/components/CartContext";
+import { useCart, cartLineKey, CartItem } from "@/components/CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { calculateShipping, type ShippingItemInput } from "@/lib/checkout/shipping";
 
 /* ─────────────────────────────────────────────────────────
    PAYMENT PLATFORM LOGOS
 ───────────────────────────────────────────────────────── */
-function PaymentLogos({ isNGN }: { isNGN: boolean }) {
+function PaymentLogos() {
   return (
     <div className="pt-4 border-t border-taupe/15 mt-4">
       <p className="text-[10px] text-taupe-dark uppercase tracking-[0.15em] font-medium mb-3 text-center">
         Secure payment via
       </p>
       <div className="flex flex-wrap items-center justify-center gap-1.5">
-        {isNGN ? (
-          <>
-            {/* Bank transfer — Nigeria is bank-transfer-only */}
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7">
-              <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none"
-                   stroke="#008751" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2.25 21h19.5m-18-18l2.25 2.25m0 0l2.25 2.25M6.75 5.25l-2.25 2.25M21 21l-2.25-2.25m0 0l-2.25-2.25M17.25 18.75l2.25-2.25M3 3l3.75 3.75M21 3l-3.75 3.75M3 21l3.75-3.75"/>
-              </svg>
-              <span style={{ fontFamily: "Arial", fontWeight: 700, fontSize: "10px", color: "#008751" }}>Bank Transfer</span>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Stripe */}
-            <div className="flex items-center justify-center px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 min-w-[44px]">
-              <svg viewBox="0 0 50 14" className="h-3 w-auto">
-                <text x="1" y="11" fontFamily="Arial" fontWeight="bold" fontSize="11" fill="#635BFF">stripe</text>
-              </svg>
-            </div>
-            {/* Visa */}
-            <div className="flex items-center justify-center px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 min-w-[40px]">
-              <svg viewBox="0 0 50 16" className="h-3 w-auto">
-                <text x="1" y="12" fontFamily="Arial" fontWeight="bold" fontSize="13" fill="#1A1F71" fontStyle="italic">VISA</text>
-              </svg>
-            </div>
-            {/* Mastercard */}
-            <div className="flex items-center justify-center px-2 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 gap-0.5">
-              <div className="w-3.5 h-3.5 rounded-full bg-[#EB001B]" />
-              <div className="w-3.5 h-3.5 rounded-full bg-[#F79E1B] -ml-1.5" />
-            </div>
-          </>
-        )}
+        {/* Stripe */}
+        <div className="flex items-center justify-center px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 min-w-[44px]">
+          <svg viewBox="0 0 50 14" className="h-3 w-auto">
+            <text x="1" y="11" fontFamily="Arial" fontWeight="bold" fontSize="11" fill="#635BFF">stripe</text>
+          </svg>
+        </div>
+        {/* Visa */}
+        <div className="flex items-center justify-center px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 min-w-[40px]">
+          <svg viewBox="0 0 50 16" className="h-3 w-auto">
+            <text x="1" y="12" fontFamily="Arial" fontWeight="bold" fontSize="13" fill="#1A1F71" fontStyle="italic">VISA</text>
+          </svg>
+        </div>
+        {/* Mastercard */}
+        <div className="flex items-center justify-center px-2 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 gap-0.5">
+          <div className="w-3.5 h-3.5 rounded-full bg-[#EB001B]" />
+          <div className="w-3.5 h-3.5 rounded-full bg-[#F79E1B] -ml-1.5" />
+        </div>
       </div>
     </div>
   );
@@ -113,11 +98,14 @@ function SwipeableItem({
   onUpdateQty,
 }: {
   item: CartItem;
-  onRemove: (id: string) => void;
-  onUpdateQty: (id: string, qty: number) => void;
+  onRemove: (lineKey: string) => void;
+  onUpdateQty: (lineKey: string, qty: number) => void;
 }) {
   const { formatAmount } = useCurrency();
   const itemHref = item.source === "new_in" ? `/new-in/${item.id}` : `/products/${item.id}`;
+  // undefined maxQuantity = no known stock cap (quick-add from a listing
+  // card), which must stay uncapped rather than reading as a cap of 0.
+  const atMax = item.maxQuantity !== undefined && item.quantity >= item.maxQuantity;
   const [offset, setOffset] = useState(0);
   const [removing, setRemoving] = useState(false);
   const startX = useRef(0);
@@ -127,7 +115,7 @@ function SwipeableItem({
 
   const triggerRemove = () => {
     setRemoving(true);
-    setTimeout(() => onRemove(item.id), 280);
+    setTimeout(() => onRemove(cartLineKey(item)), 280);
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -203,7 +191,7 @@ function SwipeableItem({
           <div className="flex items-center justify-between mt-2.5">
             <div className="flex items-center border border-taupe/30 rounded-xl overflow-hidden">
               <button
-                onClick={() => onUpdateQty(item.id, item.quantity - 1)}
+                onClick={() => onUpdateQty(cartLineKey(item), item.quantity - 1)}
                 className="w-11 h-11 flex items-center justify-center text-brown
                            active:bg-cream-dark active:scale-90 transition-transform duration-100"
                 style={{ touchAction: "manipulation" }}
@@ -213,9 +201,11 @@ function SwipeableItem({
                 {item.quantity}
               </span>
               <button
-                onClick={() => onUpdateQty(item.id, item.quantity + 1)}
+                onClick={() => onUpdateQty(cartLineKey(item), item.quantity + 1)}
+                disabled={atMax}
                 className="w-11 h-11 flex items-center justify-center text-brown
-                           active:bg-cream-dark active:scale-90 transition-transform duration-100"
+                           active:bg-cream-dark active:scale-90 transition-transform duration-100
+                           disabled:opacity-30 disabled:active:scale-100"
                 style={{ touchAction: "manipulation" }}
                 aria-label="Increase quantity"
               >+</button>
@@ -224,6 +214,11 @@ function SwipeableItem({
               {formatAmount(item.price * item.quantity)}
             </p>
           </div>
+          {atMax && (
+            <p className="text-[11px] text-[#8B2035] mt-1.5">
+              Only {item.maxQuantity} available
+            </p>
+          )}
         </div>
 
         <button
@@ -246,9 +241,7 @@ function SwipeableItem({
 ───────────────────────────────────────────────────────── */
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total, itemCount } = useCart();
-  const { currency, priceCheckout } = useCurrency();
-
-  const isNGN = currency === "NGN";
+  const { priceCheckout } = useCurrency();
 
   // No delivery address exists yet at this point in the flow — the country
   // picker is on /checkout, not here — so this is necessarily an estimate.
@@ -330,7 +323,7 @@ export default function CartPage() {
         <div>
           {items.map((item) => (
             <SwipeableItem
-              key={item.id}
+              key={cartLineKey(item)}
               item={item}
               onRemove={removeItem}
               onUpdateQty={updateQuantity}
@@ -421,7 +414,7 @@ export default function CartPage() {
               <TrustBadges />
 
               {/* Payment logos */}
-              <PaymentLogos isNGN={isNGN} />
+              <PaymentLogos />
 
             </div>
           </div>
@@ -434,28 +427,20 @@ export default function CartPage() {
                    bg-cream border-t border-taupe/20 px-4 pt-3 shadow-2xl"
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
       >
-        {/* Scrollable payment logos on mobile — currency-aware */}
+        {/* Scrollable payment logos on mobile */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none">
-          {isNGN ? (
-            <div className="flex-none flex items-center gap-1 px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 text-[9px] font-bold whitespace-nowrap" style={{ color: "#008751" }}>
-              Bank Transfer
-            </div>
-          ) : (
-            <>
-              <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 text-[9px] font-bold whitespace-nowrap" style={{ color: "#635BFF" }}>
-                Stripe
-              </div>
-              <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 gap-0.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#EB001B]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[#F79E1B] -ml-1" />
-              </div>
-              <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6">
-                <svg viewBox="0 0 48 14" className="h-2.5 w-auto">
-                  <text x="1" y="11" fontFamily="Arial" fontWeight="bold" fontSize="12" fill="#1A1F71" fontStyle="italic">VISA</text>
-                </svg>
-              </div>
-            </>
-          )}
+          <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 text-[9px] font-bold whitespace-nowrap" style={{ color: "#635BFF" }}>
+            Stripe
+          </div>
+          <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 gap-0.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#EB001B]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[#F79E1B] -ml-1" />
+          </div>
+          <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6">
+            <svg viewBox="0 0 48 14" className="h-2.5 w-auto">
+              <text x="1" y="11" fontFamily="Arial" fontWeight="bold" fontSize="12" fill="#1A1F71" fontStyle="italic">VISA</text>
+            </svg>
+          </div>
         </div>
 
         <div className="flex items-center justify-between mb-1.5">

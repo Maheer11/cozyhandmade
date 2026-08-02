@@ -110,20 +110,38 @@ describe("calculateShipping", () => {
 
   it("resolves the correct zone/customs/estimatedDays for each documented zone", () => {
     expect(calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "IE")).toMatchObject({
-      zone: "domestic", customsApplies: false,
+      zone: "domestic", customsApplies: false, estimatedDays: "within 7 business days",
     });
     expect(calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "GB")).toMatchObject({
-      zone: "uk", customsApplies: true,
+      zone: "uk", customsApplies: true, estimatedDays: "7-14 business days",
     });
     expect(calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "FR")).toMatchObject({
-      zone: "eu", customsApplies: false,
+      zone: "eu", customsApplies: false, estimatedDays: "7-14 business days",
     });
     expect(calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "US")).toMatchObject({
-      zone: "north_america", customsApplies: true,
+      zone: "north_america", customsApplies: true, estimatedDays: "7-14 business days",
+    });
+    expect(calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "NG")).toMatchObject({
+      zone: "nigeria", customsApplies: true, estimatedDays: "7-14 business days",
     });
     expect(calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "ZZ")).toMatchObject({
-      zone: "rest_of_world", customsApplies: true,
+      zone: "rest_of_world", customsApplies: true, estimatedDays: "7-14 business days",
     });
+  });
+
+  // Ireland is the ONLY zone allowed to quote a shorter estimate than the
+  // international range — a regression that let any other zone drift down to
+  // domestic's figure would under-promise transit the business can't control.
+  it("quotes the domestic estimate for Ireland alone — every other zone gets the international range", () => {
+    const intl = ["GB", "FR", "US", "CA", "NG", "AU", "ZZ"];
+    for (const country of intl) {
+      expect(
+        calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], country).estimatedDays,
+      ).toBe("7-14 business days");
+    }
+    expect(
+      calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "IE").estimatedDays,
+    ).toBe("within 7 business days");
   });
 
   it("rounds the returned price to the nearest cent", () => {

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState, useEffect } from "react";
-import { useCart, CartItem } from "./CartContext";
+import { useCart, cartLineKey, CartItem } from "./CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 
 
@@ -13,11 +13,13 @@ function DrawerItem({
   onUpdateQty,
 }: {
   item: CartItem;
-  onRemove: (id: string) => void;
-  onUpdateQty: (id: string, qty: number) => void;
+  onRemove: (lineKey: string) => void;
+  onUpdateQty: (lineKey: string, qty: number) => void;
 }) {
   const { formatAmount } = useCurrency();
   const itemHref = item.source === "new_in" ? `/new-in/${item.id}` : `/products/${item.id}`;
+  // See the same guard in app/cart/page.tsx — undefined means no known cap.
+  const atMax = item.maxQuantity !== undefined && item.quantity >= item.maxQuantity;
   const [offset, setOffset] = useState(0);
   const [removing, setRemoving] = useState(false);
   const startX = useRef(0);
@@ -27,7 +29,7 @@ function DrawerItem({
 
   const triggerRemove = () => {
     setRemoving(true);
-    setTimeout(() => onRemove(item.id), 260);
+    setTimeout(() => onRemove(cartLineKey(item)), 260);
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -93,7 +95,7 @@ function DrawerItem({
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center border border-taupe/30 rounded-lg overflow-hidden">
               <button
-                onClick={() => onUpdateQty(item.id, item.quantity - 1)}
+                onClick={() => onUpdateQty(cartLineKey(item), item.quantity - 1)}
                 className="w-8 h-8 flex items-center justify-center text-brown active:bg-cream-dark active:scale-90 transition-transform duration-100"
                 style={{ touchAction: "manipulation" }}
                 aria-label="Decrease quantity"
@@ -102,14 +104,20 @@ function DrawerItem({
               </button>
               <span className="w-6 text-center text-xs font-semibold text-deep-brown">{item.quantity}</span>
               <button
-                onClick={() => onUpdateQty(item.id, item.quantity + 1)}
-                className="w-8 h-8 flex items-center justify-center text-brown active:bg-cream-dark active:scale-90 transition-transform duration-100"
+                onClick={() => onUpdateQty(cartLineKey(item), item.quantity + 1)}
+                disabled={atMax}
+                className="w-8 h-8 flex items-center justify-center text-brown active:bg-cream-dark active:scale-90 transition-transform duration-100 disabled:opacity-30 disabled:active:scale-100"
                 style={{ touchAction: "manipulation" }}
                 aria-label="Increase quantity"
               >
                 +
               </button>
             </div>
+            {atMax && (
+              <span className="text-[10px] text-[#8B2035] whitespace-nowrap">
+                Max {item.maxQuantity}
+              </span>
+            )}
             <button
               onClick={triggerRemove}
               className="hidden sm:flex w-7 h-7 items-center justify-center text-taupe hover:text-[#8B2035] transition-colors rounded-lg"
@@ -208,7 +216,7 @@ export default function CartDrawer() {
                 Swipe left to remove items
               </p>
               {items.map((item) => (
-                <DrawerItem key={item.id} item={item} onRemove={removeItem} onUpdateQty={updateQuantity} />
+                <DrawerItem key={cartLineKey(item)} item={item} onRemove={removeItem} onUpdateQty={updateQuantity} />
               ))}
               <button
                 onClick={closeCart}

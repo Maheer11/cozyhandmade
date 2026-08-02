@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { sendOrderStatusEmail } from "@/lib/email";
 import {
   addBusinessDays,
-  NGN_DELIVERY_BUSINESS_DAYS,
+  IE_DELIVERY_BUSINESS_DAYS,
   INTL_DELIVERY_BUSINESS_DAYS_MIN,
   INTL_DELIVERY_BUSINESS_DAYS_MAX,
 } from "@/lib/config";
@@ -13,11 +13,12 @@ function formatDate(d: Date) {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
-// Nigerian orders get a single fixed estimate; international orders get a range.
-function estimatedDeliveryLabel(isNGN: boolean): string {
+// Irish orders get a single "by <date>" ceiling; every other destination gets
+// a 7–14 day range — see lib/config.ts.
+function estimatedDeliveryLabel(isIreland: boolean): string {
   const now = new Date();
-  if (isNGN) {
-    return formatDate(addBusinessDays(now, NGN_DELIVERY_BUSINESS_DAYS));
+  if (isIreland) {
+    return `by ${formatDate(addBusinessDays(now, IE_DELIVERY_BUSINESS_DAYS))}`;
   }
   const earliest = addBusinessDays(now, INTL_DELIVERY_BUSINESS_DAYS_MIN);
   const latest = addBusinessDays(now, INTL_DELIVERY_BUSINESS_DAYS_MAX);
@@ -126,15 +127,12 @@ export async function PATCH(
       if (toEmail) {
         let estimatedDeliveryDate: string | undefined;
         if (status === "shipped") {
-          const { data: tx } = await db
-            .from("transactions")
-            .select("currency")
-            .eq("order_id", id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          const isNGN = tx?.currency === "NGN";
-          estimatedDeliveryDate = estimatedDeliveryLabel(isNGN);
+          // Destination country, not currency — see lib/config.ts. Anything
+          // that isn't Ireland (including a missing country) falls to the
+          // longer international estimate, never the shorter domestic one.
+          const country =
+            (updatedOrder?.delivery_address as Record<string, string> | null)?.country ?? "";
+          estimatedDeliveryDate = estimatedDeliveryLabel(country.toUpperCase() === "IE");
         }
 
         const result = await sendOrderStatusEmail({

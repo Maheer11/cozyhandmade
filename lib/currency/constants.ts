@@ -54,8 +54,10 @@ export const LUXURY_ROUNDING_TIERS = [
 
 /**
  * Country ISO 3166-1 alpha-2 → currency.
- * Only the 4 currencies the storefront actually supports are mapped —
- * everyone else falls back to DEFAULT_CURRENCY (EUR).
+ * Only the currencies the storefront can actually take payment in are
+ * mapped — everyone else, including Nigeria, falls back to
+ * DEFAULT_CURRENCY (EUR). NG is deliberately unmapped: Stripe is the only
+ * payment method and doesn't support NGN.
  */
 export const COUNTRY_CURRENCY_MAP: Record<string, CurrencyCode> = {
   DE: "EUR",
@@ -79,12 +81,8 @@ export const COUNTRY_CURRENCY_MAP: Record<string, CurrencyCode> = {
   LT: "EUR",
   HR: "EUR",
   GB: "GBP",
-  NG: "NGN",
   US: "USD",
 };
-
-/** Countries that use Nigerian checkout (bank transfer only) */
-export const NIGERIAN_CHECKOUT_COUNTRIES = new Set<string>(["NG"]);
 
 /** Rate cache duration — 6 hours in ms */
 export const RATE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;

@@ -62,6 +62,8 @@ export default function NewInDetail({ item }: { item: NewInDetailData }) {
         image: item.product_image,
         source: "new_in",
         variant: selectedSize ?? undefined,
+        color: selectedColor ?? undefined,
+        maxQuantity: maxQty,
         shippingWeightGrams: item.shipping_weight_grams,
       });
     }

@@ -29,8 +29,6 @@ export interface RateCache {
 export interface UserRegion {
   currency: CurrencyCode;
   countryCode: string; // ISO 3166-1 alpha-2
-  continent: string;
-  checkoutMode: "nigerian" | "international";
   detectedVia: "profile" | "explicit" | "default";
 }
 

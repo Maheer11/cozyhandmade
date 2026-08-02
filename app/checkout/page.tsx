@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { getStripePromise } from "@/lib/stripe/client";
-import { useCart } from "@/components/CartContext";
+import { useCart, cartLineKey } from "@/components/CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { socialLinks, whatsappLink } from "@/lib/social-links";
 import InstagramIcon from "@/components/icons/InstagramIcon";
@@ -16,22 +16,18 @@ import { CURRENCIES } from "@/lib/currency/constants";
 import { calculateShipping, isDublinPickupEligible, type ShippingItemInput, type ShippingZone } from "@/lib/checkout/shipping";
 
 /* ─── Types ─────────────────────────────────────────────── */
-type CheckoutMode  = "nigerian" | "international";
 // "refunded" — the item sold out mid-checkout; the webhook already
 // refunded automatically and no order was (or ever will be) created. A
 // distinct step from "confirmation", which always implies a real order.
 type Step          = "shipping" | "payment" | "confirmation" | "refunded";
-type IntlPayMethod = "bank-transfer" | "stripe-card";
 type ShipInfo = {
   firstName: string; lastName: string; email: string; phone: string;
   address: string; city: string; postcode: string; country: string; state: string;
 };
 
-// DB-verified order summary — returned by whichever endpoint actually
-// created the order (Stripe path: /api/payments/stripe/status once the
-// webhook has run; bank-transfer paths: /api/orders directly, since those
-// create synchronously). The confirmation screen reads ONLY from this, for
-// every payment path, never from a client-side recomputed value — see the
+// DB-verified order summary — returned by /api/payments/stripe/status once
+// the webhook has actually created the order. The confirmation screen reads
+// ONLY from this, never from a client-side recomputed value — see the
 // "Total Paid" bug this replaces.
 interface OrderConfirmationSummary {
   totalAmountEUR: number | null;
@@ -40,51 +36,15 @@ interface OrderConfirmationSummary {
   paymentChannel: string;
 }
 
-/* ─── International bank account details (from env) ─────── */
-const BANK: Record<string, { label: string; network: string; fields: [string, string][] }> = {
-  EUR: {
-    label:   "EUR — SEPA Transfer",
-    network: "SEPA · arrives same/next business day",
-    fields:  [
-      ["IBAN",     process.env.NEXT_PUBLIC_BANK_EUR_IBAN ?? ""],
-      ["BIC/SWIFT",process.env.NEXT_PUBLIC_BANK_EUR_BIC  ?? ""],
-      ["Name",     process.env.NEXT_PUBLIC_BANK_EUR_NAME ?? ""],
-    ],
-  },
-  GBP: {
-    label:   "GBP — UK Bank Transfer",
-    network: "Faster Payments · arrives within hours",
-    fields:  [
-      ["Sort Code", process.env.NEXT_PUBLIC_BANK_GBP_SORT    ?? ""],
-      ["Account",   process.env.NEXT_PUBLIC_BANK_GBP_ACCOUNT ?? ""],
-      ["Name",      process.env.NEXT_PUBLIC_BANK_GBP_NAME    ?? ""],
-    ],
-  },
-  USD: {
-    label:   "USD — US Bank Transfer (ACH)",
-    network: "ACH · arrives 1–2 business days",
-    fields:  [
-      ["Routing No.", process.env.NEXT_PUBLIC_BANK_USD_ROUTING ?? ""],
-      ["Account No.", process.env.NEXT_PUBLIC_BANK_USD_ACCOUNT ?? ""],
-      ["Name",        process.env.NEXT_PUBLIC_BANK_USD_NAME    ?? ""],
-    ],
-  },
-};
-
 const STEPS = [
   { key: "shipping" as Step, label: "Shipping", n: 1 },
   { key: "payment"  as Step, label: "Payment",  n: 2 },
   { key: "confirmation" as Step, label: "Confirm", n: 3 },
 ];
 
-const NG_STATES = [
-  "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
-  "Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT – Abuja","Gombe",
-  "Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos",
-  "Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto",
-  "Taraba","Yobe","Zamfara",
-];
-const NG_STATE_OPTIONS = NG_STATES.map((s) => ({ value: s, label: s }));
+// Single checkout accent. Previously this alternated with a green for the
+// Nigerian (bank-transfer) checkout mode, which no longer exists.
+const ACCENT = "#8B2035";
 
 const COUNTRY_OPTIONS = [
   { value: "GB", label: "United Kingdom" },
@@ -148,42 +108,38 @@ function TermsModal({ onClose }: { onClose: () => void }) {
             },
             {
               title: "3. Pricing & Payment",
-              body: `Prices are displayed in your selected currency and are subject to change without notice. For Nigerian customers, payment is processed in Nigerian Naira (NGN) via local bank transfer. For international customers, payment is processed in your selected currency via Stripe or bank transfer. All transactions are encrypted. We reserve the right to cancel any order if payment cannot be verified.`,
+              body: `Prices are displayed in your selected currency and are subject to change without notice. All payments are processed by card via Stripe in your selected currency. All transactions are encrypted. We reserve the right to cancel any order if payment cannot be verified.`,
             },
             {
-              title: "4. Bank Transfer Orders",
-              body: `If you choose bank transfer, your order is only confirmed once we have verified receipt of the exact amount including your unique reference number. Orders will not be dispatched before payment confirmation. We aim to confirm bank transfers within 1–2 business hours. We are not responsible for transfers sent without the correct reference number.`,
+              title: "4. Shipping & Delivery",
+              body: `Domestic (Ireland): We ship nationwide via An Post. International: We ship across the EU and worldwide. Delivery times and costs vary by destination and are calculated at checkout. We are not responsible for delays caused by customs, border controls, or third-party couriers. Tracked shipping is included on all orders.`,
             },
             {
-              title: "5. Shipping & Delivery",
-              body: `Domestic (Nigeria): We ship to all 36 states and FCT. Estimated delivery is 2–10 business days from dispatch. International: We ship worldwide. Estimated delivery is 2–14 working days depending on your location and local customs processing. We are not responsible for delays caused by customs, border controls, or third-party couriers. Tracked shipping is included on all orders.`,
-            },
-            {
-              title: "6. Returns & Refunds",
+              title: "5. Returns & Refunds",
               body: `We offer a 30-day return policy on all items in their original, unused condition. Items must be returned in original packaging. Handmade items that show signs of use, washing, or damage will not be accepted for return. Return shipping costs are the responsibility of the customer unless the item is faulty or incorrectly sent. Refunds are processed within 5–10 business days of receiving the returned item.`,
             },
             {
-              title: "7. Faulty or Incorrect Items",
+              title: "6. Faulty or Incorrect Items",
               body: `If you receive a faulty or incorrect item, please contact us within 48 hours of delivery with your order reference and photographs of the issue. We will arrange a replacement or full refund at no cost to you.`,
             },
             {
-              title: "8. Intellectual Property",
+              title: "7. Intellectual Property",
               body: `All designs, photographs, text, and branding on this platform are the exclusive property of Cozi Handmade. Reproduction, distribution, or use of any content without prior written consent is strictly prohibited.`,
             },
             {
-              title: "9. Limitation of Liability",
+              title: "8. Limitation of Liability",
               body: `To the fullest extent permitted by law, Cozi Handmade shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or services. Our total liability shall not exceed the value of the order placed.`,
             },
             {
-              title: "10. Privacy",
+              title: "9. Privacy",
               body: `We collect only the personal information necessary to process your order (name, address, email, phone number). We do not sell or share your data with third parties except our payment processor (Stripe) and courier services required to fulfil your order. Your data is stored securely and handled in accordance with applicable data protection laws.`,
             },
             {
-              title: "11. Governing Law",
-              body: `These Terms shall be governed by and construed in accordance with the laws of the Federal Republic of Nigeria. Any disputes shall first be attempted to be resolved amicably. If unresolved, disputes shall be subject to the jurisdiction of Nigerian courts, without prejudice to your statutory consumer rights in your country of residence.`,
+              title: "10. Governing Law",
+              body: `These terms are governed by the laws of Ireland. Any disputes arising from these terms or from your order will be subject to the jurisdiction of the Irish courts. Nothing in these terms affects your statutory rights as a consumer under Irish and EU consumer protection law.`,
             },
             {
-              title: "12. Contact Us",
+              title: "11. Contact Us",
               body: `If you have any questions about these Terms, please contact us via the email or WhatsApp listed on our website. We aim to respond within 1 business day.`,
             },
           ].map(({ title, body }) => (
@@ -336,9 +292,9 @@ function LogoBadge({ children }: { children: React.ReactNode }) {
 /* ─────────────────────────────────────────────────────────
    STEP BAR
 ───────────────────────────────────────────────────────── */
-function StepBar({ current, mode }: { current: Step; mode: CheckoutMode }) {
+function StepBar({ current }: { current: Step }) {
   const idx   = STEPS.findIndex((s) => s.key === current);
-  const color = mode === "nigerian" ? "#008751" : "#8B2035";
+  const color = ACCENT;
   return (
     <ol className="flex items-center justify-center gap-0 mb-8">
       {STEPS.map((s, i) => {
@@ -592,11 +548,10 @@ function SelectField({ id, label, value, onChange, onBlur, error, options, place
 /* ─────────────────────────────────────────────────────────
    TRUST BADGES
 ───────────────────────────────────────────────────────── */
-function TrustBadges({ mode }: { mode: CheckoutMode }) {
+function TrustBadges() {
   const badges = [
     { ico: <IcoShield />, label: "SSL Secured",    sub: "256-bit encryption",                         green: true  },
-    { ico: <IcoBadge />,  label: mode === "nigerian" ? "Bank Verified" : "PCI-DSS Level 1",
-                           sub:  mode === "nigerian" ? "Manual transfer" : "Stripe certified",         green: true  },
+    { ico: <IcoBadge />,  label: "PCI-DSS Level 1", sub: "Stripe certified",                          green: true  },
     { ico: <IcoTruck />,  label: "Tracked Delivery", sub: "Real-time updates",                        green: false },
     { ico: <IcoReturn />, label: "Easy Returns",    sub: "30-day guarantee",                          green: false },
   ];
@@ -623,25 +578,16 @@ function TrustBadges({ mode }: { mode: CheckoutMode }) {
 /* ─────────────────────────────────────────────────────────
    PAYMENT LOGOS
 ───────────────────────────────────────────────────────── */
-function PaymentLogos({ mode }: { mode: CheckoutMode }) {
+function PaymentLogos() {
   return (
     <div className="pt-4 border-t border-stone-100 mt-4">
       <p className="text-[10px] text-stone-400 uppercase tracking-[0.15em] font-medium mb-3 text-center">
         We accept
       </p>
       <div className="flex items-center justify-center gap-2 flex-wrap">
-        {mode === "nigerian" ? (
-          <>
-            <LogoBadge><LogoVisa /></LogoBadge>
-            <LogoBadge><LogoMastercard /></LogoBadge>
-          </>
-        ) : (
-          <>
-            <LogoBadge><LogoStripe /></LogoBadge>
-            <LogoBadge><LogoVisa /></LogoBadge>
-            <LogoBadge><LogoMastercard /></LogoBadge>
-          </>
-        )}
+        <LogoBadge><LogoStripe /></LogoBadge>
+        <LogoBadge><LogoVisa /></LogoBadge>
+        <LogoBadge><LogoMastercard /></LogoBadge>
       </div>
     </div>
   );
@@ -650,10 +596,9 @@ function PaymentLogos({ mode }: { mode: CheckoutMode }) {
 /* ─────────────────────────────────────────────────────────
    ORDER SUMMARY — receipt-style, printable
 ───────────────────────────────────────────────────────── */
-function OrderSummary({ items, pricing, mode, orderRef, estimatedDays, customsApplies }: {
+function OrderSummary({ items, pricing, orderRef, estimatedDays, customsApplies }: {
   items: ReturnType<typeof useCart>["items"];
   pricing: CheckoutPricing;
-  mode: CheckoutMode;
   orderRef: string;
   estimatedDays: string;
   customsApplies: boolean;
@@ -690,7 +635,7 @@ function OrderSummary({ items, pricing, mode, orderRef, estimatedDays, customsAp
           {/* Line items */}
           <div className="space-y-4">
             {items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3">
+              <div key={cartLineKey(item)} className="flex items-center gap-3">
                 {/* Thumbnail — falls back to a plain tinted square if no image */}
                 <div className="w-12 h-12 rounded-lg bg-[#FAF6F0] border border-[#E4D8C8] shrink-0 overflow-hidden">
                   {item.image && (
@@ -732,9 +677,7 @@ function OrderSummary({ items, pricing, mode, orderRef, estimatedDays, customsAp
           </div>
 
           <p className="text-[10px] text-center mt-3 text-taupe-dark">
-            {mode === "nigerian"
-              ? "Processed via Bank Transfer · NGN"
-              : `Processed via Stripe · PCI-DSS Level 1 · ${pricing.currency}`}
+            {`Processed via Stripe · PCI-DSS Level 1 · ${pricing.currency}`}
           </p>
 
           <p className="text-[10px] text-center mt-1.5 text-taupe-dark">
@@ -752,8 +695,8 @@ function OrderSummary({ items, pricing, mode, orderRef, estimatedDays, customsAp
 
       {/* Trust badges + payment logos */}
       <div className="print:hidden bg-white rounded-2xl border border-[#E4D8C8] p-4">
-        <TrustBadges mode={mode} />
-        <PaymentLogos mode={mode} />
+        <TrustBadges />
+        <PaymentLogos />
       </div>
     </div>
   );
@@ -767,9 +710,8 @@ function OrderSummary({ items, pricing, mode, orderRef, estimatedDays, customsAp
    trigger points agree on what counts as a complete, submittable address. */
 type ShipErrors = Partial<Record<keyof ShipInfo, string>>;
 
-function validateShip(ship: ShipInfo, mode: CheckoutMode): ShipErrors {
+function validateShip(ship: ShipInfo): ShipErrors {
   const errors: ShipErrors = {};
-  const isNG = mode === "nigerian";
 
   if (!ship.firstName.trim()) errors.firstName = "First name is required.";
   if (!ship.lastName.trim())  errors.lastName  = "Last name is required.";
@@ -782,21 +724,17 @@ function validateShip(ship: ShipInfo, mode: CheckoutMode): ShipErrors {
   if (!ship.address.trim()) errors.address = "Street address is required.";
   if (!ship.city.trim()) errors.city = "City / town is required.";
 
-  if (isNG) {
-    if (!ship.state) errors.state = "Select your state.";
-  } else {
-    if (!ship.postcode.trim()) errors.postcode = "Postcode / ZIP is required.";
-    if (!ship.country) errors.country = "Select your country.";
-  }
+  if (!ship.postcode.trim()) errors.postcode = "Postcode / ZIP is required.";
+  if (!ship.country) errors.country = "Select your country.";
 
   return errors;
 }
 
 function ShippingStep({
-  mode, ship, setShip, fieldError, onFieldBlur, onNext, estimatedDays, customsApplies,
+  ship, setShip, fieldError, onFieldBlur, onNext, estimatedDays, customsApplies,
   pickupEligible, deliveryMethod, setDeliveryMethod,
 }: {
-  mode: CheckoutMode; ship: ShipInfo;
+  ship: ShipInfo;
   setShip: (s: ShipInfo) => void;
   fieldError: (key: keyof ShipInfo) => string | undefined;
   onFieldBlur: (key: keyof ShipInfo) => void;
@@ -807,55 +745,44 @@ function ShippingStep({
   deliveryMethod: "courier" | "pickup";
   setDeliveryMethod: (m: "courier" | "pickup") => void;
 }) {
-  const accent = mode === "nigerian" ? "#008751" : "#8B2035";
-  const isNG   = mode === "nigerian";
   return (
     <div className="bg-white rounded-2xl border border-cream-darker shadow-sm p-5 sm:p-6">
       <h2 className="font-heading font-600 text-deep-brown text-xl mb-5">Shipping Information</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field id="fn" label="First Name" placeholder={isNG ? "e.g. Amaka" : "e.g. Jane"}
+        <Field id="fn" label="First Name" placeholder="e.g. Jane"
                autoComplete="given-name"
                value={ship.firstName} onChange={(v) => setShip({ ...ship, firstName: v })}
                onBlur={() => onFieldBlur("firstName")} error={fieldError("firstName")} />
-        <Field id="ln" label="Last Name"  placeholder={isNG ? "e.g. Okonkwo" : "e.g. Smith"}
+        <Field id="ln" label="Last Name"  placeholder="e.g. Smith"
                autoComplete="family-name"
                value={ship.lastName}  onChange={(v) => setShip({ ...ship, lastName: v })}
                onBlur={() => onFieldBlur("lastName")} error={fieldError("lastName")} />
         <Field id="em" label="Email Address" type="email" inputMode="email" autoComplete="email"
-               placeholder={isNG ? "e.g. amaka@gmail.com" : "e.g. jane@example.com"}
+               placeholder="e.g. jane@example.com"
                value={ship.email} onChange={(v) => setShip({ ...ship, email: v })}
                onBlur={() => onFieldBlur("email")} error={fieldError("email")} span2 />
         <Field id="ph" label="Phone" type="tel" inputMode="tel" autoComplete="tel"
-               placeholder={isNG ? "e.g. +234 080 0000 0000" : "e.g. +44 7700 000000"}
+               placeholder="e.g. +44 7700 000000"
                value={ship.phone} onChange={(v) => setShip({ ...ship, phone: v })}
                onBlur={() => onFieldBlur("phone")} error={fieldError("phone")} span2 />
         <Field id="addr" label="Street Address" autoComplete="address-line1"
-               placeholder={isNG ? "e.g. 12 Allen Avenue, Ikeja" : "e.g. 12 Willow Lane"}
+               placeholder="e.g. 12 Willow Lane"
                value={ship.address} onChange={(v) => setShip({ ...ship, address: v })}
                onBlur={() => onFieldBlur("address")} error={fieldError("address")} span2 />
         <Field id="city" label="City / Town" autoComplete="address-level2"
-               placeholder={isNG ? "e.g. Lagos" : "e.g. London"}
+               placeholder="e.g. London"
                value={ship.city} onChange={(v) => setShip({ ...ship, city: v })}
                onBlur={() => onFieldBlur("city")} error={fieldError("city")} />
-        {isNG ? (
-          <SelectField id="state" label="State" value={ship.state}
-                       onChange={(v) => setShip({ ...ship, state: v })}
-                       onBlur={() => onFieldBlur("state")} error={fieldError("state")}
-                       options={NG_STATE_OPTIONS} placeholder="Select state…" />
-        ) : (
-          <>
-            <Field id="pc" label="Postcode / ZIP" placeholder="e.g. SW1A 1AA" autoComplete="postal-code"
-                   value={ship.postcode} onChange={(v) => setShip({ ...ship, postcode: v })}
-                   onBlur={() => onFieldBlur("postcode")} error={fieldError("postcode")} />
-            <SelectField id="country" label="Country" value={ship.country}
-                         onChange={(v) => setShip({ ...ship, country: v })}
-                         onBlur={() => onFieldBlur("country")} error={fieldError("country")}
-                         options={COUNTRY_OPTIONS} span2 />
-          </>
-        )}
+        <Field id="pc" label="Postcode / ZIP" placeholder="e.g. SW1A 1AA" autoComplete="postal-code"
+               value={ship.postcode} onChange={(v) => setShip({ ...ship, postcode: v })}
+               onBlur={() => onFieldBlur("postcode")} error={fieldError("postcode")} />
+        <SelectField id="country" label="Country" value={ship.country}
+                     onChange={(v) => setShip({ ...ship, country: v })}
+                     onBlur={() => onFieldBlur("country")} error={fieldError("country")}
+                     options={COUNTRY_OPTIONS} span2 />
       </div>
 
-      {!isNG && pickupEligible && (
+      {pickupEligible && (
         <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
           <p className="text-xs font-semibold text-emerald-800 mb-2">
             Your address is in Dublin — how would you like to receive your order?
@@ -877,151 +804,24 @@ function ShippingStep({
         </div>
       )}
 
-      {isNG ? (
-        <div className="mt-4 flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-800 font-system">
-          <div className="w-4 h-4 shrink-0 text-emerald-600"><IcoBadge /></div>
-          We ship to all 36 Nigerian states + FCT · Delivery: {estimatedDays}
+      <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100 text-xs text-blue-800 font-system">
+        <div className="w-4 h-4 shrink-0 text-blue-500"><IcoTruck /></div>
+        {deliveryMethod === "pickup" ? "Local pickup" : "International shipping"} · Estimated: <strong>{estimatedDays}</strong>
+      </div>
+      {customsApplies && (
+        <div className="mt-2 flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100 text-xs text-amber-800 font-system">
+          <div className="w-4 h-4 shrink-0 text-amber-500 mt-0.5"><IcoWarning /></div>
+          Customers outside the EU may be charged import duties or taxes on delivery. These are set
+          by your country and are not included in this price.
         </div>
-      ) : (
-        <>
-          <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100 text-xs text-blue-800 font-system">
-            <div className="w-4 h-4 shrink-0 text-blue-500"><IcoTruck /></div>
-            {deliveryMethod === "pickup" ? "Local pickup" : "International shipping"} · Estimated: <strong>{estimatedDays}</strong>
-          </div>
-          {customsApplies && (
-            <div className="mt-2 flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100 text-xs text-amber-800 font-system">
-              <div className="w-4 h-4 shrink-0 text-amber-500 mt-0.5"><IcoWarning /></div>
-              Customers outside the EU may be charged import duties or taxes on delivery. These are set
-              by your country and are not included in this price.
-            </div>
-          )}
-        </>
       )}
 
       <div className="hidden lg:flex justify-end mt-6">
         <button onClick={onNext}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-none text-cream font-semibold
                      text-sm tracking-wide hover:-translate-y-px transition-all duration-200 shadow-sm font-system"
-          style={{ backgroundColor: accent }}>
+          style={{ backgroundColor: ACCENT }}>
           Continue to Payment <IcoArrow />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ═════════════════════════════════════════════════════════
-   NIGERIAN PAYMENT STEP  — Bank Transfer only (always NGN)
-═════════════════════════════════════════════════════════ */
-function NigerianPaymentStep({ orderTotalNGN, orderRef, onBack, onBankTransferConfirm, isSubmitting, submitError, termsAccepted, setTermsAccepted, onShowTerms }: {
-  orderTotalNGN: number;
-  orderRef: string;
-  onBack: () => void;
-  onBankTransferConfirm: () => void;
-  isSubmitting: boolean;
-  submitError: string;
-  termsAccepted: boolean; setTermsAccepted: (v: boolean) => void; onShowTerms: () => void;
-}) {
-  const [copied, setCopied] = useState<string | null>(null);
-
-  const formattedNGN = `₦${orderTotalNGN.toLocaleString("en-NG")}`;
-
-  const copyText = (text: string, key: string) => {
-    navigator.clipboard.writeText(text.replace(/\s/g, ""));
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
-  const BANK = [
-    ["Account Number", process.env.NEXT_PUBLIC_BANK_NGN_ACCOUNT ?? "", "acct"],
-    ["Bank",           process.env.NEXT_PUBLIC_BANK_NGN_BANK    ?? "", "bank"],
-    ["Account Name",   process.env.NEXT_PUBLIC_BANK_NGN_NAME    ?? "", "name"],
-    ["Amount",         formattedNGN,                                   "amt"],
-    ["Reference",      orderRef,                                       "ref"],
-  ] as [string, string, string][];
-
-  return (
-    <div className="bg-white rounded-2xl border border-cream-darker shadow-sm p-5 sm:p-6">
-      <h2 className="font-heading font-600 text-deep-brown text-xl mb-2">Payment</h2>
-      <p className="text-xs text-taupe-dark mb-5">Complete your payment by bank transfer.</p>
-
-      <div>
-        <p className="text-sm text-stone-600 mb-4 leading-relaxed">
-          Transfer the <strong>exact amount</strong> below and include your reference number so we can
-          match your payment. Orders are processed within 1–2 hours of confirmation.
-        </p>
-
-        <div className="rounded-2xl overflow-hidden shadow-sm border border-stone-200 mb-4">
-          <div className="flex items-center gap-3 px-5 py-3 bg-white border-b border-stone-100">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                 style={{ backgroundColor: "#FEF3C7" }}>
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"
-                   stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" />
-                <path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-stone-800 text-xs font-semibold">Nigerian Bank Transfer</p>
-              <p className="text-stone-400 text-[10px]">NGN · Any local bank accepted</p>
-            </div>
-          </div>
-          <div className="bg-white px-5 py-4 space-y-3.5">
-            {BANK.map(([label, value, key]) => (
-              <div key={key} className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
-                  <p className={`text-sm font-semibold truncate tabular-nums ${key === "ref" ? "text-gold" : "text-stone-900"}`}>
-                    {value}
-                  </p>
-                </div>
-                <button onClick={() => copyText(value, key)}
-                  className={`shrink-0 text-[10px] px-2.5 py-1 rounded font-medium transition-all duration-200
-                              ${copied === key ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500 hover:bg-stone-200"}`}>
-                  {copied === key ? "Copied" : "Copy"}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
-          <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
-               stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-          </svg>
-          <p className="text-xs text-amber-800 leading-relaxed">
-            Always include your <strong>reference number</strong> in the transfer narration. We&apos;ll send a WhatsApp confirmation once received.
-          </p>
-        </div>
-
-        <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
-
-        {submitError && (
-          <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
-            {submitError}
-          </p>
-        )}
-
-        <button onClick={onBankTransferConfirm} disabled={!termsAccepted || isSubmitting}
-          className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
-                     rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
-                     disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
-                     enabled:hover:-translate-y-px enabled:shadow-sm"
-          style={{ backgroundColor: "#008751" }}>
-          {isSubmitting ? "Saving order…" : <>I&apos;ve Sent the Payment <IcoCheck /></>}
-        </button>
-      </div>
-
-      <div className="hidden lg:flex mt-6">
-        <button onClick={onBack}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-none border-2 border-stone-200
-                     text-stone-500 font-medium text-sm hover:border-stone-400 hover:text-stone-700 transition-all duration-200">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
         </button>
       </div>
     </div>
@@ -1142,170 +942,30 @@ function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccep
 }
 
 /* ═════════════════════════════════════════════════════════
-   INTERNATIONAL PAYMENT STEP  — Bank Transfer or Stripe
+   PAYMENT STEP  — Stripe card only
 ═════════════════════════════════════════════════════════ */
-function InternationalPaymentStep({
-  formattedTotal, orderRef, currency, intlMethod, setIntlMethod,
-  onBack, onTransferConfirm,
+function PaymentStep({
+  formattedTotal, orderRef,
+  onBack,
   clientSecret, intentError, onStripeSuccess, onStripeRefunded,
-  isSubmitting, submitError,
   termsAccepted, setTermsAccepted, onShowTerms,
 }: {
   formattedTotal: string;
   orderRef: string;
-  currency: string;
-  intlMethod: IntlPayMethod;
-  setIntlMethod: (m: IntlPayMethod) => void;
   onBack: () => void;
-  onTransferConfirm: () => void;
   clientSecret: string | null;
   intentError: string | null;
   onStripeSuccess: (orderId: string, summary: OrderConfirmationSummary) => void;
   onStripeRefunded: (info: { reason: string; productName: string | null }) => void;
-  isSubmitting: boolean;
-  submitError: string;
   termsAccepted: boolean;
   setTermsAccepted: (v: boolean) => void;
   onShowTerms: () => void;
 }) {
-  const [copied, setCopied] = useState<string | null>(null);
-
-  // Pick the matching bank account, fall back to EUR (the home currency)
-  const bankInfo  = BANK[currency] ?? BANK.EUR;
-  const isFallback = !BANK[currency] && currency !== "EUR";
-
-  const copyText = (val: string, key: string) => {
-    navigator.clipboard.writeText(val.replace(/\s/g, ""));
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
   return (
     <div className="bg-white rounded-2xl border border-cream-darker shadow-sm p-5 sm:p-6">
       <h2 className="font-heading font-600 text-deep-brown text-xl mb-2">Payment</h2>
-      <p className="text-xs text-taupe-dark mb-5">Choose how you&apos;d like to pay.</p>
+      <p className="text-xs text-taupe-dark mb-5">Pay securely by card.</p>
 
-      {/* ── Tabs ── */}
-      <div className="flex border border-stone-200 rounded-none overflow-hidden mb-6">
-        <button onClick={() => setIntlMethod("bank-transfer")}
-          className={`flex-1 py-3 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2
-                      ${intlMethod === "bank-transfer" ? "text-white" : "bg-white text-stone-600 hover:bg-stone-50"}`}
-          style={intlMethod === "bank-transfer" ? { backgroundColor: "#059669" } : {}}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18l2.25 2.25m0 0l2.25 2.25M6.75 5.25l-2.25 2.25M21 21l-2.25-2.25m0 0l-2.25-2.25M17.25 18.75l2.25-2.25M3 3l3.75 3.75M21 3l-3.75 3.75M3 21l3.75-3.75M12 12h.008v.008H12V12z"/>
-          </svg>
-          Bank Transfer
-        </button>
-        <div className="w-px bg-stone-200" />
-        <button onClick={() => setIntlMethod("stripe-card")}
-          className={`flex-1 py-3 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2
-                      ${intlMethod === "stripe-card" ? "text-white" : "bg-white text-stone-600 hover:bg-stone-50"}`}
-          style={intlMethod === "stripe-card" ? { backgroundColor: "#635BFF" } : {}}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
-          </svg>
-          Card / Stripe
-        </button>
-      </div>
-
-      {/* ════════ BANK TRANSFER TAB ════════ */}
-      {intlMethod === "bank-transfer" && (
-        <div>
-          {/* Currency fallback notice */}
-          {isFallback && (
-            <div className="flex gap-2.5 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4">
-              <svg className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
-              </svg>
-              <p className="text-xs text-blue-800 leading-relaxed">
-                We don&apos;t have a <strong>{currency}</strong> account yet. Please convert to <strong>EUR</strong> first
-                using your bank or <a href="https://wise.com" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Wise</a>,
-                then transfer to our EUR IBAN below.
-              </p>
-            </div>
-          )}
-
-          <p className="text-sm text-stone-600 mb-4 leading-relaxed">
-            Transfer the <strong>exact amount</strong> and include your reference number so we can
-            match your payment. Orders are confirmed within 1 business day.
-          </p>
-
-          {/* Account detail card */}
-          <div className="rounded-2xl overflow-hidden shadow-sm border border-stone-200 mb-4">
-            <div className="flex items-center gap-3 px-5 py-3 bg-white border-b border-stone-100">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-emerald-100">
-                <svg className="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-stone-800 text-xs font-semibold">{bankInfo.label}</p>
-                <p className="text-stone-400 text-[10px]">{bankInfo.network}</p>
-              </div>
-            </div>
-
-            <div className="bg-white px-5 py-4 space-y-3.5">
-              {bankInfo.fields.map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
-                    <p className="text-sm font-semibold text-stone-900 truncate tabular-nums">{value}</p>
-                  </div>
-                  <button onClick={() => copyText(value, label)}
-                    className={`shrink-0 text-[10px] px-2.5 py-1 rounded font-medium transition-all duration-200
-                                ${copied === label ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500 hover:bg-stone-200"}`}>
-                    {copied === label ? "Copied" : "Copy"}
-                  </button>
-                </div>
-              ))}
-
-              {/* Amount row */}
-              <div className="flex items-center justify-between gap-4 pt-1 border-t border-stone-100">
-                <div className="min-w-0">
-                  <p className="text-[10px] text-stone-400 uppercase tracking-wide">Amount</p>
-                  <p className="text-sm font-bold text-stone-900 tabular-nums">{formattedTotal}</p>
-                </div>
-                <button onClick={() => copyText(formattedTotal.replace(/[^\d.]/g, ""), "amount")}
-                  className={`shrink-0 text-[10px] px-2.5 py-1 rounded font-medium transition-all duration-200
-                              ${copied === "amount" ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500 hover:bg-stone-200"}`}>
-                  {copied === "amount" ? "Copied" : "Copy"}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
-            <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-            </svg>
-            <p className="text-xs text-amber-800 leading-relaxed">
-              Always add your <strong>order reference</strong> to the transfer note — this is how we identify your payment.
-              We&apos;ll email you once it&apos;s confirmed.
-            </p>
-          </div>
-
-          <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
-
-          {submitError && (
-            <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
-              {submitError}
-            </p>
-          )}
-
-          <button onClick={onTransferConfirm} disabled={!termsAccepted || isSubmitting}
-            className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
-                       rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
-                       disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
-                       enabled:hover:-translate-y-px"
-            style={{ backgroundColor: "#059669" }}>
-            {isSubmitting ? "Saving order…" : <>I&apos;ve Sent the Transfer <IcoCheck /></>}
-          </button>
-        </div>
-      )}
-
-      {/* ════════ STRIPE CARD TAB ════════ */}
-      {intlMethod === "stripe-card" && (
-        <div>
           <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-5">
             <div className="text-emerald-600 shrink-0"><IcoShield /></div>
             <span className="text-xs text-emerald-700 font-medium">256-bit SSL encryption active</span>
@@ -1355,8 +1015,6 @@ function InternationalPaymentStep({
               </Elements>
             )}
           </div>
-        </div>
-      )}
 
       <div className="hidden lg:flex mt-6">
         <button type="button" onClick={onBack}
@@ -1375,21 +1033,19 @@ function InternationalPaymentStep({
 /* ═════════════════════════════════════════════════════════
    CONFIRMATION SCREEN
 ═════════════════════════════════════════════════════════ */
-function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, summary, estimatedDays }: {
-  mode: CheckoutMode; intlMethod: IntlPayMethod;
+function ConfirmationScreen({ orderRef, firstName, summary, estimatedDays }: {
   orderRef: string; firstName: string;
   summary: OrderConfirmationSummary;
   estimatedDays: string;
 }) {
-  // Nigeria is bank-transfer-only, so every Nigerian order is "pending" until
-  // manually confirmed. International Stripe orders only ever reach this
-  // screen once the webhook has confirmed the charge, so they're never
-  // pending; international bank-transfer orders are pending like Nigeria's.
-  const isPending = mode === "nigerian" || (mode === "international" && intlMethod === "bank-transfer");
   // DB-verified — the actual amount recorded on transactions.amount, not a
   // client-side recomputation. Formatted directly in the currency it was
-  // actually charged/instructed in, no re-conversion needed.
+  // actually charged in, no re-conversion needed.
   const displayAmount = formatCurrency(summary.chargedAmount, CURRENCIES[summary.currency]);
+  // Card is the only payment method, so this is always true for new orders.
+  // Still read from the DB-recorded payment_channel rather than assumed, so
+  // any historical bank-transfer order rendered through this screen stays
+  // labelled honestly.
   const isStripe = summary.paymentChannel === "stripe_card";
 
   return (
@@ -1398,31 +1054,20 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, summary, es
 
         {/* Status icon */}
         <div className="text-center mb-6">
-          {isPending ? (
-            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-amber-100">
-              <svg className="w-10 h-10 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
-              </svg>
-            </div>
-          ) : (
-            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-emerald-100">
-              <svg className="w-10 h-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          )}
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-emerald-100">
+            <svg className="w-10 h-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
 
-          <p className={`text-[10px] uppercase tracking-[0.2em] font-medium mb-1
-                         ${isPending ? "text-amber-600" : "text-emerald-600"}`}>
-            {isPending ? "Awaiting Payment" : "Order Confirmed"}
+          <p className="text-[10px] uppercase tracking-[0.2em] font-medium mb-1 text-emerald-600">
+            Order Confirmed
           </p>
           <h1 className="font-heading text-3xl font-700 text-deep-brown mb-2">
-            {isPending ? "Transfer received soon" : `Thank you${firstName ? `, ${firstName}` : ""}!`}
+            {`Thank you${firstName ? `, ${firstName}` : ""}!`}
           </h1>
           <p className="text-brown/70 text-sm leading-relaxed max-w-xs mx-auto">
-            {isPending
-              ? "We'll confirm your bank transfer within 1–2 hours and notify you via WhatsApp."
-              : `Order ${orderRef} is being lovingly prepared by our artisans.`}
+            {`Order ${orderRef} is being lovingly prepared by our artisans.`}
           </p>
         </div>
 
@@ -1434,9 +1079,9 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, summary, es
           <div className="space-y-2 text-sm mb-3">
             {[
               ["Order Ref",  orderRef],
-              [isPending ? "Amount to Transfer" : "Total Paid", displayAmount],
+              ["Total Paid", displayAmount],
               // DB-verified — payment_channel as actually recorded on the
-              // transaction, not inferred from local tab-selection state.
+              // transaction, not inferred from local UI state.
               ["Payment via", isStripe ? `Stripe (${summary.currency})` : `Bank Transfer (${summary.currency})`],
               ["Estimated Delivery", estimatedDays],
             ].map(([label, value]) => (
@@ -1447,26 +1092,14 @@ function ConfirmationScreen({ mode, intlMethod, orderRef, firstName, summary, es
             ))}
           </div>
 
-          {isPending ? (
-            <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
-              <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24"
-                   stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-              </svg>
-              <span className="text-xs text-amber-700">Payment pending · WhatsApp update within 1–2 hrs</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-              <div className="text-emerald-500 shrink-0"><IcoCheck /></div>
-              <span className="text-xs text-emerald-700">Payment confirmed · Tracked delivery included</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+            <div className="text-emerald-500 shrink-0"><IcoCheck /></div>
+            <span className="text-xs text-emerald-700">Payment confirmed · Tracked delivery included</span>
+          </div>
 
           {/* Payment security indicator — understated, only for genuine
-              Stripe-confirmed orders (never shown for bank-transfer/NGN,
-              which weren't secured "by Stripe"). DB-verified via
-              payment_channel, same reasoning as "Payment via" above. */}
+              Stripe-confirmed orders. DB-verified via payment_channel, same
+              reasoning as "Payment via" above. */}
           {isStripe && (
             <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-taupe/10">
               <div className="text-taupe-dark shrink-0"><IcoShield /></div>
@@ -1561,17 +1194,9 @@ export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const { currency, priceCheckout } = useCurrency();
 
-  // NGN → Nigerian checkout (bank transfer only). Any other currency → international (Stripe or bank transfer).
-  const mode: CheckoutMode = currency === "NGN" ? "nigerian" : "international";
-  const accent = mode === "nigerian" ? "#008751" : "#8B2035";
-
   const [step,          setStep]          = useState<Step>("shipping");
-  const [intlMethod,    setIntlMethod]    = useState<IntlPayMethod>("bank-transfer");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms,     setShowTerms]     = useState(false);
-  const [submitting,    setSubmitting]    = useState(false);
-  const [submitError,   setSubmitError]   = useState("");
-  const [savedOrderId,  setSavedOrderId]  = useState<string | null>(null);
   const [orderRef]                        = useState(() =>
     `WIL-${Math.random().toString(36).slice(2, 10).toUpperCase()}`
   );
@@ -1590,7 +1215,7 @@ export default function CheckoutPage() {
   const [showAllShipErrors, setShowAllShipErrors] = useState(false);
   const [ship, setShip] = useState<ShipInfo>({
     firstName: "", lastName: "", email: "", phone: "",
-    address: "", city: "", postcode: "", country: mode === "nigerian" ? "NG" : "GB", state: "",
+    address: "", city: "", postcode: "", country: "GB", state: "",
   });
 
   // Free customer pickup — only ever offered for addresses that actually
@@ -1612,14 +1237,11 @@ export default function CheckoutPage() {
   //
   // `total` (cart subtotal) is in EUR — the base currency every price is
   // stored/entered in. `chargedTotal` is the properly-converted amount in
-  // the customer's selected currency — that's what's actually
-  // charged/displayed/transferred (NGN via bank transfer when
-  // mode === "nigerian"). Both the Stripe path (create-intent) and the bank
-  // transfer path (/api/orders) independently recompute subtotal + shipping
-  // server-side and never trust a client-submitted total — create-intent's
-  // client_shipping_eur check additionally rejects outright if its figure
-  // and the server's ever diverge; /api/orders simply ignores the client's
-  // total_amount/charged_amount entirely and stores its own.
+  // the customer's selected currency — that's what's actually charged and
+  // displayed. create-intent independently recomputes subtotal + shipping
+  // server-side and never trusts a client-submitted total; its
+  // client_shipping_eur check rejects outright if its figure and the
+  // server's ever diverge.
   const shippingItems: ShippingItemInput[] = items.map((item) => ({
     quantity: item.quantity,
     shippingWeightGrams: item.shippingWeightGrams,
@@ -1637,9 +1259,8 @@ export default function CheckoutPage() {
   // keeps the display correct if that ever changes).
   const customsAppliesDisplay = effectiveDeliveryMethod === "pickup" ? false : shippingQuote.customsApplies;
   const pricing        = priceCheckout(total, shippingEUR);
-  const chargedTotal  = pricing.totalConverted;
 
-  const shipErrors = validateShip(ship, mode);
+  const shipErrors = validateShip(ship);
   function shipFieldError(key: keyof ShipInfo) {
     return (shipTouched[key] || showAllShipErrors) ? shipErrors[key] : undefined;
   }
@@ -1654,15 +1275,15 @@ export default function CheckoutPage() {
     setStep("payment");
   }
 
-  // Stripe PaymentIntent — created once the customer reaches the Card/Stripe
-  // tab. The server re-prices from the cart here (never trusts client
+  // Stripe PaymentIntent — created once the customer reaches the payment
+  // step. The server re-prices from the cart here (never trusts client
   // totals), so this is also the point where a stale/tampered cart would be
   // caught, before any card details are even collected.
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [intentError,  setIntentError]  = useState<string | null>(null);
 
   useEffect(() => {
-    if (mode !== "international" || step !== "payment" || intlMethod !== "stripe-card") return;
+    if (step !== "payment") return;
     if (clientSecret || intentError) return; // already have one, or already failed — don't refetch on every render
 
     let cancelled = false;
@@ -1707,69 +1328,18 @@ export default function CheckoutPage() {
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, step, intlMethod]);
-
-  async function handleBankTransferConfirm() {
-    setSubmitting(true);
-    setSubmitError("");
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: items.map((item) => ({
-            product_id: item.id,
-            product_name: item.name,
-            product_image: item.image,
-            quantity: item.quantity,
-            unit_price: item.price,
-            source: item.source ?? "product",
-            variant: item.variant,
-          })),
-          // total_amount/charged_amount are NOT sent — /api/orders recomputes
-          // both server-side (repriceItems + calculateShipping) and ignores
-          // any client-submitted total, same guarantee as the Stripe path.
-          delivery_address: ship,
-          payment_method: "bank_transfer",
-          order_ref: orderRef,
-          currency: "NGN",
-          delivery_method: effectiveDeliveryMethod,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setSubmitError(data.error ?? "Could not save your order. Please try again.");
-        return;
-      }
-      setSavedOrderId(data.order_id);
-      // DB-verified figures from the same response that confirms the order
-      // was created — not a client-side recomputation, so clearing the
-      // cart on the next line can never change what the receipt displays.
-      setConfirmed({
-        summary: {
-          totalAmountEUR: data.total_amount_eur,
-          chargedAmount: data.charged_amount,
-          currency: data.currency,
-          paymentChannel: data.payment_channel,
-        },
-        estimatedDays: estimatedDaysDisplay,
-      });
-      clearCart(); // order now genuinely exists in the DB — safe to empty
-      setStep("confirmation");
-    } catch {
-      setSubmitError("Network error — please check your connection and try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  }, [step]);
 
   // The webhook is what actually creates the order — this only runs once
   // StripeCardForm's own polling has confirmed that's happened (via
   // /api/payments/stripe/status, which returns these same DB-verified
   // figures), so clearing the cart here (and not any earlier) can never
   // empty it for a payment that hasn't actually gone through.
-  function handleStripeSuccess(orderId: string, summary: OrderConfirmationSummary) {
-    setSavedOrderId(orderId);
+  // The DB order id is intentionally unused — the confirmation screen shows
+  // the client-generated `orderRef` that the customer has seen since the
+  // payment step, so switching to the DB id here would show them a reference
+  // they've never seen and that isn't on their Stripe statement.
+  function handleStripeSuccess(_orderId: string, summary: OrderConfirmationSummary) {
     setConfirmed({ summary, estimatedDays: estimatedDaysDisplay });
     clearCart();
     setStep("confirmation");
@@ -1785,57 +1355,6 @@ export default function CheckoutPage() {
     setSoldOut(info);
     clearCart();
     setStep("refunded");
-  }
-
-  async function handleInternationalTransferConfirm() {
-    setSubmitting(true);
-    setSubmitError("");
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: items.map((item) => ({
-            product_id: item.id,
-            product_name: item.name,
-            product_image: item.image,
-            quantity: item.quantity,
-            unit_price: item.price,
-            source: item.source ?? "product",
-            variant: item.variant,
-          })),
-          // total_amount/charged_amount are NOT sent — /api/orders recomputes
-          // both server-side (repriceItems + calculateShipping) and ignores
-          // any client-submitted total, same guarantee as the Stripe path.
-          delivery_address: ship,
-          payment_method: "swift_transfer",
-          order_ref: orderRef,
-          currency,
-          delivery_method: effectiveDeliveryMethod,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setSubmitError(data.error ?? "Could not save your order. Please try again.");
-        return;
-      }
-      setSavedOrderId(data.order_id);
-      setConfirmed({
-        summary: {
-          totalAmountEUR: data.total_amount_eur,
-          chargedAmount: data.charged_amount,
-          currency: data.currency,
-          paymentChannel: data.payment_channel,
-        },
-        estimatedDays: estimatedDaysDisplay,
-      });
-      clearCart(); // order now genuinely exists in the DB — safe to empty
-      setStep("confirmation");
-    } catch {
-      setSubmitError("Network error — please check your connection and try again.");
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   /* Empty cart guard */
@@ -1861,7 +1380,6 @@ export default function CheckoutPage() {
     if (!confirmed) return null;
     return (
       <ConfirmationScreen
-        mode={mode} intlMethod={intlMethod}
         orderRef={orderRef} firstName={ship.firstName}
         summary={confirmed.summary}
         estimatedDays={confirmed.estimatedDays}
@@ -1891,22 +1409,20 @@ export default function CheckoutPage() {
             </svg>
             <h1 className="font-heading text-xl sm:text-2xl font-700 text-deep-brown">Secure Checkout</h1>
           </div>
-          <p className="text-xs font-medium tracking-wide pl-6 sm:pl-0" style={{ color: accent }}>
-            {mode === "nigerian"
-              ? "Nigerian Orders · Bank Transfer"
-              : `International · Stripe · ${currency}`}
+          <p className="text-xs font-medium tracking-wide pl-6 sm:pl-0" style={{ color: ACCENT }}>
+            {`Secure card payment · Stripe · ${currency}`}
           </p>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-52 lg:pb-10">
-        <StepBar current={step} mode={mode} />
+        <StepBar current={step} />
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Form */}
           <div className="flex-1 min-w-0 space-y-4">
             {step === "shipping" && (
-              <ShippingStep mode={mode} ship={ship} setShip={setShip}
+              <ShippingStep ship={ship} setShip={setShip}
                 fieldError={shipFieldError} onFieldBlur={handleShipFieldBlur}
                 onNext={handleContinueToPayment}
                 estimatedDays={estimatedDaysDisplay}
@@ -1915,33 +1431,15 @@ export default function CheckoutPage() {
                 deliveryMethod={deliveryMethod}
                 setDeliveryMethod={setDeliveryMethod} />
             )}
-            {step === "payment" && mode === "nigerian" && (
-              <NigerianPaymentStep
-                orderTotalNGN={chargedTotal} orderRef={orderRef}
-                onBack={() => { setStep("shipping"); setTermsAccepted(false); setSubmitError(""); }}
-                onBankTransferConfirm={handleBankTransferConfirm}
-                isSubmitting={submitting}
-                submitError={submitError}
-                termsAccepted={termsAccepted}
-                setTermsAccepted={setTermsAccepted}
-                onShowTerms={() => setShowTerms(true)}
-              />
-            )}
-            {step === "payment" && mode === "international" && (
-              <InternationalPaymentStep
+            {step === "payment" && (
+              <PaymentStep
                 formattedTotal={pricing.formattedTotal}
                 orderRef={orderRef}
-                currency={currency}
-                intlMethod={intlMethod}
-                setIntlMethod={setIntlMethod}
-                onBack={() => { setStep("shipping"); setTermsAccepted(false); setSubmitError(""); }}
-                onTransferConfirm={handleInternationalTransferConfirm}
+                onBack={() => { setStep("shipping"); setTermsAccepted(false); }}
                 clientSecret={clientSecret}
                 intentError={intentError}
                 onStripeSuccess={handleStripeSuccess}
                 onStripeRefunded={handleStripeRefunded}
-                isSubmitting={submitting}
-                submitError={submitError}
                 termsAccepted={termsAccepted}
                 setTermsAccepted={setTermsAccepted}
                 onShowTerms={() => setShowTerms(true)}
@@ -1949,14 +1447,14 @@ export default function CheckoutPage() {
             )}
             {/* Mobile trust + logos */}
             <div className="lg:hidden bg-white rounded-2xl border border-cream-darker shadow-sm p-4">
-              <TrustBadges mode={mode} />
-              <div className="mt-3"><PaymentLogos mode={mode} /></div>
+              <TrustBadges />
+              <div className="mt-3"><PaymentLogos /></div>
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="hidden lg:block w-72 shrink-0 sticky top-28">
-            <OrderSummary items={items} pricing={pricing} mode={mode} orderRef={orderRef}
+            <OrderSummary items={items} pricing={pricing} orderRef={orderRef}
               estimatedDays={estimatedDaysDisplay} customsApplies={customsAppliesDisplay} />
           </div>
         </div>
@@ -1977,7 +1475,7 @@ export default function CheckoutPage() {
           <button type="button" onClick={handleContinueToPayment}
             className="w-full h-12 rounded-none text-white font-semibold text-sm tracking-wide
                        active:scale-[0.98] transition-all duration-150 shadow-sm"
-            style={{ backgroundColor: accent }}>
+            style={{ backgroundColor: ACCENT }}>
             Continue to Payment →
           </button>
         )}
@@ -1989,45 +1487,26 @@ export default function CheckoutPage() {
         {step === "payment" && (
           <div className="flex gap-3">
             <button type="button"
-              onClick={() => { setStep("shipping"); setTermsAccepted(false); setSubmitError(""); }}
+              onClick={() => { setStep("shipping"); setTermsAccepted(false); }}
               className="h-12 px-5 rounded-none border-2 border-stone-200 text-stone-500
                          font-medium text-sm active:bg-stone-100 transition-all duration-150 shrink-0">
               ← Back
             </button>
-            {mode === "international" && intlMethod === "stripe-card" ? (
-              // The real Stripe submit button lives inline next to the card
-              // fields (StripeCardForm, inside <Elements>) — a detached
-              // sticky-bar button can't reach that context, and putting a
-              // pay button anywhere but right next to the card form is
-              // confusing anyway. This is just a pointer to it.
-              <div className="flex-1 h-12 rounded-none border-2 border-taupe/30 flex items-center justify-center
-                              text-xs text-taupe-dark px-3 text-center">
-                ↑ Enter card details above to pay
-              </div>
-            ) : (
-              <button type="button"
-                onClick={
-                  mode === "nigerian"
-                    ? handleBankTransferConfirm
-                    : handleInternationalTransferConfirm
-                }
-                disabled={!termsAccepted || submitting}
-                className="flex-1 h-12 rounded-none text-white font-semibold text-sm
-                           active:scale-[0.98] transition-all duration-150 shadow-sm
-                           disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ backgroundColor: accent }}>
-                {submitting ? "Saving…" : "Confirm Order"}
-              </button>
-            )}
+            {/* The real Stripe submit button lives inline next to the card
+                fields (StripeCardForm, inside <Elements>) — a detached
+                sticky-bar button can't reach that context, and putting a
+                pay button anywhere but right next to the card form is
+                confusing anyway. This is just a pointer to it. */}
+            <div className="flex-1 h-12 rounded-none border-2 border-taupe/30 flex items-center justify-center
+                            text-xs text-taupe-dark px-3 text-center">
+              ↑ Enter card details above to pay
+            </div>
           </div>
-        )}
-        {submitError && step === "payment" && (
-          <p className="text-[10px] text-red-600 text-center mt-1">{submitError}</p>
         )}
 
         <div className="flex items-center justify-center gap-1.5 mt-2 text-[10px] text-stone-500">
           <span className="text-emerald-500"><IcoShield /></span>
-          {mode === "nigerian" ? "Bank transfer secured" : "PCI-DSS Level 1 · Stripe secured"}
+          PCI-DSS Level 1 · Stripe secured
         </div>
       </div>
     </div>
