@@ -46,6 +46,66 @@ const STEPS = [
 // Nigerian (bank-transfer) checkout mode, which no longer exists.
 const ACCENT = "#8B2035";
 
+/* ─────────────────────────────────────────────────────────
+   STRIPE ELEMENTS APPEARANCE
+
+   Without this, <Elements> renders PaymentElement in Stripe's stock theme —
+   a different font, different input height and different spacing from every
+   other field on this page. On a narrow screen that mismatch is what reads
+   as a "misaligned" payment box, because the card input genuinely doesn't
+   line up with the address inputs above it.
+
+   fontSizeBase is deliberately 16px and must NOT be reduced. iOS Safari
+   auto-zooms the viewport whenever a focused input renders below 16px, and
+   that zoom is what makes a mobile checkout feel broken — the page jumps,
+   the layout shifts sideways, and pinch-to-zoom is left in a strange state.
+   Shrink the surrounding copy instead; this one value has to stay.
+───────────────────────────────────────────────────────── */
+const STRIPE_APPEARANCE = {
+  theme: "stripe" as const,
+  variables: {
+    // Matches --font-body / --font-inter from globals.css so the card field
+    // is set in the same typeface as the rest of the form.
+    fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    fontSizeBase: "16px",
+    colorPrimary: ACCENT,
+    colorText: "#3D2B1F",
+    colorTextSecondary: "#8A7968",
+    colorDanger: "#B91C1C",
+    borderRadius: "12px",
+    spacingUnit: "4px",
+  },
+  rules: {
+    ".Input": {
+      // Height and padding chosen to match the site's own inputs, so the
+      // card field sits flush with the address fields rather than a few
+      // pixels taller or shorter.
+      padding: "12px 14px",
+      border: "1px solid #E4D8C8",
+      boxShadow: "none",
+    },
+    ".Input:focus": {
+      border: `1px solid ${ACCENT}`,
+      boxShadow: "none",
+      outline: "none",
+    },
+    ".Label": {
+      fontSize: "12px",
+      fontWeight: "500",
+      color: "#8A7968",
+      marginBottom: "6px",
+    },
+    ".Tab, .Block": {
+      border: "1px solid #E4D8C8",
+      boxShadow: "none",
+    },
+    ".Tab--selected": {
+      border: `1px solid ${ACCENT}`,
+      color: ACCENT,
+    },
+  },
+};
+
 const COUNTRY_OPTIONS = [
   { value: "GB", label: "United Kingdom" },
   { value: "IE", label: "Ireland" },
@@ -332,8 +392,14 @@ function StepBar({ current }: { current: Step }) {
    treatment across every field in checkout — border colour change plus a
    soft matching ring, not a competing browser-default outline on top.
 ───────────────────────────────────────────────────────── */
+// text-base (16px) on mobile is NOT a style choice — iOS Safari auto-zooms
+// the viewport whenever a focused input renders below 16px, which shifts the
+// page sideways mid-typing and leaves the user scrolled off-target. That
+// zoom is the single biggest cause of a mobile checkout feeling broken.
+// sm:text-sm restores the smaller size from tablet up, where no browser
+// zooms and the tighter type looks better.
 const FIELD_BASE =
-  "w-full h-12 px-4 rounded-xl bg-[#FAF6F0] text-deep-brown text-sm font-system " +
+  "w-full h-12 px-4 rounded-xl bg-[#FAF6F0] text-deep-brown text-base sm:text-sm font-system " +
   "placeholder:text-[#9C8570]/70 focus:outline-none transition-colors duration-150 " +
   "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#F0EBE3]";
 const FIELD_OK = "border border-[#E4D8C8] focus:border-[#792F00] focus:ring-2 focus:ring-[#792F00]/20";
@@ -913,7 +979,10 @@ function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccep
 
   return (
     <div>
-      <PaymentElement />
+      {/* Accordion with the card form already open: on a narrow screen the
+          default tab layout puts payment-method tabs across the top, which
+          wrap awkwardly and push the card fields below the fold. */}
+      <PaymentElement options={{ layout: { type: "accordion", defaultCollapsed: false } }} />
 
       <div className="mt-4">
         <TermsCheckbox accepted={termsAccepted} onChange={setTermsAccepted} onShowTerms={onShowTerms} />
@@ -1002,7 +1071,7 @@ function PaymentStep({
                 Preparing secure payment…
               </div>
             ) : (
-              <Elements stripe={getStripePromise()} options={{ clientSecret }}>
+              <Elements stripe={getStripePromise()} options={{ clientSecret, appearance: STRIPE_APPEARANCE }}>
                 <StripeCardForm
                   formattedTotal={formattedTotal}
                   orderRef={orderRef}
