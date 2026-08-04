@@ -3,6 +3,7 @@ import { createClient }      from "@/lib/supabase/server";
 import { renderToBuffer }    from "@react-pdf/renderer";
 import { InvoiceDocument }   from "@/lib/invoice-pdf";
 import { NextResponse }      from "next/server";
+import { isAdminEmail }      from "@/lib/auth/isAdmin";
 import React                 from "react";
 
 export async function GET(
@@ -28,7 +29,7 @@ export async function GET(
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
   if (!isAdmin && order.user_id !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

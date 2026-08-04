@@ -2,16 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import AdminNav from "@/components/AdminNav";
-
-function isAdmin(email: string | undefined) {
-  return email && process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL;
-}
+import { isAdminEmail } from "@/lib/auth/isAdmin";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user || !isAdmin(user.email)) redirect("/");
+  if (!user || !isAdminEmail(user.email)) redirect("/");
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#F3F0EB" }}>

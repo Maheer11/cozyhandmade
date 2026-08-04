@@ -1,16 +1,13 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-
-function isAdmin(email: string | undefined) {
-  return email && process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL;
-}
+import { isAdminEmail } from "@/lib/auth/isAdmin";
 
 export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!isAdmin(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminEmail(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = createAdminClient() as any;
     const { data, error } = await db
@@ -30,7 +27,7 @@ export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!isAdmin(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminEmail(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = createAdminClient() as any;
     const body = await request.json();

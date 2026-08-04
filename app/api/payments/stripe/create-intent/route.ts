@@ -131,6 +131,14 @@ export async function POST(request: Request) {
       currency: body.currency.toLowerCase(),
       payment_method_types: ["card"],
       metadata: { source: "cozi-handmade-checkout" },
+      // Stripe's own receipt, as a backstop independent of our
+      // infrastructure: it still reaches the customer if Resend is down, the
+      // deploy is broken, or an email_deliveries row is stuck. A duplicate
+      // receipt is a far smaller harm than a customer who paid and received
+      // nothing in writing. Stripe only sends these automatically in live
+      // mode, so they won't appear in test-mode runs. Remove this one line
+      // to turn it off.
+      ...(body.delivery_address.email ? { receipt_email: body.delivery_address.email } : {}),
     });
 
     // Stage the server-verified cart + delivery address so the webhook (a

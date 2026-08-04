@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { sendOrderStatusEmail } from "@/lib/email";
+import { isAdminEmail } from "@/lib/auth/isAdmin";
 import {
   addBusinessDays,
   IE_DELIVERY_BUSINESS_DAYS,
@@ -23,10 +24,6 @@ function estimatedDeliveryLabel(isIreland: boolean): string {
   const earliest = addBusinessDays(now, INTL_DELIVERY_BUSINESS_DAYS_MIN);
   const latest = addBusinessDays(now, INTL_DELIVERY_BUSINESS_DAYS_MAX);
   return `${formatDate(earliest)} – ${formatDate(latest)}`;
-}
-
-function isAdmin(email: string | undefined) {
-  return email && process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL;
 }
 
 // "pending" / "paid" / "processing" are system-managed — only
@@ -55,7 +52,7 @@ export async function PATCH(
     // Auth check uses anon client; DB writes use service-role to bypass RLS
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!isAdmin(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminEmail(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { status, notes } = await request.json();
 

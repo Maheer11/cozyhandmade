@@ -3,6 +3,16 @@ import { getStripe } from "@/lib/stripe/server";
 import { getStripeWebhookSecret } from "@/lib/stripe/env";
 import { updateSpendTier } from "@/lib/checkout/updateSpendTier";
 import { decideDuplicateDeliveryAction, STUCK_PROCESSING_THRESHOLD_MS } from "@/lib/checkout/webhookDedupe";
+import { claimEmailDelivery, sendClaimedEmail, deliverEmail } from "@/lib/checkout/emailDeliveries";
+import {
+  parseRecipients,
+  sendOrderConfirmationEmail,
+  sendRefundNotificationEmail,
+  sendAdminNewOrderEmail,
+  type DeliveryAddress,
+  type OrderEmailItem,
+} from "@/lib/email";
+import { calculateShipping } from "@/lib/checkout/shipping";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
@@ -288,6 +298,29 @@ export async function POST(request: Request) {
       // not just the one item that triggered OUT_OF_STOCK.
       await db.from("pending_stripe_orders").update({ resolved_at: new Date().toISOString() }).eq("payment_intent_id", paymentIntent.id);
       await markDone(db, event.id);
+
+      // Tell the customer their money is coming back. Strictly after
+      // markDone: the refund has already happened and the event is already
+      // terminal, so nothing below can affect either. deliverEmail never
+      // throws and never returns non-200 — a dead email provider leaves a
+      // 'failed' row in email_deliveries and nothing else.
+      await deliverEmail(
+        db,
+        {
+          kind: "refund_notification",
+          paymentIntentId: paymentIntent.id,
+          recipient: customerEmail,
+        },
+        () =>
+          sendRefundNotificationEmail({
+            to: customerEmail!,
+            productName: productName ?? null,
+            amount: pending.total_amount,
+            currency: pending.currency,
+            deliveryAddress: (pending.delivery_address ?? {}) as DeliveryAddress,
+          }),
+      );
+
       return NextResponse.json({ received: true, refunded: true, reason: `Out of stock: ${productName}` });
     }
 
@@ -317,12 +350,95 @@ export async function POST(request: Request) {
   // Postgres update plus the delete above, not a slow external call, so
   // doing it inline keeps the code simple without risking Stripe's response
   // timeout.
+  // Everything the confirmation email needs is already in memory on
+  // `pending` — captured here because the staging row is deleted on the very
+  // next line and the email work happens after that.
+  const deliveryAddress = (pending.delivery_address ?? {}) as DeliveryAddress;
+  const orderItems = (pending.items ?? []) as OrderEmailItem[];
+  // ORDER_NOTIFICATION_EMAILS is a comma-separated list and is deliberately
+  // NOT ADMIN_EMAIL. ADMIN_EMAIL is an AUTHENTICATION check — nine routes
+  // gate dashboard access on `email === process.env.ADMIN_EMAIL` — so
+  // adding a second address there to receive alerts would silently grant
+  // that person admin access. Falls back to ADMIN_EMAIL when unset, so
+  // behaviour is unchanged until the new variable is configured.
+  const adminRecipients = parseRecipients(
+    process.env.ORDER_NOTIFICATION_EMAILS ?? process.env.ADMIN_EMAIL,
+  );
+  const estimatedDays = calculateShipping(
+    orderItems.map((i) => ({
+      quantity: i.quantity,
+      shippingWeightGrams: (i as { shipping_weight_grams?: number | null }).shipping_weight_grams ?? null,
+    })),
+    deliveryAddress.country,
+  ).estimatedDays;
+  const placedAt = new Date();
+
   await db.from("pending_stripe_orders").delete().eq("payment_intent_id", paymentIntent.id);
 
   if (pending.user_id) {
     await updateSpendTier(db, pending.user_id, pending.total_amount);
   }
 
+  // ── Email claims: BEFORE markDone, sends AFTER ────────────────────────
+  // Claiming first means a crash between here and the send leaves a
+  // discoverable 'pending' row in email_deliveries, rather than an event
+  // marked terminal with no email and no trace of one being owed. The
+  // unique (kind, payment_intent_id) constraint is what stops a taken-over
+  // reprocessing of this same event sending a second confirmation.
+  const confirmationClaim = {
+    kind: "order_confirmation" as const,
+    paymentIntentId: paymentIntent.id,
+    orderId: orderId as string,
+    recipient: deliveryAddress.email,
+  };
+  const adminClaim = {
+    kind: "admin_new_order" as const,
+    paymentIntentId: paymentIntent.id,
+    orderId: orderId as string,
+    recipient: adminRecipients.join(", "),
+  };
+  const confirmationOutcome = await claimEmailDelivery(db, confirmationClaim);
+  const adminOutcome = await claimEmailDelivery(db, adminClaim);
+
   await markDone(db, event.id);
+
+  // The order is committed and the event is terminal. Nothing below this
+  // line can change the response — sendClaimedEmail cannot throw, and its
+  // result is recorded in email_deliveries rather than returned to Stripe.
+  if (confirmationOutcome === "claimed") {
+    await sendClaimedEmail(db, confirmationClaim, () =>
+      sendOrderConfirmationEmail({
+        to: deliveryAddress.email!,
+        orderId: orderId as string,
+        items: orderItems,
+        subtotal: pending.subtotal_amount ?? pending.total_amount,
+        shipping: pending.shipping_amount ?? 0,
+        total: pending.total_amount,
+        currency: "EUR",
+        chargedAmount: paymentIntent.amount_received / 100,
+        chargedCurrency: pending.currency,
+        deliveryAddress,
+        estimatedDays,
+        placedAt,
+      }),
+    );
+  }
+
+  if (adminOutcome === "claimed") {
+    await sendClaimedEmail(db, adminClaim, () =>
+      sendAdminNewOrderEmail({
+        to: adminRecipients,
+        orderId: orderId as string,
+        items: orderItems,
+        shipping: pending.shipping_amount ?? 0,
+        total: pending.total_amount,
+        currency: "EUR",
+        deliveryAddress,
+        estimatedDays,
+        placedAt,
+      }),
+    );
+  }
+
   return NextResponse.json({ received: true, order_id: orderId });
 }

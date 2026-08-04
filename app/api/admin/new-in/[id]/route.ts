@@ -1,10 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-
-function isAdmin(email: string | undefined) {
-  return email && process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL;
-}
+import { isAdminEmail } from "@/lib/auth/isAdmin";
 
 export async function PATCH(
   request: Request,
@@ -14,7 +11,7 @@ export async function PATCH(
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!isAdmin(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminEmail(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = createAdminClient() as any;
     const body = await request.json();
@@ -60,7 +57,7 @@ export async function DELETE(
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!isAdmin(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminEmail(user?.email)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = createAdminClient() as any;
     const { error } = await db.from("new_in_items").delete().eq("id", id);
