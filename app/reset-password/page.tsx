@@ -23,8 +23,25 @@ function ResetPasswordForm() {
   async function verifySession() {
     const supabase = createClient();
 
-    const hash = window.location.hash;
-    if (!hash.includes("type=recovery")) {
+    // Recovery links arrive in one of two shapes and this has to accept both:
+    //
+    //  - PKCE (what @supabase/ssr's createBrowserClient uses by default):
+    //    ?code=... in the QUERY STRING.
+    //  - Implicit (older flow): #access_token=...&type=recovery in the HASH.
+    //
+    // This previously checked the hash only, so under PKCE a perfectly valid
+    // link was rejected as "invalid" before any session check ran.
+    const search = new URLSearchParams(window.location.search);
+    const code = search.get("code");
+    const hasRecoveryHash = window.location.hash.includes("type=recovery");
+
+    // Arrived from /auth/confirm, which already exchanged the token for a
+    // session. There is no code or hash to read here by design — presenting
+    // a single-use token twice is exactly what we're avoiding — so trust the
+    // session check below instead.
+    const preVerified = search.get("verified") === "1";
+
+    if (!preVerified && !code && !hasRecoveryHash) {
       setError(
         "Invalid reset link. Password recovery links are only valid for 24 hours."
       );
@@ -32,7 +49,25 @@ function ResetPasswordForm() {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // supabase-js has detectSessionInUrl on by default, so it may already be
+    // mid-exchange when this runs. Poll briefly before concluding there's no
+    // session — otherwise a valid link intermittently reports as expired
+    // purely because we asked too early.
+    let user = null;
+    for (let attempt = 0; attempt < 4 && !user; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 300));
+      ({ data: { user } } = await supabase.auth.getUser());
+    }
+
+    // Still nothing, but we hold a code — the automatic exchange either
+    // didn't run or failed, so do it explicitly. An "already used" error
+    // here is expected and harmless when the automatic path won the race.
+    if (!user && code) {
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (!exchangeError) {
+        ({ data: { user } } = await supabase.auth.getUser());
+      }
+    }
 
     if (!user) {
       setError(
