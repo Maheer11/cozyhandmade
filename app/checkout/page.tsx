@@ -403,6 +403,21 @@ const FIELD_BASE =
   "placeholder:text-[#9C8570]/70 focus:outline-none transition-colors duration-150 " +
   "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#F0EBE3]";
 const FIELD_OK = "border border-[#E4D8C8] focus:border-[#792F00] focus:ring-2 focus:ring-[#792F00]/20";
+
+// Section shell for the checkout steps.
+//
+// On a phone the card chrome is dropped entirely — no white panel, no
+// border, no shadow, no horizontal padding — so the form sits directly on
+// the page. The inputs, the delivery-method options and the info notices are
+// ALL bordered boxes in their own right, so wrapping them in another
+// bordered box produced three visible frames nested inside each other on a
+// 390px screen. Removing the outermost one gives the fields room to breathe
+// without changing anything about them.
+//
+// From sm: up the panel returns, where there's width to spare and the card
+// edge helps separate the form from the sidebar.
+const SECTION_SHELL =
+  "px-0 py-1 sm:bg-white sm:rounded-2xl sm:border sm:border-cream-darker sm:shadow-sm sm:p-6";
 const FIELD_ERROR = "border-2 border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200";
 
 function FieldError({ id, message }: { id: string; message?: string }) {
@@ -625,8 +640,8 @@ function TrustBadges() {
     <div className="grid grid-cols-2 gap-2 mt-4">
       {badges.map((b) => (
         <div key={b.label}
-             className={`flex items-start gap-2.5 rounded-lg border p-3
-                         ${b.green ? "bg-emerald-50 border-emerald-100" : "bg-white border-stone-100"}`}>
+             className={`flex items-start gap-2.5 rounded-lg border-0 sm:border p-3
+                         `}>
           <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0
                            ${b.green ? "bg-emerald-100 text-emerald-600" : "bg-stone-100 text-stone-500"}`}>
             {b.ico}
@@ -812,7 +827,7 @@ function ShippingStep({
   setDeliveryMethod: (m: "courier" | "pickup") => void;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-cream-darker shadow-sm p-5 sm:p-6">
+    <div className={SECTION_SHELL}>
       <h2 className="font-heading font-600 text-deep-brown text-xl mb-5">Shipping Information</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field id="fn" label="First Name" placeholder="e.g. Jane"
@@ -849,7 +864,7 @@ function ShippingStep({
       </div>
 
       {pickupEligible && (
-        <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+        <div className="mt-4 rounded-xl border-0 sm:border sm:border-emerald-100 bg-emerald-50/70 p-3">
           <p className="text-xs font-semibold text-emerald-800 mb-2">
             Your address is in Dublin — how would you like to receive your order?
           </p>
@@ -870,12 +885,12 @@ function ShippingStep({
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100 text-xs text-blue-800 font-system">
+      <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50/70 rounded-xl border-0 sm:border sm:border-blue-100 text-xs text-blue-800 font-system">
         <div className="w-4 h-4 shrink-0 text-blue-500"><IcoTruck /></div>
         {deliveryMethod === "pickup" ? "Local pickup" : "International shipping"} · Estimated: <strong>{estimatedDays}</strong>
       </div>
       {customsApplies && (
-        <div className="mt-2 flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100 text-xs text-amber-800 font-system">
+        <div className="mt-2 flex items-start gap-2 p-3 bg-amber-50/70 rounded-xl border-0 sm:border sm:border-amber-100 text-xs text-amber-800 font-system">
           <div className="w-4 h-4 shrink-0 text-amber-500 mt-0.5"><IcoWarning /></div>
           Customers outside the EU may be charged import duties or taxes on delivery. These are set
           by your country and are not included in this price.
@@ -1031,7 +1046,7 @@ function PaymentStep({
   onShowTerms: () => void;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-cream-darker shadow-sm p-5 sm:p-6">
+    <div className={SECTION_SHELL}>
       <h2 className="font-heading font-600 text-deep-brown text-xl mb-2">Payment</h2>
       <p className="text-xs text-taupe-dark mb-5">Pay securely by card.</p>
 
@@ -1515,7 +1530,7 @@ export default function CheckoutPage() {
               />
             )}
             {/* Mobile trust + logos */}
-            <div className="lg:hidden bg-white rounded-2xl border border-cream-darker shadow-sm p-4">
+            <div className="lg:hidden sm:bg-white sm:rounded-2xl sm:border sm:border-cream-darker sm:shadow-sm sm:p-4 pt-2">
               <TrustBadges />
               <div className="mt-3"><PaymentLogos /></div>
             </div>

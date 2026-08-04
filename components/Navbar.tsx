@@ -259,11 +259,26 @@ export default function Navbar() {
             </div>
 
             {/* Cart icon — opens slide-in drawer */}
+            {/* Three things make this read as tappable on a phone, and it
+                previously had none of them:
+                 - touchAction: manipulation — without it iOS waits ~300ms for
+                   a possible double-tap before firing, which is the single
+                   biggest cause of a control feeling unresponsive. Every
+                   other tappable control in this codebase already sets it.
+                 - active:scale-90 — a press needs to move. The old
+                   active:bg tint faded in over 150ms, so on a quick tap it
+                   was gone before the eye registered it.
+                 - a resting background on mobile — a bare outline icon on a
+                   flat header reads as decoration; a subtle filled target
+                   reads as a button. Dropped at lg: where hover does that
+                   job instead. */}
             <button
               onClick={openCart}
+              style={{ touchAction: "manipulation" }}
               className="relative w-12 h-12 flex items-center justify-center
-                         text-brown active:bg-cream-dark lg:hover:text-gold rounded-xl
-                         transition-colors duration-150"
+                         text-brown rounded-xl bg-cream-dark/50 lg:bg-transparent
+                         active:bg-cream-dark active:scale-90 lg:hover:text-gold
+                         lg:active:scale-100 transition-all duration-100"
               aria-label={`Cart, ${itemCount} items`}
             >
               <svg
