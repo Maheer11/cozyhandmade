@@ -462,6 +462,30 @@ export interface Database {
           display_order?: number;
         };
       };
+      categories: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          image: string | null;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          description?: string;
+          image?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string;
+          image?: string | null;
+          display_order?: number;
+        };
+      };
     };
   };
 }

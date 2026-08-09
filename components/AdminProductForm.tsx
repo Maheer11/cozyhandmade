@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { DbProduct } from "@/lib/db-products";
-import { categories } from "@/lib/products";
+import type { Category } from "@/lib/products";
 
 interface FormState {
   productType: "regular" | "custom";
@@ -55,13 +55,13 @@ export interface ProductPrefill {
   variant_price?: Record<string, number>;
 }
 
-function defaultState(product?: DbProduct, prefill?: ProductPrefill): FormState {
+function defaultState(product?: DbProduct, prefill?: ProductPrefill, categories?: Category[]): FormState {
   return {
     productType:    "regular",
     name:           product?.name           ?? prefill?.name ?? "",
     price:          product?.price.toString()         ?? prefill?.price ?? "",
     original_price: product?.original_price?.toString() ?? "",
-    category:       product?.category       ?? categories[0]?.id ?? "",
+    category:       product?.category       ?? categories?.[0]?.id ?? "",
     description:    product?.description    ?? prefill?.description ?? "",
     details:        product?.details?.join("\n")      ?? "",
     tags:           product?.tags?.join(", ")         ?? prefill?.tags ?? "",
@@ -80,13 +80,13 @@ function defaultState(product?: DbProduct, prefill?: ProductPrefill): FormState 
   };
 }
 
-export default function AdminProductForm({ product, prefill, fromNewInId }: { product?: DbProduct; prefill?: ProductPrefill; fromNewInId?: string }) {
+export default function AdminProductForm({ product, prefill, fromNewInId, categories }: { product?: DbProduct; prefill?: ProductPrefill; fromNewInId?: string; categories: Category[] }) {
   const isEdit = !!product;
   const router = useRouter();
   const fileRef  = useRef<HTMLInputElement>(null);
   const moreRef  = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState<FormState>(defaultState(product, prefill));
+  const [form, setForm] = useState<FormState>(defaultState(product, prefill, categories));
   const [uploadingMain, setUploadingMain] = useState(false);
   const [uploadingMore, setUploadingMore] = useState(false);
   const [mainProgress,  setMainProgress]  = useState(0);

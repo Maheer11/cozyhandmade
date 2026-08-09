@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminProductForm, { type ProductPrefill } from "@/components/AdminProductForm";
 import { createClient } from "@/lib/supabase/server";
+import { getCategories } from "@/lib/db-categories";
 import type { NewInItem } from "@/components/AdminNewInForm";
 
 export default async function NewProductPage({
@@ -9,14 +10,15 @@ export default async function NewProductPage({
   searchParams: Promise<{ fromNewIn?: string }>;
 }) {
   const { fromNewIn } = await searchParams;
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const categories = await getCategories(db);
 
   let prefill: ProductPrefill | undefined;
   let sourceName: string | undefined;
 
   if (fromNewIn) {
-    const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
     const { data: item } = await db
       .from("new_in_items")
       .select("*")
@@ -58,7 +60,7 @@ export default async function NewProductPage({
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <AdminProductForm prefill={prefill} fromNewInId={prefill ? fromNewIn : undefined} />
+        <AdminProductForm prefill={prefill} fromNewInId={prefill ? fromNewIn : undefined} categories={categories} />
       </div>
     </div>
   );

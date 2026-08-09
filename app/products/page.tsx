@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { mapProduct, type DbProduct } from "@/lib/db-products";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
-import { categories } from "@/lib/products";
+import { mapCategoriesWithFallback, type DbCategory } from "@/lib/db-categories";
 import ProductsContent from "@/components/ProductsContent";
 import type { Review } from "@/components/SocialProofSection";
 
@@ -29,6 +29,10 @@ export default async function ProductsPage() {
     .select("*")
     .order("display_order", { ascending: true });
 
+  const { data: categoryRows } = await db
+    .from("categories")
+    .select("*") as { data: DbCategory[] | null };
+
   // Reviews are admin-managed (/admin/reviews) — no more hardcoded array.
   const { data: dbReviews } = await db
     .from("reviews")
@@ -49,11 +53,16 @@ export default async function ProductsPage() {
   // Merge custom products first, then regular products
   const allProducts = [...customProducts, ...regularProducts];
 
+  const resolvedCategories = mapCategoriesWithFallback(
+    categoryRows ?? [],
+    [...(data ?? []), ...(customData ?? [])]
+  );
+
   // Only show categories that actually have a product in them — the
   // Curated Categories slider should reflect real inventory, not the full
-  // hardcoded list. A category reappears on its own the moment a product
-  // is added to it, no code change needed.
-  const availableCategories = categories.filter((cat) =>
+  // admin-managed list. A category reappears on its own the moment a
+  // product is added to it, no admin action needed.
+  const availableCategories = resolvedCategories.filter((cat) =>
     allProducts.some((p) => p.category === cat.id)
   );
 

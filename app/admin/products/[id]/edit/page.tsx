@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { DbProduct } from "@/lib/db-products";
+import { getCategories } from "@/lib/db-categories";
 import AdminProductForm from "@/components/AdminProductForm";
 
 export default async function EditProductPage({
@@ -14,11 +15,10 @@ export default async function EditProductPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const { data: product } = await db
-    .from("products")
-    .select("*")
-    .eq("id", id)
-    .single() as { data: DbProduct | null };
+  const [{ data: product }, categories] = await Promise.all([
+    db.from("products").select("*").eq("id", id).single() as Promise<{ data: DbProduct | null }>,
+    getCategories(db),
+  ]);
 
   if (!product) notFound();
 
@@ -37,7 +37,7 @@ export default async function EditProductPage({
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <AdminProductForm product={product} />
+        <AdminProductForm product={product} categories={categories} />
       </div>
     </div>
   );

@@ -33,16 +33,6 @@ export interface Category {
   image: string;
 }
 
-export const categories: Category[] = [
-  { id: "Blankets", name: "Throw blankets", description: "Hand-stitched warmth for restful nights", image: "/images/blanket-room2.jpg" },
-
-  { id: "baby", name: "Baby blankets", description: "Gentle knits for the tiniest ones", image: "/images/baby-blanket.jpg" },
-
-  { id: "handbags", name: "Handbags & Totes", description: "Woven by hand, carried with pride", image: "/images/backgroundpic.jpg" },
-
-  { id: "wallets", name: "Purses & Wallets", description: "Compact elegance, stitched to last", image: "/images/blanket-room.jpg" },
-
-  { id: "scarves", name: "Scarves & Wraps", description: "Draped in softness, knitted with love", image: "/images/blanket-bg.jpg" },
-];
-
+// Categories now live in Supabase, admin-managed at /admin/categories.
+// Use lib/db-categories.ts getCategories() to fetch.
 // Products now live in Supabase + Cloudinary. Use lib/db-products.ts mapProduct() to fetch.
