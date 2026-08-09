@@ -554,11 +554,30 @@ export default function AdminProductForm({ product, prefill, fromNewInId }: { pr
     );
   }
 
+  // new_in_items only tracks one total (stock_quantity) — it has no
+  // per-color/size breakdown. If the source item had colors/sizes, this
+  // form switches to per-variant stock (see computedStock above) and that
+  // grid starts every cell at 0. Silently defaulting it to, say, an even
+  // split would be presenting a guess as real inventory, so instead this
+  // surfaces the gap and makes the admin fill in real numbers.
+  const prefillStockGap = !!prefill && (prefill.colors?.length || prefill.sizes?.length)
+    ? Number(prefill.stock_quantity ?? 0)
+    : 0;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
           {error}
+        </div>
+      )}
+
+      {prefillStockGap > 0 && (
+        <div className="px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg">
+          This item had <strong>{prefillStockGap} unit{prefillStockGap === 1 ? "" : "s"}</strong> total in New In,
+          but New In doesn&apos;t track stock per colour/size. The stock grid below starts at 0 for every
+          variant — enter the real per-variant counts (they should add up to {prefillStockGap}, or to whatever
+          you actually have on hand) before creating, otherwise this product will show as out of stock.
         </div>
       )}
 
