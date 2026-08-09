@@ -3,9 +3,10 @@ import Image from "next/image";
 import NewsletterForm from "@/components/NewsletterForm";
 import ScrollReveal from "@/components/ScrollReveal";
 import SocialProofSection, { type Review } from "@/components/SocialProofSection";
+import HeroTiles from "@/components/HeroTiles";
 import HeroSlider from "@/components/HeroSlider";
+import heroTextBg from "@/public/images/newhome1.jpg";
 import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
-import OurStorySection from "@/components/OurStorySection";
 import NewInSection, { type NewInCardData } from "@/components/NewInSection";
 import { createClient } from "@/lib/supabase/server";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
@@ -93,6 +94,12 @@ export default async function HomePage() {
   }));
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
+
+  // Hero art is live New In stock. If the collection is ever empty the hero
+  // would render nothing, so the original single-photo hero is the fallback.
+  const hasNewIn = newInItems.length > 0;
+  const heroVisual = hasNewIn ? <HeroTiles items={newInItems} /> : <HeroSlider />;
+
   return (
     <>
       {/* ══════════════════════════════════════════════
@@ -101,220 +108,242 @@ export default async function HomePage() {
       <section className="relative">
         {/* ── Mobile: slider on top, text below ── */}
         <div className="lg:hidden flex flex-col">
-          <div className="relative h-[60vh]">
-            <HeroSlider />
-            {/* Top dissolve — blends into the navbar's cream-dark background */}
-            <div
-              className="absolute top-0 left-0 w-full h-20 z-10 pointer-events-none
-                            bg-gradient-to-b from-cream-dark via-cream-dark/50 to-transparent"
-            />
-            {/* Bottom dissolve into milk text panel */}
-            <div
-              className="absolute bottom-0 left-0 w-full h-28 z-10 pointer-events-none
-                            bg-gradient-to-t from-cream-dark via-cream-dark/50 to-transparent"
-            />
+          {/* The rail sizes itself from its cards; only the single-photo
+              fallback needs a fixed height to have anything to fill. */}
+          <div className={`relative ${hasNewIn ? "" : "h-[60vh]"}`}>
+            {heroVisual}
           </div>
 
           {/* Text panel — milk background */}
-          <div className="relative flex flex-col justify-center px-6 py-10 overflow-hidden bg-cream-dark">
+          {/* py-6 not py-10: with products stacked first, every pixel above the
+              headline pushes it under the fixed bottom nav. */}
+          <div className="relative flex flex-col justify-center px-6 py-6 overflow-hidden bg-cream-dark">
             <div className="relative z-10">
-              <p className="text-gold text-[10px] uppercase tracking-[0.28em] font-body font-semibold mb-3 animate-fade-up">
+              <p className="text-gold text-[10px] uppercase tracking-[0.28em] font-body font-semibold mb-3">
                 ✦ Handcrafted in Ireland
               </p>
-              <h1 className="font-heading italic text-4xl sm:text-5xl font-300 leading-[1.15] mb-4 animate-fade-up delay-100">
-                <span className="text-deep-brown">Helping people</span>
-                <span className="text-gold"> create, connect</span>
-                <br />
-                <span className="font-500 not-italic text-gold">
-                  &amp; Find Comfort
+              {/* Two block-level spans force the 2-line break structurally
+                  rather than leaving it to auto-wrap. 2rem at 375px keeps line
+                  two on a single line; sm bumps it back up. Italic rule: one
+                  emphasis word only — see the desktop copy below.
+                  No entrance animation: a cascading fade-up-per-line on the
+                  first thing a visitor sees reads as a slide-deck reveal, not
+                  a shop. Commerce pages (ASOS et al.) render the hero static
+                  and confident — motion is reserved for content that scrolls
+                  into view further down, via ScrollReveal. */}
+              <h1 className="font-heading text-[2rem] sm:text-4xl font-300 leading-[1.15] mb-4">
+                <span className="block text-deep-brown">Handmade blankets,</span>
+                <span className="block text-gold font-500">
+                  bags &amp; baby <em className="italic">keepsakes</em>
                 </span>
               </h1>
-              <p className="text-deep-brown/70 text-sm font-medium leading-relaxed mb-7 animate-fade-up delay-200">
-                Every piece is handcrafted in Ireland using premium
-                materials, from cozy blankets and handbags to baby keepsakes and
-                creative patterns
+              <p className="text-deep-brown/70 text-sm font-medium leading-relaxed mb-7">
+                Helping people create, connect and find comfort — every piece
+                handcrafted in Ireland from premium materials.
               </p>
 
-              <div className="flex flex-col gap-3 animate-fade-up delay-300">
+              <div className="flex flex-col gap-3">
                 <Link
                   href="/products"
-                  className="group flex items-center justify-center gap-2.5 h-13 px-8 rounded-none
-                             border-2 border-gold text-gold font-semibold text-sm tracking-wide
-                             hover:bg-gold hover:text-cream active:bg-gold active:text-cream active:scale-[0.98]
+                  className="group flex items-center justify-center h-13 px-8 rounded-none
+                             bg-gold text-cream font-semibold text-sm tracking-wide
+                             shadow-[0_10px_28px_-12px_rgba(139,32,53,0.75)]
+                             hover:bg-gold-dark active:bg-gold-dark active:scale-[0.98]
                              transition-all duration-200"
                   style={{ touchAction: "manipulation" }}
                 >
-                  {/* Same iOS-style filled bag glyph + "S" mark as the navbar's Shop icon —
-                      the bag turns milk (cream-dark) on hover so it still reads against the gold fill */}
-                  <span className="relative w-7 h-7 shrink-0 inline-flex items-center justify-center">
-                    <svg
-                      className="w-7 h-7 absolute inset-0 fill-gold group-hover:fill-cream-dark transition-colors duration-200"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path d="M7.5 5.25a4.5 4.5 0 119 0V6h1.628a2.25 2.25 0 012.244 2.077l.807 10.5A2.25 2.25 0 0118.933 21H5.067a2.25 2.25 0 01-2.246-2.423l.807-10.5A2.25 2.25 0 015.872 6H7.5v-.75zM9 6h6v-.75a3 3 0 10-6 0V6zm-.75 3.75a.75.75 0 011.5 0 2.25 2.25 0 004.5 0 .75.75 0 011.5 0 3.75 3.75 0 01-7.5 0z" />
-                    </svg>
-                    <span className="relative text-white group-hover:text-gold text-[10px] font-bold mt-1 transition-colors duration-200">
-                      S
-                    </span>
-                  </span>
-                  Browse the Collection
+                  {/* No icon: the bag glyph duplicated the navbar cart icon
+                      directly above it. The arrow on the secondary CTA is now
+                      the only icon here, so the two CTAs read distinctly. */}
+                  Shop the Collection
                 </Link>
+                {/* Secondary points at New In — the story section it used to
+                    link to no longer exists */}
                 <Link
-                  href="/#about"
-                  className="flex items-center justify-center h-13 rounded-none
-                             border-2 border-deep-brown/30 text-deep-brown font-medium text-sm
-                             hover:border-gold hover:text-gold
-                             active:text-gold transition-all duration-200"
+                  href="/new-in"
+                  className="group flex items-center justify-center gap-1.5 h-11
+                             text-deep-brown/70 font-medium text-sm
+                             hover:text-gold active:text-gold transition-colors duration-200"
                   style={{ touchAction: "manipulation" }}
                 >
-                  Our Story
+                  See what&apos;s new
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                 </Link>
               </div>
 
-              <p className="text-deep-brown/35 text-[10px] tracking-wide font-body mt-6 animate-fade-up delay-400">
-                ✦ Each piece unique &nbsp;·&nbsp; ✦ Gift wrapped
+              <p className="text-deep-brown/35 text-[10px] tracking-wide font-body mt-6">
+                ✦ Each piece unique &nbsp;·&nbsp; ✦ Gift wrapped &nbsp;·&nbsp; ✦ Ships from Dublin
               </p>
             </div>
           </div>
         </div>
 
         {/* ── Desktop: asymmetric split — text left (42%) / slider right (58%) ── */}
-        <div className="hidden lg:grid lg:grid-cols-[42fr_58fr] min-h-screen">
+        {/* 88vh, not 100vh — letting the category grid peek above the fold is
+            what tells you the hero is the top of a page rather than a splash
+            screen standing on its own. */}
+        {/* The text column widens at each step because its left padding grows
+            with the viewport (container alignment). At a flat 42fr the content
+            box actually got NARROWER as the screen got wider — 426px at 1280
+            but 390px at 1920 — which is what forced the headline to wrap. */}
+        <div className="hidden lg:grid lg:grid-cols-[42fr_58fr] xl:grid-cols-[48fr_52fr] 2xl:grid-cols-[55fr_45fr] min-h-[88vh]">
           {/* Left — brand story */}
-          <div className="relative flex flex-col justify-center px-12 xl:px-16 py-20 overflow-hidden bg-cream-dark">
-            <div className="relative z-10 max-w-lg">
-              <p className="text-gold text-xs uppercase tracking-[0.28em] font-body font-semibold mb-5 animate-fade-up">
-                ✦ Handcrafted in Ireland
-              </p>
-              <h1 className="font-heading italic text-5xl xl:text-6xl font-300 leading-[1.1] mb-6 animate-fade-up delay-100">
-                <span className="text-deep-brown">Helping people</span>
-                <span className="text-gold"> create, connect</span>
-                <br />
-                <em className="font-500 not-italic text-gold">
-                  &amp; Find Comfort
-                </em>
-              </h1>
-              <p className="text-deep-brown/75 text-base xl:text-lg font-medium leading-relaxed mb-9 animate-fade-up delay-200">
-                Every piece is handcrafted in Ireland using premium materials, from
-                cozy blankets and handbags to baby keepsakes and creative patterns
-              </p>
+          {/* py-3 matches the p-3 margin the image grid uses around its own
+              cards (right column below), so the two panels sit inset from
+              the column edges by the same amount — this is what makes the
+              frosted card's top/bottom line up with the spotlight photo's.
 
-              <div className="flex gap-4 mb-10 animate-fade-up delay-300">
-                <Link
-                  href="/products"
-                  className="group inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-none
-                             border-2 border-gold text-gold font-semibold text-sm tracking-wide
-                             hover:bg-gold hover:text-cream hover:-translate-y-0.5
-                             active:translate-y-0
-                             transition-all duration-300"
+              Horizontal padding is symmetric (px-12/xl:px-16) rather than the
+              site-container-aligned calc this used to have. That calc pinned
+              the card's LEFT edge to match "Find your piece" below, but grows
+              with viewport width while the right edge stayed fixed — at
+              1920px it put 352px of bare photo on the left and 64px on the
+              right, which is what read as the card being shoved to one side.
+              Centering the card in its own photo panel takes priority over
+              matching the page grid below; if that downstream alignment
+              matters again later, the two goals need a different approach
+              since they can't both hold at every viewport width. */}
+          {/* p-3 uniformly — matching the image grid's own p-3 wrapper exactly
+              (right column below), on all four sides, not just top/bottom.
+              px-8/2xl:px-12 left a visible bare strip of photo at the outer
+              viewport edge and a wider gutter before the image grid than the
+              image grid uses around its own cards, which read as the two
+              halves of the hero following different rules. Dropping to p-3
+              is safe for the nowrap-headline fit at 1280px too — smaller
+              padding only ever gives the card MORE available width, never
+              less, so it can't reintroduce that overflow. */}
+          <div
+            className="relative flex flex-col justify-center p-3 overflow-hidden"
+          >
+            {/* Background photo — this was the hero's original single image,
+                before the column split into text + New In grid. Object-cover
+                fills the whole column; the text now sits on a frosted dark
+                card instead of the flat milk panel, so the copy needed to
+                flip from dark-on-light to light-on-dark below. */}
+            <Image
+              src={heroTextBg}
+              alt=""
+              aria-hidden
+              fill
+              sizes="45vw"
+              placeholder="blur"
+              className="object-cover"
+            />
+
+            {/* h-full instead of my-auto — the card below now stretches to
+                match the image grid's height, so this wrapper needs to span
+                the full padded box rather than shrink-wrap a centered block. */}
+            {/* mx-auto: past ~1750px the symmetric padding leaves more room
+                than max-w-2xl uses, so without this the card would hug the
+                left padding edge instead of centering in the extra space. */}
+            <div className="relative z-10 h-full max-w-2xl mx-auto flex flex-col justify-center">
+              {/* No card fill anymore — text sits directly on the photo. A
+                  flat-colour scrim is what made the earlier WCAG ratios
+                  possible to compute at all (a single background colour to
+                  measure against); text-shadow doesn't reduce to one clean
+                  number the same way, since "the background" is now whatever
+                  patch of photo happens to sit behind each glyph. Two stacked
+                  shadows: a tight dark one right at the glyph edge for the
+                  photo's lighter patches, a softer wider one for separation
+                  from mid-tone areas. Verified by looking at the rendered
+                  result against this specific photo's brightest and darkest
+                  regions, not by a formal ratio — worth re-checking by eye if
+                  this background photo ever changes. */}
+              <div
+                className="h-full flex flex-col justify-center
+                           px-8 py-10 xl:px-10 xl:py-12"
+              >
+                <p
+                  className="text-terracotta text-xs uppercase tracking-[0.28em] font-body font-semibold mb-5"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
                 >
-                  {/* Same iOS-style filled bag glyph + "S" mark as the navbar's Shop icon —
-                      the bag turns milk (cream-dark) on hover so it still reads against the gold fill */}
-                  <span className="relative w-7 h-7 shrink-0 inline-flex items-center justify-center">
-                    <svg
-                      className="w-7 h-7 absolute inset-0 fill-gold group-hover:fill-cream-dark transition-colors duration-200"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path d="M7.5 5.25a4.5 4.5 0 119 0V6h1.628a2.25 2.25 0 012.244 2.077l.807 10.5A2.25 2.25 0 0118.933 21H5.067a2.25 2.25 0 01-2.246-2.423l.807-10.5A2.25 2.25 0 015.872 6H7.5v-.75zM9 6h6v-.75a3 3 0 10-6 0V6zm-.75 3.75a.75.75 0 011.5 0 2.25 2.25 0 004.5 0 .75.75 0 011.5 0 3.75 3.75 0 01-7.5 0z" />
-                    </svg>
-                    <span className="relative text-white group-hover:text-gold text-[10px] font-bold mt-1 transition-colors duration-200">
-                      S
-                    </span>
+                  ✦ Handcrafted in Ireland
+                </p>
+                {/* Block spans force the 2-line break. nowrap only from xl up:
+                    at 1024–1279 (lg, before the grid widens this column to
+                    48%) the panel is too narrow for either line at this font
+                    size — forcing nowrap there clipped "blankets," and
+                    "keepsakes" mid-word against the column edge. Below xl the
+                    lines are free to wrap again if they need to; from xl up,
+                    where the measured card width comfortably fits both lines
+                    on one line each, nowrap keeps the intended 2-line shape.
+                    Italic rule: exactly one emphasis word ("keepsakes"),
+                    never a whole clause. No entrance cascade here either —
+                    see the mobile block above for why. */}
+                <h1 className="font-heading text-5xl xl:text-[3.25rem] 2xl:text-6xl font-300 leading-[1.1] mb-6">
+                  <span
+                    className="block xl:whitespace-nowrap text-cream"
+                    style={{ textShadow: "0 2px 6px rgba(0,0,0,0.9), 0 4px 22px rgba(0,0,0,0.65)" }}
+                  >
+                    Handmade blankets,
                   </span>
-                  Browse the Collection
-                </Link>
-                <Link
-                  href="/#about"
-                  className="inline-flex items-center justify-center px-7 py-4 rounded-none
-                             border-2 border-deep-brown/30 text-deep-brown font-medium text-sm tracking-wide
-                             hover:border-gold hover:text-gold hover:-translate-y-0.5
-                             transition-all duration-300"
+                  <span
+                    className="block xl:whitespace-nowrap text-terracotta font-500"
+                    style={{ textShadow: "0 2px 6px rgba(0,0,0,0.9), 0 4px 22px rgba(0,0,0,0.65)" }}
+                  >
+                    bags &amp; baby <em className="italic">keepsakes</em>
+                  </span>
+                </h1>
+                <p
+                  className="text-cream/80 text-base xl:text-lg font-medium leading-relaxed mb-9"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
                 >
-                  Our Story
-                </Link>
-              </div>
+                  Helping people create, connect and find comfort — every piece
+                  handcrafted in Ireland from premium materials.
+                </p>
 
-              <p className="text-deep-brown/75 text-xs tracking-wide font-body animate-fade-up delay-400">
-                ✦ Get Premium Quality &nbsp;·&nbsp; ✦ Each piece unique
-                &nbsp;·&nbsp; ✦ Gift wrap available
-              </p>
+                <div className="flex gap-4 mb-10">
+                  <Link
+                    href="/products"
+                    className="group inline-flex items-center justify-center px-8 py-4 rounded-none
+                               bg-gold text-cream font-semibold text-sm tracking-wide
+                               shadow-[0_14px_34px_-14px_rgba(139,32,53,0.8)]
+                               hover:bg-gold-dark hover:-translate-y-0.5
+                               active:translate-y-0
+                               transition-all duration-300"
+                  >
+                    {/* No icon: the bag glyph duplicated the navbar cart icon
+                        directly above it. The arrow on the secondary CTA is now
+                        the only icon here, so the two CTAs read distinctly. */}
+                    Shop the Collection
+                  </Link>
+                  {/* Text link, not a second outline button — the hero needs one
+                      unambiguous primary action. Points at New In since the
+                      story section it used to target is gone. */}
+                  <Link
+                    href="/new-in"
+                    className="group inline-flex items-center gap-1.5 px-2 py-4
+                               text-cream/75 font-medium text-sm tracking-wide
+                               hover:text-terracotta transition-colors duration-300"
+                    style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
+                  >
+                    See what&apos;s new
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                  </Link>
+                </div>
+
+                <p
+                  className="text-cream/75 text-xs tracking-wide font-body"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
+                >
+                  ✦ Get Premium Quality &nbsp;·&nbsp; ✦ Each piece unique
+                  &nbsp;·&nbsp; ✦ Gift wrap available
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Right — image slider */}
           <div className="relative">
-            <HeroSlider />
-            {/* Wide dissolve — image bleeds into milk panel */}
-            <div
-              className="absolute top-0 left-0 h-full w-72 xl:w-96 z-10 pointer-events-none
-                            bg-gradient-to-r from-cream-dark via-cream-dark/60 to-transparent"
-            />
-            {/* Top dissolve — blends into the navbar's cream-dark background */}
-            <div
-              className="absolute top-0 left-0 w-full h-24 z-10 pointer-events-none
-                            bg-gradient-to-b from-cream-dark via-cream-dark/50 to-transparent"
-            />
+            {heroVisual}
           </div>
         </div>
 
-        {/* Owner quote card — bottom-left of hero (desktop only) */}
-        <Link
-          href="/#about"
-          className="hidden lg:flex absolute bottom-8 right-8 z-30
-                     items-center gap-4
-                     bg-cream rounded-2xl px-5 py-4
-                     shadow-xl max-w-[300px] overflow-hidden
-                     hover:shadow-2xl hover:-translate-y-0.5
-                     transition-all duration-300 group"
-        >
-          {/* Wine left accent bar */}
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gold rounded-l-2xl" />
-
-          {/* Profile picture holder */}
-          <div
-            className="shrink-0 ml-2 w-12 h-12 rounded-full
-                          border-2 border-gold bg-cream-dark
-                          flex items-center justify-center overflow-hidden"
-          >
-            <span className="font-heading italic text-gold font-semibold text-lg select-none">
-              MM
-            </span>
-          </div>
-
-          {/* Quote + attribution */}
-          <div>
-            <p className="font-heading italic text-sm text-deep-brown leading-snug">
-              &ldquo;Every stitch is a promise kept to the woman who will wear
-              it.&rdquo;
-            </p>
-            <p className="text-[10px] text-gold font-semibold font-body tracking-[0.15em] uppercase mt-2">
-              — Maryam Mahmud, CEO
-            </p>
-          </div>
-        </Link>
-
-        {/* Floating artisan badge — bridges the two panels (desktop only) */}
-        <div
-          className="hidden lg:flex flex-col items-center
-                     absolute left-[54%] top-[35%] -translate-x-1/2 -translate-y-1/2 z-30
-                     bg-gold rounded-xl px-8 py-7 shadow-2xl shadow-gold/40
-                     pointer-events-none select-none"
-        >
-          <span className="text-cream/60 text-base mb-2 leading-none">✦</span>
-          <p className="font-heading italic text-5xl font-400 text-cream text-center leading-none">
-            2 years
-          </p>
-          <div className="w-8 h-px bg-cream/30 my-3" />
-          <p className="text-[12px] text-cream/90 font-body tracking-[0.18em] uppercase text-center whitespace-nowrap">
-            INNOVATING AND RESTOCKING
-          </p>
-          <p className="text-sm text-cream/70 font-body mt-1.5 text-center whitespace-nowrap">
-            Crafting since 2024
-          </p>
-        </div>
       </section>
+
+      {/* Melts the hero's milk panel into the section below — without it the
+          hero ends on a hard horizontal seam and reads as its own screen. */}
+      <div className="h-14 lg:h-20 bg-gradient-to-b from-cream-dark to-cream-darker" aria-hidden />
 
       {/* ══════════════════════════════════════════════
           TRUST STRIP
@@ -371,8 +400,15 @@ export default async function HomePage() {
 
       {/* ══════════════════════════════════════════════
           NEW IN — admin-managed via /admin/new-in
+
+          Desktop only. On mobile the hero already renders this exact rail,
+          with the same card component and the full item list — showing it
+          twice meant two identical swipe rows in one scroll. Desktop keeps
+          both because there the hero is the bento collage, not a rail.
       ══════════════════════════════════════════════ */}
-      <NewInSection items={newInItems} />
+      <div className="hidden lg:block">
+        <NewInSection items={newInItems} />
+      </div>
 
       {/* ══════════════════════════════════════════════
           OUR BELOVED PIECES — Apple-style Showcase
@@ -380,11 +416,6 @@ export default async function HomePage() {
       {customProducts.length > 0 && (
         <BelovedPiecesShowcase products={customProducts} />
       )}
-
-      {/* ══════════════════════════════════════════════
-          ABOUT — "Stitched with Soul"
-      ══════════════════════════════════════════════ */}
-      <OurStorySection />
 
       {/* ══════════════════════════════════════════════
           TESTIMONIALS — Social Proof

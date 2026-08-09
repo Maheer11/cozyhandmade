@@ -11,7 +11,8 @@ export default function HeroSlider() {
         sizes="100vw"
         className="object-cover"
         placeholder="blur"
-        priority
+        loading="eager"
+        fetchPriority="high"
       />
     </div>
   );

@@ -228,6 +228,137 @@ body {
   transform: scale(1.05);
 }
 
+/* ─── Hero tile collage ────────────────────────────────
+   Tiles rise and settle in sequence on load; the photo inside each
+   one drifts on a slow Ken Burns push so the hero never sits fully
+   still. Entrance runs on the tile, drift runs on the image, so the
+   two transforms never fight over the same element. */
+@keyframes tileIn {
+  from { opacity: 0; transform: translateY(28px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes kenBurns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.09); }
+}
+.hero-tile {
+  animation: tileIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero-tile-img {
+  animation: kenBurns 24s ease-in-out infinite alternate;
+}
+
+/* ─── Build credit link ────────────────────────────────
+   A gold sheen sweeps across the letters and a hairline
+   underline draws in from the left. The text colour is
+   painted through the gradient (background-clip: text), so
+   whatever `color` the surrounding markup sets still shows
+   through as the base tone — only the travelling highlight
+   is fixed to gold. */
+.credit-link {
+  --sheen: var(--color-terracotta);
+  position: relative;
+  display: inline-block;
+  background-image: linear-gradient(
+    100deg,
+    currentColor 0%,
+    currentColor 42%,
+    var(--sheen) 50%,
+    currentColor 58%,
+    currentColor 100%
+  );
+  /* Position must stay within 0–100%: at those bounds an over-sized
+     background still covers the whole box, so the letters are always
+     painted. Outside that range the image slides clear of the text and
+     `text-fill-color: transparent` would leave it invisible. */
+  background-size: 260% 100%;
+  background-position: 100% center;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition:
+    background-position 0.85s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    color 0.25s ease;
+}
+.credit-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: var(--sheen);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.credit-link:hover,
+.credit-link:focus-visible {
+  background-position: 0% center;
+}
+.credit-link:hover::after,
+.credit-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Touch devices get no hover, so the sweep plays once on reveal
+   (the drawer re-adds this class each time it opens). */
+@keyframes creditSheen {
+  0%   { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+.credit-sheen-once {
+  animation: creditSheen 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.35s both;
+}
+
+/* Idle attention loop: the sheen crosses in the first ~13% of the cycle,
+   then rests. Both ends of the travel hide the gold band off-window, so
+   the loop point is invisible — it just reads as an occasional glint. */
+@keyframes creditSheenLoop {
+  0%   { background-position: 100% center; }
+  13%  { background-position: 0% center; }
+  100% { background-position: 0% center; }
+}
+.credit-idle {
+  animation: creditSheenLoop 9s cubic-bezier(0.25, 0.46, 0.45, 0.94) 3s infinite;
+}
+/* Hand control back to the hover transition on pointer-in — a running
+   animation outranks the transition, so it has to be cleared. */
+.credit-idle:hover,
+.credit-idle:focus-visible {
+  animation: none;
+}
+
+/* The credit's outer chip — a quiet bordered pill that warms up on hover
+   so the line reads as something you can click. The chip must be a separate
+   element from .credit-link: `background-clip: text` clips the element's
+   background *colour* too, so a fill on the gradient element would only
+   paint behind the glyphs. */
+.credit-chip {
+  border: 1px solid color-mix(in srgb, var(--color-terracotta) 30%, transparent);
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+.credit-chip:hover,
+.credit-chip:focus-visible {
+  border-color: color-mix(in srgb, var(--color-terracotta) 70%, transparent);
+  background-color: color-mix(in srgb, var(--color-terracotta) 10%, transparent);
+}
+/* Hovering anywhere on the chip — including its padding — drives the sheen
+   on the text inside it. */
+.credit-chip:hover .credit-link,
+.credit-chip:focus-visible .credit-link {
+  background-position: 0% center;
+}
+.credit-chip:hover .credit-idle,
+.credit-chip:focus-visible .credit-idle {
+  animation: none;
+}
+/* The chip's own border does the job the drawn underline was doing. */
+.credit-chip .credit-link::after {
+  display: none;
+}
+
 /* ─── Respect reduced-motion preference ──────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
