@@ -27,15 +27,6 @@ const sortOptions = [
 
 const whyUsFeatures = [
   {
-    label: "100% Natural Wool",
-    description: "Merino & Shetland fleece, sourced with care and worked entirely by hand.",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12a7.5 7.5 0 1115 0 7.5 7.5 0 01-15 0zm7.5-7.5v3m0 9v3m7.5-7.5h-3m-9 0h-3" />
-      </svg>
-    ),
-  },
-  {
     label: "Handcrafted with Care",
     description: "Every piece is stitched one at a time by a skilled Creative in the world of needle and thread.",
     icon: (
