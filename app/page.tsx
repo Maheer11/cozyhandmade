@@ -230,6 +230,22 @@ export default async function HomePage() {
               className="object-cover"
             />
 
+            {/* Scrim confined to where the copy actually sits, not the whole
+                photo — a flat full-panel tint was tried before and pulled for
+                dulling the shot; text-shadow alone wasn't enough contrast
+                against this photo's bright wall behind the headline. Radial
+                gradient centered on the text block, fading to fully
+                transparent well before the panel edges, so the rest of the
+                photo stays untouched. */}
+            <div
+              aria-hidden
+              className="absolute inset-0 z-1"
+              style={{
+                background:
+                  "radial-gradient(ellipse 70% 60% at 30% 50%, rgba(26,8,16,0.55) 0%, rgba(26,8,16,0.28) 45%, rgba(26,8,16,0) 75%)",
+              }}
+            />
+
             {/* h-full instead of my-auto — the card below now stretches to
                 match the image grid's height, so this wrapper needs to span
                 the full padded box rather than shrink-wrap a centered block. */}
