@@ -102,7 +102,7 @@ export default async function AdminNewInPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <AdminNewInActions id={item.id} name={item.name} />
+                      <AdminNewInActions id={item.id} name={item.name} addedToCollections={item.added_to_collections} />
                     </td>
                   </tr>
                 );

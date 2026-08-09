@@ -319,6 +319,7 @@ export interface Database {
           variant_price: Record<string, number>;
           is_handmade: boolean;
           shipping_weight_grams: number | null;
+          added_to_collections: boolean;
         };
         Insert: {
           id?: string;
@@ -339,6 +340,7 @@ export interface Database {
           variant_price?: Record<string, number>;
           is_handmade?: boolean;
           shipping_weight_grams?: number | null;
+          added_to_collections?: boolean;
         };
         Update: {
           name?: string;
@@ -357,6 +359,7 @@ export interface Database {
           variant_price?: Record<string, number>;
           is_handmade?: boolean;
           shipping_weight_grams?: number | null;
+          added_to_collections?: boolean;
         };
       };
       custom_products: {

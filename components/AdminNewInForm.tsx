@@ -21,6 +21,7 @@ export interface NewInItem {
   stock_quantity: number;
   variant_price: Record<string, number>;
   shipping_weight_grams: number | null;
+  added_to_collections: boolean;
 }
 
 interface FormState {

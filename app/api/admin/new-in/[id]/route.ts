@@ -38,6 +38,7 @@ export async function PATCH(
       update.shipping_weight_grams = body.shipping_weight_grams === null || body.shipping_weight_grams === ""
         ? null : Number(body.shipping_weight_grams);
     }
+    if (body.added_to_collections !== undefined) update.added_to_collections = !!body.added_to_collections;
 
     const { error } = await db.from("new_in_items").update(update).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

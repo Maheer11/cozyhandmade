@@ -35,38 +35,58 @@ function variantKey(color: string, size: string) {
   return size;
 }
 
-function defaultState(product?: DbProduct): FormState {
+// Prefill for a product seeded from a New In item — same shape as the
+// fields defaultState() would otherwise pull off a DbProduct, but sourced
+// from new_in_items instead. The admin still reviews and submits through
+// this form (and its POST /api/admin/products route) like any other new
+// product, so nothing bypasses the normal add-product path.
+export interface ProductPrefill {
+  name?: string;
+  price?: string;
+  description?: string;
+  tags?: string;
+  stock_quantity?: string;
+  is_handmade?: boolean;
+  shipping_weight_grams?: string;
+  image?: string;
+  images?: string[];
+  colors?: string[];
+  sizes?: string[];
+  variant_price?: Record<string, number>;
+}
+
+function defaultState(product?: DbProduct, prefill?: ProductPrefill): FormState {
   return {
     productType:    "regular",
-    name:           product?.name           ?? "",
-    price:          product?.price.toString()         ?? "",
+    name:           product?.name           ?? prefill?.name ?? "",
+    price:          product?.price.toString()         ?? prefill?.price ?? "",
     original_price: product?.original_price?.toString() ?? "",
     category:       product?.category       ?? categories[0]?.id ?? "",
-    description:    product?.description    ?? "",
+    description:    product?.description    ?? prefill?.description ?? "",
     details:        product?.details?.join("\n")      ?? "",
-    tags:           product?.tags?.join(", ")         ?? "",
-    stock_quantity: product?.stock_quantity?.toString() ?? "0",
+    tags:           product?.tags?.join(", ")         ?? prefill?.tags ?? "",
+    stock_quantity: product?.stock_quantity?.toString() ?? prefill?.stock_quantity ?? "0",
     in_stock:       product?.in_stock       ?? true,
     featured:       product?.featured       ?? false,
-    is_handmade:    product?.is_handmade    ?? true,
-    shipping_weight_grams: product?.shipping_weight_grams?.toString() ?? "",
-    image:          product?.image          ?? "",
-    images:         product?.images         ?? [],
-    colors:         product?.colors         ?? [],
-    sizes:          product?.sizes          ?? [],
+    is_handmade:    product?.is_handmade    ?? prefill?.is_handmade ?? true,
+    shipping_weight_grams: product?.shipping_weight_grams?.toString() ?? prefill?.shipping_weight_grams ?? "",
+    image:          product?.image          ?? prefill?.image ?? "",
+    images:         product?.images         ?? prefill?.images ?? [],
+    colors:         product?.colors         ?? prefill?.colors ?? [],
+    sizes:          product?.sizes          ?? prefill?.sizes ?? [],
     variant_stock:  (product?.variant_stock as Record<string, number>) ?? {},
-    variant_price:  (product?.variant_price as Record<string, number>) ?? {},
+    variant_price:  (product?.variant_price as Record<string, number>) ?? prefill?.variant_price ?? {},
     display_order:  "0",
   };
 }
 
-export default function AdminProductForm({ product }: { product?: DbProduct }) {
+export default function AdminProductForm({ product, prefill, fromNewInId }: { product?: DbProduct; prefill?: ProductPrefill; fromNewInId?: string }) {
   const isEdit = !!product;
   const router = useRouter();
   const fileRef  = useRef<HTMLInputElement>(null);
   const moreRef  = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState<FormState>(defaultState(product));
+  const [form, setForm] = useState<FormState>(defaultState(product, prefill));
   const [uploadingMain, setUploadingMain] = useState(false);
   const [uploadingMore, setUploadingMore] = useState(false);
   const [mainProgress,  setMainProgress]  = useState(0);
@@ -235,6 +255,17 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
       setSaving(false);
       return;
     }
+
+    // Mark the source New In item so it doesn't get duplicated again by
+    // accident — best-effort, the product itself is already saved.
+    if (fromNewInId) {
+      await fetch(`/api/admin/new-in/${fromNewInId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ added_to_collections: true }),
+      });
+    }
+
     router.push("/admin/products");
     router.refresh();
   }
