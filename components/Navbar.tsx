@@ -40,15 +40,12 @@ const navLinks = [
   { href: "/#newsletter", label: "Journal" },
 ];
 
-const drawerCategories = [
-  { href: "/products?category=Blankets", label: "Throw Blankets" },
-  { href: "/products?category=baby", label: "Baby Blankets" },
-  { href: "/products?category=handbags", label: "Handbags & Totes" },
-  { href: "/products?category=wallets", label: "Purses & Wallets" },
-  { href: "/products?category=scarves", label: "Scarves & Wraps" },
-];
+export default function Navbar({ categories }: { categories: { id: string; name: string }[] }) {
+  const drawerCategories = categories.map((c) => ({
+    href: `/products?category=${c.id}`,
+    label: c.name,
+  }));
 
-export default function Navbar() {
   const { itemCount, openCart } = useCart();
   const { user } = useAuth();
   const pathname = usePathname();

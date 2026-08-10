@@ -4,6 +4,8 @@ import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
 import { CurrencyProvider } from "@/lib/currency/CurrencyContext";
 import { AuthProvider } from "@/lib/supabase/auth-context";
+import { createClient } from "@/lib/supabase/server";
+import { getCategories } from "@/lib/db-categories";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
@@ -36,9 +38,12 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const supabase = await createClient();
+  const categories = await getCategories(supabase);
+
   return (
     <html lang="en" className={`${cormorant.variable} ${jost.variable}`}>
       <body className="min-h-screen flex flex-col bg-cream text-deep-brown antialiased">
@@ -46,7 +51,7 @@ export default function RootLayout({
         <CurrencyProvider>
         <CartProvider>
           {/* Top bar — always visible */}
-          <Navbar />
+          <Navbar categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
 
           {/* Page content — extra bottom padding on mobile for bottom nav */}
           <main className="flex-1 pb-nav lg:pb-0">{children}</main>
