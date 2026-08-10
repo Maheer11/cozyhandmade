@@ -71,7 +71,7 @@ export default function HeroTiles({ items }: { items: NewInCardData[] }) {
           with the next card peeking so the row reads as swipeable. */}
       <div className="lg:hidden bg-cream-dark pt-3">
         <div className="px-4 flex items-baseline justify-between mb-2.5">
-          <h2 className="font-heading text-xl text-deep-brown">New In</h2>
+          <h2 className="font-heading text-2xl font-bold text-gold animate-cart-nudge">New In</h2>
           <Link
             href="/new-in"
             className="group inline-flex items-center gap-1.5 text-xs font-body font-semibold text-gold"
