@@ -57,7 +57,7 @@ export default async function FeaturedPiecesGridPage({
         </div>
 
         {!items || items.length === 0 ? (
-          <p className="text-center text-taupe-dark py-20">Nothing here yet — check back soon.</p>
+          <p className="text-center text-taupe-dark py-20">Nothing here yet. Check back soon.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
             {items.map((item) => (

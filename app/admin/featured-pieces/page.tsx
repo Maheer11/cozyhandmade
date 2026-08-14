@@ -102,7 +102,7 @@ export default async function AdminFeaturedPiecesPage() {
                             <p className="font-medium text-gray-900 truncate max-w-[200px]">{item.name}</p>
                             {!item.product_id && (
                               <span
-                                title="No product linked — this piece has no stock source and cannot be sold. Edit it and pick a product."
+                                title="No product linked. This piece has no stock source and cannot be sold. Edit it and pick a product."
                                 className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800"
                               >
                                 ⚠ no product
@@ -110,7 +110,7 @@ export default async function AdminFeaturedPiecesPage() {
                             )}
                             {missingWeight && (
                               <span
-                                title="No shipping weight set — this item's orders fall back to the default (high) weight and may be mispriced."
+                                title="No shipping weight set. This item's orders fall back to the default (high) weight and may be mispriced."
                                 className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800"
                               >
                                 ⚠ weight
@@ -157,7 +157,7 @@ export default async function AdminFeaturedPiecesPage() {
                           ● On homepage
                         </span>
                       ) : (
-                        <span className="text-xs text-gray-300">—</span>
+                        <span className="text-xs text-gray-300">No</span>
                       )}
                     </td>
                     <td className="px-5 py-3">

@@ -194,7 +194,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               </Link>
             </div>
             <p className="font-heading italic text-lg sm:text-xl text-taupe-dark leading-snug lg:text-right lg:max-w-xs">
-              From Cozi throws to hand-stitched keepsakes — every piece, one place.
+              From Cozi throws to hand-stitched keepsakes. Every piece, one place.
             </p>
           </ScrollReveal>
 
@@ -458,7 +458,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
             {/* Text */}
             <ScrollReveal>
               <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
-                04 — Why Cozi Handmade
+                04 · Why Cozi Handmade
               </p>
               <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown mb-5 leading-tight">
                 The Cozi Standard
@@ -515,7 +515,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
                 </div>
                 <div className="absolute -bottom-4 left-3 bg-cream rounded-lg px-3 py-1.5 shadow-lg border border-taupe/20">
                   <p className="text-[10px] uppercase tracking-[0.15em] text-deep-brown font-semibold">
-                    Fig. 02 — Texture
+                    Fig. 02 · Texture
                   </p>
                 </div>
               </div>

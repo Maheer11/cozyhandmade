@@ -83,7 +83,7 @@ export const FeaturedPieceCard = memo(function FeaturedPieceCard({
         {item.lifestyle_image && (
           <Image
             src={item.lifestyle_image}
-            alt={`${item.name} — in use`}
+            alt={`${item.name} in use`}
             fill
             loading="lazy"
             sizes="(max-width: 640px) 68vw, (max-width: 1024px) 288px, 320px"

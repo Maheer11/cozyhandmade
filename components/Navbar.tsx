@@ -135,7 +135,8 @@ export default function Navbar({ categories }: { categories: { id: string; name:
 
           {/* ── Logo ── */}
           <Link href="/" className="flex items-center group shrink-0">
-            <CoziLogo className="w-44 h-14 transition-opacity duration-200 group-hover:opacity-75" />
+            {/* Slightly smaller on mobile, full size from sm up. */}
+            <CoziLogo className="w-36 h-11 sm:w-44 sm:h-14 transition-opacity duration-200 group-hover:opacity-75" />
           </Link>
 
           {/* ── Desktop nav links ── */}
@@ -326,14 +327,6 @@ export default function Navbar({ categories }: { categories: { id: string; name:
         aria-modal="true"
         aria-label="Navigation menu"
       >
-        {/* Left stitched border accent */}
-        <div
-          className="absolute left-0 top-0 bottom-0 w-1"
-          style={{
-            backgroundImage: "repeating-linear-gradient(180deg, #8B2035 0px, #8B2035 8px, transparent 8px, transparent 14px)",
-          }}
-        />
-
         {/* Drawer header */}
         <div className="flex items-center justify-between h-16 px-5 pl-6 border-b border-taupe/20">
           <Link href="/" onClick={() => setMenuOpen(false)}>

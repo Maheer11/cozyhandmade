@@ -67,7 +67,7 @@ const marqueeItems: { text: string; icon: "star" | "diamond" }[] = [
 const testimonials = [
   {
     quote:
-      "The baby cardigan I ordered arrived beautifully wrapped — my daughter wore it home from hospital. It's already a family heirloom.",
+      "The baby cardigan I ordered arrived beautifully wrapped. My daughter wore it home from hospital. It's already a family heirloom.",
     name: "Sarah M.",
     location: "London",
   },
@@ -232,8 +232,9 @@ export default async function HomePage() {
                 Slowmade pieces for everyday living
               </h1>
               <p className="text-deep-brown/70 text-sm font-medium leading-relaxed mb-7">
-                Helping people create, connect and find comfort — every piece
-                handcrafted in Ireland from premium materials.
+                Born from my own journey back to creativity, slowmade pieces
+                that bring warmth, beauty and a little more intention to
+                everyday life.
               </p>
 
               <div className="flex flex-col gap-3">
@@ -398,7 +399,7 @@ export default async function HomePage() {
                   className="text-cream/80 text-base xl:text-lg font-medium leading-relaxed mb-9"
                   style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
                 >
-                  Helping people create, connect and find comfort — every piece
+                  Helping people create, connect and find comfort, every piece
                   handcrafted in Ireland from premium materials.
                 </p>
 
@@ -572,28 +573,11 @@ export default async function HomePage() {
                   className="object-cover"
                 />
               </div>
-              <span
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-8deg] z-40
-                               bg-white/95 shadow-md px-4 py-1.5 rounded text-gold font-heading italic text-sm
-                               border border-taupe/20"
-              >
-                handmade with love
-              </span>
             </div>
 
-            {/* Postcard/letter card — stitched-dash left edge echoes the mobile
-                nav drawer's accent, tying "Letters from our Studio" to an
-                actual handwritten-letter feel instead of a generic dark band. */}
+            {/* Postcard/letter card — the photo collage carries the studio feel
+                on its own, so the card stays a clean white panel. */}
             <div className="relative bg-white rounded-3xl shadow-[0_20px_50px_-15px_rgba(26,8,16,0.25)] overflow-hidden lg:flex lg:flex-col lg:justify-center">
-              {/* Stitched border accent */}
-              <div
-                className="absolute left-0 top-0 bottom-0 w-1"
-                style={{
-                  backgroundImage:
-                    "repeating-linear-gradient(180deg, #8B2035 0px, #8B2035 8px, transparent 8px, transparent 14px)",
-                }}
-              />
-
               <div className="text-center lg:text-left px-6 sm:px-14 lg:px-14 py-10 sm:py-14">
                 {/* Wax-seal style mark */}
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold/10 text-gold text-lg mb-5">
@@ -607,7 +591,7 @@ export default async function HomePage() {
                   Letters from our Studio
                 </h2>
                 <p className="text-brown/70 text-base leading-relaxed mb-9 font-body max-w-md mx-auto lg:mx-0">
-                  New pieces, knitting stories, and seasonal inspiration —
+                  New pieces, knitting stories, and seasonal inspiration,
                   delivered gently to your inbox.
                 </p>
                 <div className="lg:mx-0 mx-auto max-w-md">

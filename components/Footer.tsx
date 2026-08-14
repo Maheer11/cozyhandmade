@@ -36,7 +36,7 @@ export default function Footer() {
               />
             </Link>
             <p className="text-cream/60 text-sm leading-relaxed mb-4 max-w-xs font-body">
-              Every stitch made with love — duvets, baby clothes, handbags, purses, scarves
+              Every stitch made with love: duvets, baby clothes, handbags, purses, scarves
               and blankets crafted by skilled women artisans.
             </p>
             {/* Social icons */}

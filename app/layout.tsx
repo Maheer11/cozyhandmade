@@ -27,9 +27,9 @@ const jost = Jost({
 });
 
 export const metadata: Metadata = {
-  title: "Cozi Handmade — Handcrafted Woolwork & Knits",
+  title: "Cozi Handmade | Handcrafted Woolwork & Knits",
   description:
-    "Beautifully handcrafted duvets, baby clothing, handbags, purses, scarves and blankets — every stitch made with love by skilled women artisans.",
+    "Beautifully handcrafted duvets, baby clothing, handbags, purses, scarves and blankets, every stitch made with love by skilled women artisans.",
 };
 
 export const viewport: Viewport = {

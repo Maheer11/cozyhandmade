@@ -46,7 +46,7 @@ export default function AdminFeaturedPieceActions({
           href={`/admin/featured-pieces/${id}/edit`}
           className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-amber-700
                      bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
-          title="Copied into Collections but not linked — stock is tracked separately. Open to pick the product."
+          title="Copied into Collections but not linked, so stock is tracked separately. Open to pick the product."
         >
           ⚠ Needs linking
         </Link>

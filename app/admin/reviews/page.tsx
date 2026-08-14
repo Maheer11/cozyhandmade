@@ -56,7 +56,7 @@ export default async function AdminReviewsPage() {
                   </td>
                   <td className="px-5 py-3 text-gray-700">
                     {[r.customer_label, r.location].filter(Boolean).join(" · ") || (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-gray-400">None</span>
                     )}
                   </td>
                   <td className="px-5 py-3 text-gray-600 capitalize">{r.platform}</td>

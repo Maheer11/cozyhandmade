@@ -152,7 +152,7 @@ const WITHDRAWAL_RIGHTS = [
   "",
   `  To cancel, email ${BUSINESS.contactEmail} with your order number`,
   "  before those 14 days are up. A clear statement that you wish to",
-  "  cancel is enough — a model cancellation form is available on request.",
+  "  cancel is enough. A model cancellation form is available on request.",
   "",
   "  Send the items back within 14 days of telling us. Return postage is",
   "  at your cost, unless the item arrived faulty, damaged, or wasn't what",
@@ -164,8 +164,8 @@ const WITHDRAWAL_RIGHTS = [
   "  This is your legal right under EU consumer law. Our 30-day returns",
   "  policy sits alongside it as an additional promise, not a replacement.",
   "",
-  "  Pieces made specially to your own specification — a bespoke",
-  "  commission, or a combination we don't otherwise offer — are exempt",
+  "  Pieces made specially to your own specification (a bespoke",
+  "  commission, or a combination we don't otherwise offer) are exempt",
   "  from this right. Choosing from the options shown on a product page",
   "  is not a special order.",
 ].join("\n");
@@ -328,7 +328,7 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
     "Questions about your order? Reply to this email and we'll help.",
   ].join("\n");
 
-  return sendEmail({ to: params.to, subject: `Order confirmed — #${ref}`, text, replyTo: REPLY_TO });
+  return sendEmail({ to: params.to, subject: `Order confirmed: #${ref}`, text, replyTo: REPLY_TO });
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -349,7 +349,7 @@ export async function sendRefundNotificationEmail(params: RefundNotificationPara
   const text = [
     `Hi ${firstName},`,
     "",
-    "I'm sorry — this is the email nobody wants to send.",
+    "I'm sorry. This is the email nobody wants to send.",
     "",
     `${item} sold out in the moments between your payment going through and`,
     "your order being finalised. Because every piece is handmade, we often",
@@ -379,7 +379,7 @@ export async function sendRefundNotificationEmail(params: RefundNotificationPara
     to: params.to,
     // No withdrawal-rights block: no order exists, so there is no contract
     // to withdraw from.
-    subject: `Your payment has been refunded — ${item} sold out`,
+    subject: `Your payment has been refunded: ${item} sold out`,
     text,
     replyTo: REPLY_TO,
   });
@@ -431,7 +431,7 @@ export async function sendAdminNewOrderEmail(params: AdminNewOrderParams): Promi
 
   return sendEmail({
     to: params.to,
-    subject: `New order — ${formatMoney(params.total, params.currency)} — ${customerName}`,
+    subject: `New order: ${formatMoney(params.total, params.currency)} · ${customerName}`,
     text,
   });
 }

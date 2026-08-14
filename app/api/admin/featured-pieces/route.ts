@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       .eq("id", productId)
       .maybeSingle();
     if (!linkedProduct) {
-      return NextResponse.json({ error: "That product no longer exists — pick another" }, { status: 400 });
+      return NextResponse.json({ error: "That product no longer exists, pick another" }, { status: 400 });
     }
 
     const { data, error } = await db

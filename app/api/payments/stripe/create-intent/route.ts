@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         `server computed €${shippingEUR} (zone=${shippingQuote.zone})`
       );
       return NextResponse.json(
-        { error: "Shipping cost changed — please review your order and try again." },
+        { error: "Shipping cost changed. Please review your order and try again." },
         { status: 400 }
       );
     }
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
       // client completes it), so it's safe to just fail here.
       await getStripe().paymentIntents.cancel(paymentIntent.id).catch(() => {});
       console.error("create-intent: failed to stage pending_stripe_orders row", stageError);
-      return NextResponse.json({ error: "Could not start checkout — please try again" }, { status: 500 });
+      return NextResponse.json({ error: "Could not start checkout, please try again" }, { status: 500 });
     }
 
     // Return the server-verified quote so the UI displays exactly the

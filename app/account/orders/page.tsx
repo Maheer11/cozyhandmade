@@ -19,7 +19,7 @@ function lifecycleMessage(order: Order): string | null {
   if (order.status === "processing") {
     const shipBy = new Date(order.created_at);
     shipBy.setDate(shipBy.getDate() + PROCESSING_DAYS);
-    return `Payment confirmed. Your order is being prepared — estimated to ship by ${formatDate(shipBy.toISOString())}.`;
+    return `Payment confirmed. Your order is being prepared. Estimated to ship by ${formatDate(shipBy.toISOString())}.`;
   }
   if (order.status === "shipped") {
     return order.shipped_at

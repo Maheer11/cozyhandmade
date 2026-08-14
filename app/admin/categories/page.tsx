@@ -66,7 +66,7 @@ export default async function AdminCategoriesPage() {
                     ) : (
                       <span
                         className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700"
-                        title="No manual image set — using the most recent product's photo automatically"
+                        title="No manual image set. Using the most recent product's photo automatically"
                       >
                         Auto
                       </span>

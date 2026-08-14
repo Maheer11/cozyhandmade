@@ -156,7 +156,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
     if (url) {
       set("image", url);
     } else {
-      setMainImgError("Upload failed — check your connection and try again.");
+      setMainImgError("Upload failed. Check your connection and try again.");
     }
     setUploadingMain(false);
     setMainProgress(0);
@@ -180,7 +180,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
     );
     const valid = urls.filter(Boolean) as string[];
     if (valid.length < files.length) {
-      setMoreImgError(`${files.length - valid.length} image(s) failed to upload — try again.`);
+      setMoreImgError(`${files.length - valid.length} image(s) failed to upload, try again.`);
     }
     if (valid.length > 0) set("images", [...form.images, ...valid]);
     setUploadingMore(false);
@@ -586,7 +586,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
         <div className="px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg">
           This item had <strong>{prefillStockGap} unit{prefillStockGap === 1 ? "" : "s"}</strong> total in Featured Pieces,
           but Featured Pieces doesn&apos;t track stock per colour/size. The stock grid below starts at 0 for every
-          variant — enter the real per-variant counts (they should add up to {prefillStockGap}, or to whatever
+          variant, so enter the real per-variant counts (they should add up to {prefillStockGap}, or to whatever
           you actually have on hand) before creating, otherwise this product will show as out of stock.
         </div>
       )}
@@ -654,7 +654,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
               />
             </div>
             <div>
-              <label className={labelCls}>Original Price (€) — for sale</label>
+              <label className={labelCls}>Original Price (€) for sale</label>
               <input
                 type="number"
                 value={form.original_price}
@@ -728,7 +728,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
               onChange={(e) => set("description", e.target.value)}
               rows={4}
               className={inputCls}
-              placeholder="Describe the product — materials, dimensions, care instructions…"
+              placeholder="Describe the product: materials, dimensions, care instructions…"
             />
           </div>
 
@@ -776,7 +776,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
                   <span className="text-sm text-gray-700 font-medium">Show on homepage</span>
                   <span className="block text-xs text-gray-400 mt-0.5">
                     Puts this product in the homepage hero, alongside any Featured Pieces
-                    that are switched on. There is no limit — the hero shows exactly what
+                    that are switched on. There is no limit. The hero shows exactly what
                     you tick here, so a handful reads best.
                   </span>
                 </span>

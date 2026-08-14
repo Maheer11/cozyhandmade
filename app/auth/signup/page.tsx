@@ -64,7 +64,7 @@ export default function SignupPage() {
           <h1 className="font-heading italic text-3xl font-400 text-deep-brown mb-3">Check your inbox</h1>
           <p className="text-sm text-taupe-dark font-body leading-relaxed max-w-sm mx-auto">
             We sent a confirmation link to <strong className="text-deep-brown">{email}</strong>.
-            Click it to activate your account — then sign in.
+            Click it to activate your account. Then sign in.
           </p>
           <Link
             href="/auth/login"

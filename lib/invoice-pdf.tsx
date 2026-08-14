@@ -106,7 +106,7 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
 
   return (
     <Document
-      title={`Invoice ${ref} — Cozi Handmade`}
+      title={`Invoice ${ref} | Cozi Handmade`}
       author="Cozi Handmade"
       subject="Order Invoice"
     >
@@ -192,7 +192,7 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
           </View>
           <View style={s.totalRow}>
             <Text style={s.totalLabel}>Delivery</Text>
-            <Text style={s.totalValue}>—</Text>
+            <Text style={s.totalValue}>N/A</Text>
           </View>
           <View style={[s.totalRow, { marginTop: 6, borderTopWidth: 1, borderTopColor: CREAM, paddingTop: 8 }]}>
             <Text style={s.grandLabel}>Total</Text>

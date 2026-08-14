@@ -18,7 +18,7 @@ export default async function CustomOrderPage() {
             Create a Custom Order
           </h1>
           <p className="text-deep-brown/70 text-sm sm:text-base leading-relaxed">
-            Tell us what you have in mind — colour, size, occasion, anything — and we'll
+            Tell us what you have in mind (colour, size, occasion, anything) and we'll
             reply on WhatsApp to talk it through before you order.
           </p>
         </div>

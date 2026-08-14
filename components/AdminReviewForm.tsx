@@ -102,7 +102,7 @@ export default function AdminReviewForm({ item }: { item?: ReviewItem }) {
     setUploading(true);
     const url = await uploadFile(file, setProgress);
     if (url) set("screenshot", url);
-    else setUploadError("Upload failed — check your connection and try again.");
+    else setUploadError("Upload failed. Check your connection and try again.");
     setUploading(false);
     setProgress(0);
   }
@@ -135,7 +135,7 @@ export default function AdminReviewForm({ item }: { item?: ReviewItem }) {
     setSaving(false);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Something went wrong — please try again.");
+      setError(body.error ?? "Something went wrong, please try again.");
       return;
     }
 
@@ -148,7 +148,7 @@ export default function AdminReviewForm({ item }: { item?: ReviewItem }) {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Screenshot</label>
         <p className="text-xs text-gray-400 mb-2">
-          The real customer message/screenshot — no fabricated quotes.
+          The real customer message/screenshot, no fabricated quotes.
         </p>
         <div
           onClick={() => fileRef.current?.click()}

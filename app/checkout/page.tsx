@@ -866,7 +866,7 @@ function ShippingStep({
       {pickupEligible && (
         <div className="mt-4 rounded-xl border-0 sm:border sm:border-emerald-100 bg-emerald-50/70 p-3">
           <p className="text-xs font-semibold text-emerald-800 mb-2">
-            Your address is in Dublin — how would you like to receive your order?
+            Your address is in Dublin. How would you like to receive your order?
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <label className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-xs cursor-pointer transition-colors
@@ -879,7 +879,7 @@ function ShippingStep({
                                ${deliveryMethod === "pickup" ? "border-emerald-400 bg-white" : "border-emerald-100 bg-emerald-50/50"}`}>
               <input type="radio" name="deliveryMethod" checked={deliveryMethod === "pickup"}
                      onChange={() => setDeliveryMethod("pickup")} className="accent-emerald-600" />
-              <span className="text-emerald-900 font-medium">Pick up in Dublin — Free</span>
+              <span className="text-emerald-900 font-medium">Pick up in Dublin (Free)</span>
             </label>
           </div>
         </div>
@@ -960,7 +960,7 @@ function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccep
       }
     }
     setWaitingForOrder(false);
-    setError(`Your payment succeeded and we're finishing your order — this is taking a little longer than usual. Contact us with order reference ${orderRef} if you don't hear from us soon.`);
+    setError(`Your payment succeeded and we're finishing your order. This is taking a little longer than usual. Contact us with order reference ${orderRef} if you don't hear from us soon.`);
   }
 
   async function handleSubmit() {
@@ -984,7 +984,7 @@ function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccep
 
       await pollForOrder(paymentIntent.id);
     } catch {
-      setError("Network error — please check your connection and try again.");
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -1249,7 +1249,7 @@ function SoldOutRefundedScreen({ productName }: { productName: string | null }) 
           </h1>
           <p className="text-brown/70 text-sm leading-relaxed max-w-xs mx-auto">
             {productName ? `"${productName}" sold out` : "This item sold out"} just as your payment
-            completed — we&apos;ve automatically refunded you in full. We&apos;re sorry for the disappointment.
+            completed, and we&apos;ve automatically refunded you in full. We&apos;re sorry for the disappointment.
           </p>
         </div>
 
@@ -1406,7 +1406,7 @@ export default function CheckoutPage() {
         }
         setClientSecret(data.client_secret);
       } catch {
-        if (!cancelled) setIntentError("Network error — please check your connection and try again.");
+        if (!cancelled) setIntentError("Network error. Please check your connection and try again.");
       }
     })();
 

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "FAQs — Cozi Handmade",
+  title: "FAQs | Cozi Handmade",
   description:
-    "Answers to common questions about Cozi Handmade — delivery, caring for your handmade piece, custom orders, and how to pay.",
+    "Answers to common questions about Cozi Handmade: delivery, caring for your handmade piece, custom orders, and how to pay.",
 };
 
 // Rendered on the page AND mirrored 1:1 into the FAQPage JSON-LD below —
@@ -12,19 +12,19 @@ export const metadata: Metadata = {
 const faqs: { q: string; a: string }[] = [
   {
     q: "How long does delivery take?",
-    a: "[OWNER: confirm delivery timeframes — how many working days for domestic and international orders once dispatched.]",
+    a: "[OWNER: confirm delivery timeframes: how many working days for domestic and international orders once dispatched.]",
   },
   {
     q: "Where do you ship?",
-    a: "[OWNER: confirm shipping scope — which countries and regions you currently ship to.]",
+    a: "[OWNER: confirm shipping scope: which countries and regions you currently ship to.]",
   },
   {
     q: "What is your returns policy?",
-    a: "[OWNER: confirm returns policy — the return window, condition requirements, and who covers return shipping.]",
+    a: "[OWNER: confirm returns policy: the return window, condition requirements, and who covers return shipping.]",
   },
   {
     q: "Are your pieces really handmade?",
-    a: "Yes — every piece is made to order by hand. Because of that, slight variations in colour, texture, and size compared to the product photos are natural characteristics of handmade goods, not defects. No two pieces are exactly alike.",
+    a: "Yes. Every piece is made to order by hand. Because of that, slight variations in colour, texture, and size compared to the product photos are natural characteristics of handmade goods, not defects. No two pieces are exactly alike.",
   },
   {
     q: "How do I care for my handmade piece?",
@@ -32,7 +32,7 @@ const faqs: { q: string; a: string }[] = [
   },
   {
     q: "Can I order a custom piece?",
-    a: "Absolutely. Tell us what you have in mind — colour, size, occasion — through the Custom Order page, and we'll reply on WhatsApp to talk it through before you order.",
+    a: "Absolutely. Tell us what you have in mind (colour, size, occasion) through the Custom Order page, and we'll reply on WhatsApp to talk it through before you order.",
   },
   {
     q: "How can I pay?",
@@ -70,7 +70,7 @@ export default function FaqPage() {
             Frequently Asked Questions
           </h1>
           <p className="text-deep-brown/70 text-sm sm:text-base leading-relaxed">
-            Delivery, care, custom orders, and payment — answered. Can&apos;t
+            Delivery, care, custom orders, and payment: answered. Can&apos;t
             find what you need? Reach us any time on WhatsApp.
           </p>
         </div>

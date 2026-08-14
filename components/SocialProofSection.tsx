@@ -207,7 +207,7 @@ export default function SocialProofSection({ reviews }: { reviews: Review[] }) {
             Words from Our Community
           </h2>
           <p className="text-deep-brown/55 text-sm max-w-md mx-auto leading-relaxed font-medium">
-            Real screenshots from real customers — shared via WhatsApp &amp; Instagram DMs
+            Real screenshots from real customers, shared via WhatsApp &amp; Instagram DMs
           </p>
         </div>
 

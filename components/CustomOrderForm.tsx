@@ -134,7 +134,7 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
           Send via WhatsApp
         </a>
         <p className="text-xs text-taupe-dark text-center leading-relaxed">
-          This opens WhatsApp with your details pre-filled — nothing is sent until you hit send there.
+          This opens WhatsApp with your details pre-filled. Nothing is sent until you hit send there.
         </p>
 
         <Link

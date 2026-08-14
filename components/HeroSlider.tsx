@@ -6,7 +6,7 @@ export default function HeroSlider() {
     <div className="relative w-full h-full overflow-hidden bg-deep-brown">
       <Image
         src={heroImage}
-        alt="Cozi Handmade — artisan craftsmanship"
+        alt="Cozi Handmade artisan craftsmanship"
         fill
         sizes="100vw"
         className="object-cover"

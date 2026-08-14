@@ -71,7 +71,7 @@ export default async function NewProductPage({
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Add Product</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {sourceName ? `Adding "${sourceName}" to Collections — pick a category and review before saving.` : "New item for the catalogue"}
+            {sourceName ? `Adding "${sourceName}" to Collections. Pick a category and review before saving.` : "New item for the catalogue"}
           </p>
         </div>
       </div>

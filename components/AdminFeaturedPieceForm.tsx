@@ -157,7 +157,7 @@ function ImageDropzone({
     setUploading(true);
     const uploadedUrl = await uploadFile(file, folder, setProgress);
     if (uploadedUrl) onUploaded(uploadedUrl);
-    else setError("Upload failed — check your connection and try again.");
+    else setError("Upload failed. Check your connection and try again.");
     setUploading(false);
     setProgress(0);
   }
@@ -287,7 +287,7 @@ export default function AdminFeaturedPieceForm({
     setSaving(false);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Something went wrong — please try again.");
+      setError(body.error ?? "Something went wrong, please try again.");
       return;
     }
 
@@ -300,14 +300,14 @@ export default function AdminFeaturedPieceForm({
       <div className="flex flex-wrap gap-6">
         <ImageDropzone
           label="Product image"
-          hint="Tight/close shot — shown by default"
+          hint="Tight/close shot, shown by default"
           url={form.product_image}
           onUploaded={(url) => set("product_image", url)}
           folder="new-in-product"
         />
         <ImageDropzone
           label="Lifestyle image"
-          hint="Item in use — shown on hover / press"
+          hint="Item in use, shown on hover / press"
           url={form.lifestyle_image}
           onUploaded={(url) => set("lifestyle_image", url)}
           folder="new-in-lifestyle"
@@ -329,7 +329,7 @@ export default function AdminFeaturedPieceForm({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Price (€)</label>
           <p className="text-xs text-gray-400 mb-1.5">
-            Entered and shown in pounds directly — no currency conversion for Featured Pieces items.
+            Entered and shown in pounds directly, with no currency conversion for Featured Pieces items.
           </p>
           <input
             type="number"
@@ -385,7 +385,7 @@ export default function AdminFeaturedPieceForm({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Price per size (optional)</label>
           <p className="text-xs text-gray-400 mb-2">
-            Set a different price for one or more sizes — e.g. for a product sold in configurations
+            Set a different price for one or more sizes, e.g. for a product sold in configurations
             like &quot;Without Stand&quot; / &quot;With Stand&quot;. Leave blank to use the base price above.
           </p>
           <div className="space-y-2">
@@ -468,7 +468,7 @@ export default function AdminFeaturedPieceForm({
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-2">
         <label className="block text-sm font-medium text-gray-700">Stock comes from this product</label>
         <p className="text-xs text-gray-500">
-          Pick the product this piece is. Its stock is the stock — sell one here or in the shop and the
+          Pick the product this piece is. Its stock is the stock: sell one here or in the shop and the
           same number goes down. To change the count, edit the product.
         </p>
         <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -477,7 +477,7 @@ export default function AdminFeaturedPieceForm({
             onChange={(e) => set("product_id", e.target.value)}
             className="flex-1 min-w-[240px] px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
           >
-            <option value="">— Select a product —</option>
+            <option value="">Select a product</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -491,11 +491,11 @@ export default function AdminFeaturedPieceForm({
                   : "bg-red-50 border-red-200 text-red-700"
               }`}
             >
-              Stock: {linkedProduct.stock_quantity} — managed on the product
+              Stock: {linkedProduct.stock_quantity}, managed on the product
             </span>
           ) : (
             <span className="shrink-0 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
-              No product linked — this piece can&apos;t be sold
+              No product linked, so this piece can&apos;t be sold
             </span>
           )}
         </div>
@@ -541,7 +541,7 @@ export default function AdminFeaturedPieceForm({
         </div>
         <p className="text-xs text-gray-500">
           A manual override. &quot;Out of stock&quot; hides this piece from sale even when the linked
-          product still has stock — use it to pull something early. &quot;Available&quot; follows the
+          product still has stock. Use it to pull something early. &quot;Available&quot; follows the
           product: once its stock hits zero, this piece shows as sold out on its own.
           {linkedProduct && !form.sold_out && linkedProduct.stock_quantity <= 0 && (
             <span className="block mt-1 text-amber-700">
@@ -580,7 +580,7 @@ export default function AdminFeaturedPieceForm({
             <span className="text-sm font-medium text-gray-700">Show on homepage</span>
             <span className="block text-xs text-gray-500 mt-0.5">
               Puts this piece in the homepage hero, alongside any Products that are
-              switched on. There is no limit — the hero shows exactly what you tick,
+              switched on. There is no limit. The hero shows exactly what you tick,
               so a handful reads best. The first one (by display order) becomes the
               large spotlight image.
             </span>

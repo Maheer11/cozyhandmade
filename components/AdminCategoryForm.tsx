@@ -84,7 +84,7 @@ export default function AdminCategoryForm({ category }: { category?: DbCategory 
     setUploading(true);
     const url = await uploadFile(file, setProgress);
     if (url) set("image", url);
-    else setUploadError("Upload failed — check your connection and try again.");
+    else setUploadError("Upload failed. Check your connection and try again.");
     setUploading(false);
     setProgress(0);
   }
@@ -114,7 +114,7 @@ export default function AdminCategoryForm({ category }: { category?: DbCategory 
     setSaving(false);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Something went wrong — please try again.");
+      setError(body.error ?? "Something went wrong, please try again.");
       return;
     }
 
@@ -132,7 +132,7 @@ export default function AdminCategoryForm({ category }: { category?: DbCategory 
 
       {isEdit && (
         <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500">
-          ID: <span className="font-mono text-gray-700">{category!.id}</span> — locked, products already reference it.
+          ID: <span className="font-mono text-gray-700">{category!.id}</span> is locked, products already reference it.
         </div>
       )}
 
@@ -147,7 +147,7 @@ export default function AdminCategoryForm({ category }: { category?: DbCategory 
         />
         {!isEdit && form.name.trim() && (
           <p className="text-xs text-gray-400 mt-1.5">
-            ID will be: <span className="font-mono">{form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "—"}</span>
+            ID will be: <span className="font-mono">{form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "(none)"}</span>
           </p>
         )}
       </div>
@@ -168,8 +168,8 @@ export default function AdminCategoryForm({ category }: { category?: DbCategory 
           Card image <span className="font-normal text-gray-400">(optional)</span>
         </label>
         <p className="text-xs text-gray-400 mb-2">
-          Leave blank to auto-use the most recently added product&apos;s photo in this category —
-          it&apos;ll stay up to date on its own as inventory changes. Upload one here only if you
+          Leave blank to auto-use the most recently added product&apos;s photo in this category.
+          It&apos;ll stay up to date on its own as inventory changes. Upload one here only if you
           want a specific hero shot instead.
         </p>
         <div className="flex items-center gap-4">
