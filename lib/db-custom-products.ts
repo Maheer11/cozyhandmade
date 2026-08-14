@@ -20,6 +20,8 @@ export function mapCustomProduct(p: DbCustomProduct): Product {
     tags: p.tags ?? [],
     inStock: p.in_stock,
     featured: false,
+    // custom_products has no such column — these never appear in the hero.
+    showOnHomepage: false,
     isHandmade: true,
     stockQuantity: p.stock_quantity,
     colors: p.colors ?? [],

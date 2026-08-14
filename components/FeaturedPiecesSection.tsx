@@ -6,8 +6,17 @@ import Image from "next/image";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 
-export interface NewInCardData {
+export interface FeaturedPieceCardData {
   id: string;
+  /**
+   * Which catalogue this row came from — decides the detail route. Defaults to
+   * "featured_piece" when absent, which is every caller except the homepage
+   * hero: that one draws from products AND featured_pieces at once (both
+   * admin-toggled via show_on_homepage) and the two ids live under different
+   * routes. Named to match the same discriminator on cart items
+   * (CartContext / lib/checkout/repriceItems.ts).
+   */
+  source?: "product" | "featured_piece";
   name: string;
   product_image: string;
   lifestyle_image: string | null;
@@ -18,11 +27,20 @@ export interface NewInCardData {
   shipping_weight_grams?: number | null;
 }
 
-export const NewInCard = memo(function NewInCard({
+/**
+ * Detail route for a card. Products and featured pieces have separate tables,
+ * separate ids and separate routes, so anything rendering a mixed list (the
+ * homepage hero) has to switch on `source` rather than assume one of them.
+ */
+export function itemHref(item: Pick<FeaturedPieceCardData, "id" | "source">): string {
+  return item.source === "product" ? `/products/${item.id}` : `/featured-pieces/${item.id}`;
+}
+
+export const FeaturedPieceCard = memo(function FeaturedPieceCard({
   item,
   variant = "rail",
 }: {
-  item: NewInCardData;
+  item: FeaturedPieceCardData;
   /** "rail" = fixed width for the horizontal scroll-snap row; "grid" = fills its grid cell. */
   variant?: "rail" | "grid";
 }) {
@@ -35,7 +53,7 @@ export const NewInCard = memo(function NewInCard({
 
   return (
     <Link
-      href={`/new-in/${item.id}`}
+      href={itemHref(item)}
       style={{ touchAction: "manipulation" }}
       onMouseEnter={() => setRevealed(true)}
       onMouseLeave={() => setRevealed(false)}
@@ -119,7 +137,7 @@ export const NewInCard = memo(function NewInCard({
 const ViewAllTile = memo(function ViewAllTile() {
   return (
     <Link
-      href="/new-in"
+      href="/featured-pieces"
       style={{ touchAction: "manipulation" }}
       className="group relative flex flex-col items-center justify-center gap-3 shrink-0 snap-start
                  w-[68vw] max-w-[280px] sm:w-72 lg:w-80 aspect-square sm:aspect-auto sm:h-auto
@@ -134,7 +152,7 @@ const ViewAllTile = memo(function ViewAllTile() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
         </svg>
       </span>
-      <span className="font-heading italic text-deep-brown text-lg sm:text-xl text-center px-2">View all New In →</span>
+      <span className="font-heading italic text-deep-brown text-lg sm:text-xl text-center px-2">View all Featured Pieces →</span>
     </Link>
   );
 });
@@ -152,7 +170,7 @@ function ScrollArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | n
     <div className="hidden lg:flex items-center gap-2">
       <button
         onClick={() => scrollBy(-1)}
-        aria-label="Scroll New In left"
+        aria-label="Scroll Featured Pieces left"
         className="w-10 h-10 rounded-full border border-taupe/30 flex items-center justify-center
                    text-brown hover:bg-cream-dark hover:border-taupe/50 transition-colors duration-150"
       >
@@ -162,7 +180,7 @@ function ScrollArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | n
       </button>
       <button
         onClick={() => scrollBy(1)}
-        aria-label="Scroll New In right"
+        aria-label="Scroll Featured Pieces right"
         className="w-10 h-10 rounded-full border border-taupe/30 flex items-center justify-center
                    text-brown hover:bg-cream-dark hover:border-taupe/50 transition-colors duration-150"
       >
@@ -174,7 +192,7 @@ function ScrollArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | n
   );
 }
 
-export default function NewInSection({ items }: { items: NewInCardData[] }) {
+export default function FeaturedPiecesSection({ items }: { items: FeaturedPieceCardData[] }) {
   const railRef = useRef<HTMLDivElement>(null);
   if (!items.length) return null;
 
@@ -187,7 +205,7 @@ export default function NewInSection({ items }: { items: NewInCardData[] }) {
               ✦ Just Landed
             </p>
             <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown">
-              New In
+              Featured Pieces
             </h2>
           </div>
           <ScrollArrows railRef={railRef} />
@@ -201,7 +219,7 @@ export default function NewInSection({ items }: { items: NewInCardData[] }) {
             {items.map((item, i) => (
               <Fragment key={item.id}>
                 {i > 0 && <Divider />}
-                <NewInCard item={item} />
+                <FeaturedPieceCard item={item} />
               </Fragment>
             ))}
             <Divider />

@@ -11,13 +11,20 @@ export interface CartItem {
   image: string;
   quantity: number;
   // "product" (default, omitted for backward-compat with existing carts in
-  // localStorage) vs "new_in" — a standalone new_in_items row with no
-  // products-table link. Determines which table checkout verifies price/stock
-  // against and which detail route ("/products/:id" vs "/new-in/:id") to link to.
-  source?: "product" | "new_in";
+  // localStorage) vs "featured_piece" — a standalone featured_pieces row
+  // with no products-table link. Determines which table checkout verifies
+  // price/stock against and which detail route ("/products/:id" vs
+  // "/featured-pieces/:id") to link to.
+  //
+  // "new_in" is also accepted — it's the legacy value this field used before
+  // the New In → Featured Pieces rename, and carts already sitting in a
+  // customer's localStorage still carry it. Never written by new code, but
+  // every comparison against this field must still treat it the same as
+  // "featured_piece" so those carts keep working.
+  source?: "product" | "new_in" | "featured_piece";
   // The selected size/tier key (e.g. "With Stand") when the item has
-  // per-tier pricing (new_in_items.variant_price). Lets checkout verify the
-  // exact tier price server-side instead of falling back to the base price.
+  // per-tier pricing (featured_pieces.variant_price). Lets checkout verify
+  // the exact tier price server-side instead of falling back to the base price.
   //
   // SIZE ONLY — never a colour, and never a colour+size composite.
   // variant_price is keyed by entries in `sizes` (see schema.sql), so
@@ -45,7 +52,7 @@ export interface CartItem {
   // undefined = no cap known (quick-add from a listing card, which has no
   // stock data). Those lines stay uncapped, exactly as before.
   maxQuantity?: number;
-  // Billable shipping weight, read from the product/new_in row at
+  // Billable shipping weight, read from the product/featured-piece row at
   // add-to-cart time. Missing/null (including carts persisted before this
   // field existed) is treated by calculateShipping() as "unknown" and
   // falls back to a deliberately high default — see lib/checkout/shipping.ts.

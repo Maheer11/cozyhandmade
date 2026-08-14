@@ -102,7 +102,9 @@ function SwipeableItem({
   onUpdateQty: (lineKey: string, qty: number) => void;
 }) {
   const { formatAmount } = useCurrency();
-  const itemHref = item.source === "new_in" ? `/new-in/${item.id}` : `/products/${item.id}`;
+  // "new_in" accepted alongside "featured_piece" for carts persisted before
+  // the New In → Featured Pieces rename.
+  const itemHref = (item.source === "new_in" || item.source === "featured_piece") ? `/featured-pieces/${item.id}` : `/products/${item.id}`;
   // undefined maxQuantity = no known stock cap (quick-add from a listing
   // card), which must stay uncapped rather than reading as a cap of 0.
   const atMax = item.maxQuantity !== undefined && item.quantity >= item.maxQuantity;

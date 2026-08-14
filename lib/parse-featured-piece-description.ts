@@ -1,4 +1,4 @@
-// Turns a single free-text `new_in_items.description` field into structured
+// Turns a single free-text `featured_pieces.description` field into structured
 // sections for display — no second "short description" field, per spec.
 // Recognizes a simple convention: known section headings on their own line,
 // "•"/"-"/"–" bulleted lines under a heading, and "Label: value" lines under a

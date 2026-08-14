@@ -18,7 +18,7 @@ const helpLinks = [
 ];
 
 const aboutLinks = [
-  { href: "/new-in", label: "New In" },
+  { href: "/featured-pieces", label: "Featured Pieces" },
   { href: "/#newsletter", label: "Journal" },
 ];
 
@@ -35,7 +35,6 @@ export default function Footer() {
                 color="#F5E6D8"
               />
             </Link>
-            <p className="text-cream/70 text-xs mb-3 font-body tracking-wide">✦ handcrafted with love, since 2018</p>
             <p className="text-cream/60 text-sm leading-relaxed mb-4 max-w-xs font-body">
               Every stitch made with love — duvets, baby clothes, handbags, purses, scarves
               and blankets crafted by skilled women artisans.

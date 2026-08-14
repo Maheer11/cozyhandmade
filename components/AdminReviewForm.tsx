@@ -40,7 +40,7 @@ function defaultState(item?: ReviewItem): FormState {
 // Cloudinary stores the raw original upload — inserting a delivery
 // transformation into the returned URL keeps the stored URL itself small
 // (auto format, auto quality, capped width), same fix applied to product
-// and New In image uploads.
+// and Featured Pieces image uploads.
 function optimizeCloudinaryUrl(url: string): string {
   return url.replace("/upload/", "/upload/f_auto,q_auto,w_1200,c_limit/");
 }

@@ -21,7 +21,7 @@ function defaultState(category?: DbCategory): FormState {
   };
 }
 
-// Same unsigned-upload Cloudinary pattern as AdminNewInForm.tsx / AdminProductForm.tsx.
+// Same unsigned-upload Cloudinary pattern as AdminFeaturedPieceForm.tsx / AdminProductForm.tsx.
 function optimizeCloudinaryUrl(url: string): string {
   return url.replace("/upload/", "/upload/f_auto,q_auto,w_1600,c_limit/");
 }

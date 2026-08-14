@@ -17,7 +17,9 @@ function DrawerItem({
   onUpdateQty: (lineKey: string, qty: number) => void;
 }) {
   const { formatAmount } = useCurrency();
-  const itemHref = item.source === "new_in" ? `/new-in/${item.id}` : `/products/${item.id}`;
+  // "new_in" accepted alongside "featured_piece" for carts persisted before
+  // the New In → Featured Pieces rename.
+  const itemHref = (item.source === "new_in" || item.source === "featured_piece") ? `/featured-pieces/${item.id}` : `/products/${item.id}`;
   // See the same guard in app/cart/page.tsx — undefined means no known cap.
   const atMax = item.maxQuantity !== undefined && item.quantity >= item.maxQuantity;
   const [offset, setOffset] = useState(0);

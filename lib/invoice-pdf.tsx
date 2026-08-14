@@ -116,7 +116,6 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
         <View style={s.header}>
           <View>
             <Text style={s.brandName}>Cozi Handmade</Text>
-            <Text style={s.brandTagline}>HANDCRAFTED WITH HEART</Text>
           </View>
           <View>
             <Text style={s.invoiceLabel}>Invoice</Text>

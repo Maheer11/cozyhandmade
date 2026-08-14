@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { NewInCard, type NewInCardData } from "@/components/NewInSection";
+import { FeaturedPieceCard, type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
+import {
+  FEATURED_PIECE_STOCK_SELECT,
+  isFeaturedPieceSoldOut,
+  type FeaturedPieceStockSource,
+} from "@/lib/featured-piece-stock";
 
 const PAGE_SIZE = 24;
 
-export default async function NewInGridPage({
+export default async function FeaturedPiecesGridPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>;
@@ -18,11 +23,24 @@ export default async function NewInGridPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const { data: items, count } = await db
-    .from("new_in_items")
-    .select("id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price", { count: "exact" })
+  // The embedded products(stock_quantity) is what makes `sold_out` on the card
+  // truthful: stock lives on the linked product now (migration 013), and the
+  // row's own sold_out is only the manual override half of the answer. Embedded
+  // in this one query rather than looked up per card — a 24-card page would
+  // otherwise be 25 round trips.
+  const { data: rows, count } = await db
+    .from("featured_pieces")
+    .select(
+      `id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price, ${FEATURED_PIECE_STOCK_SELECT}`,
+      { count: "exact" }
+    )
     .order("display_order", { ascending: true })
-    .range(from, to) as { data: NewInCardData[] | null; count: number | null };
+    .range(from, to) as { data: (FeaturedPieceCardData & FeaturedPieceStockSource)[] | null; count: number | null };
+
+  const items: FeaturedPieceCardData[] = (rows ?? []).map((row) => ({
+    ...row,
+    sold_out: isFeaturedPieceSoldOut(row),
+  }));
 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
@@ -34,7 +52,7 @@ export default async function NewInGridPage({
             ✦ Just Landed
           </p>
           <h1 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown">
-            New In
+            Featured Pieces
           </h1>
         </div>
 
@@ -43,7 +61,7 @@ export default async function NewInGridPage({
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
             {items.map((item) => (
-              <NewInCard key={item.id} item={item} variant="grid" />
+              <FeaturedPieceCard key={item.id} item={item} variant="grid" />
             ))}
           </div>
         )}
@@ -51,7 +69,7 @@ export default async function NewInGridPage({
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-3 mt-12">
             <Link
-              href={`/new-in?page=${page - 1}`}
+              href={`/featured-pieces?page=${page - 1}`}
               aria-disabled={page <= 1}
               className={`px-5 py-2.5 rounded-full text-sm font-medium border border-taupe/30
                          ${page <= 1 ? "pointer-events-none opacity-40" : "hover:bg-cream-dark transition-colors"}`}
@@ -60,7 +78,7 @@ export default async function NewInGridPage({
             </Link>
             <span className="text-sm text-taupe-dark">Page {page} of {totalPages}</span>
             <Link
-              href={`/new-in?page=${page + 1}`}
+              href={`/featured-pieces?page=${page + 1}`}
               aria-disabled={page >= totalPages}
               className={`px-5 py-2.5 rounded-full text-sm font-medium border border-taupe/30
                          ${page >= totalPages ? "pointer-events-none opacity-40" : "hover:bg-cream-dark transition-colors"}`}

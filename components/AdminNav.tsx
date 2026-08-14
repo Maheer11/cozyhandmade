@@ -25,8 +25,8 @@ const links = [
     ),
   },
   {
-    href: "/admin/new-in",
-    label: "New In",
+    href: "/admin/featured-pieces",
+    label: "Featured Pieces",
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round"

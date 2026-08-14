@@ -7,7 +7,7 @@ import { useCart } from "./CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import ProductCard from "./ProductCard";
 import type { Product } from "@/lib/products";
-import { parseDescription } from "@/lib/parse-new-in-description";
+import { parseDescription } from "@/lib/parse-featured-piece-description";
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
   return (
@@ -80,7 +80,7 @@ export default function ProductDetail({
   const [descExpanded,  setDescExpanded]  = useState(false);
   const [openSections,  setOpenSections]  = useState<Set<number>>(new Set());
 
-  // Same description convention as New In items: an untitled intro block,
+  // Same description convention as Featured Pieces items: an untitled intro block,
   // then known headings ("Why You'll Love It", "Product Details", …) each
   // rendered as an independent dropdown.
   const descSections  = useMemo(() => parseDescription(product.description ?? ""), [product.description]);
@@ -232,7 +232,7 @@ export default function ProductDetail({
             </div>
 
             {/* Intro — the untitled first block of the description, truncated
-                with a Read more/less toggle. Same treatment as New In items. */}
+                with a Read more/less toggle. Same treatment as Featured Pieces items. */}
             {introSection && (
               <div className="mb-2">
                 <p className={`text-brown/75 leading-relaxed text-sm sm:text-base ${descExpanded ? "" : "line-clamp-3"}`}>
@@ -249,7 +249,7 @@ export default function ProductDetail({
             )}
 
             {/* Named description sections — each an independent dropdown,
-                closed by default, identical to the New In detail page. */}
+                closed by default, identical to the Featured Piece detail page. */}
             {namedSections.length > 0 && (
               <div className="mb-6">
                 {namedSections.map((section, i) => {

@@ -1,15 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import AdminProductForm, { type ProductPrefill } from "@/components/AdminProductForm";
 import { createClient } from "@/lib/supabase/server";
 import { getCategories } from "@/lib/db-categories";
-import type { NewInItem } from "@/components/AdminNewInForm";
+import type { FeaturedPieceItem } from "@/components/AdminFeaturedPieceForm";
+import {
+  FEATURED_PIECE_STOCK_SELECT,
+  linkedProductStock,
+  type FeaturedPieceStockSource,
+} from "@/lib/featured-piece-stock";
 
 export default async function NewProductPage({
   searchParams,
 }: {
-  searchParams: Promise<{ fromNewIn?: string }>;
+  searchParams: Promise<{ fromFeaturedPiece?: string }>;
 }) {
-  const { fromNewIn } = await searchParams;
+  const { fromFeaturedPiece } = await searchParams;
   const supabase = await createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
@@ -18,12 +24,23 @@ export default async function NewProductPage({
   let prefill: ProductPrefill | undefined;
   let sourceName: string | undefined;
 
-  if (fromNewIn) {
+  if (fromFeaturedPiece) {
+    // The piece's own stock_quantity is deprecated and unread (migration 013);
+    // its stock is whatever the linked product holds, so that is what gets
+    // prefilled here.
     const { data: item } = await db
-      .from("new_in_items")
-      .select("*")
-      .eq("id", fromNewIn)
-      .single() as { data: NewInItem | null };
+      .from("featured_pieces")
+      .select(`*, ${FEATURED_PIECE_STOCK_SELECT}`)
+      .eq("id", fromFeaturedPiece)
+      .single() as { data: (FeaturedPieceItem & FeaturedPieceStockSource) | null };
+
+    // Already linked to a product? Then there is nothing to create — sending
+    // the admin to a prefilled "new product" form here is exactly how a second
+    // copy of the same item (with its own separate stock) gets made. Go to the
+    // real product instead.
+    if (item?.product_id) {
+      redirect(`/admin/products/${item.product_id}/edit`);
+    }
 
     if (item) {
       sourceName = item.name;
@@ -31,7 +48,7 @@ export default async function NewProductPage({
         name: item.name,
         price: item.price?.toString(),
         description: item.description ?? "",
-        stock_quantity: item.stock_quantity?.toString(),
+        stock_quantity: (linkedProductStock(item) ?? 0).toString(),
         is_handmade: item.is_handmade,
         shipping_weight_grams: item.shipping_weight_grams?.toString() ?? "",
         image: item.product_image,
@@ -60,7 +77,7 @@ export default async function NewProductPage({
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <AdminProductForm prefill={prefill} fromNewInId={prefill ? fromNewIn : undefined} categories={categories} />
+        <AdminProductForm prefill={prefill} fromFeaturedPieceId={prefill ? fromFeaturedPiece : undefined} categories={categories} />
       </div>
     </div>
   );

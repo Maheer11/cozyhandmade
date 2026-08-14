@@ -15,13 +15,23 @@ export default async function AdminProductsPage() {
     .order("created_at", { ascending: false }) as { data: DbProduct[] | null };
 
   const missingWeightCount = (products ?? []).filter((p) => p.shipping_weight_grams == null).length;
+  // The homepage hero has no count cap — it renders exactly what's toggled on,
+  // here and in Featured Pieces. Surfacing the running total is the only way
+  // the owner can tell "how full is the hero right now" without leaving the page.
+  const onHomepageCount = (products ?? []).filter((p) => p.show_on_homepage).length;
 
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-7">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{products?.length ?? 0} items in catalogue</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {products?.length ?? 0} items in catalogue
+            <span className="mx-1.5 text-gray-300">·</span>
+            <span className={onHomepageCount > 0 ? "text-gray-700 font-medium" : ""}>
+              {onHomepageCount} shown on homepage
+            </span>
+          </p>
         </div>
         <Link
           href="/admin/products/new"
@@ -56,6 +66,7 @@ export default async function AdminProductsPage() {
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Category</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Price</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Stock</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Homepage</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Featured</th>
                 <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
               </tr>
@@ -113,6 +124,18 @@ export default async function AdminProductsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3">
+                    {product.show_on_homepage ? (
+                      <span
+                        title="Appears in the homepage hero."
+                        className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700"
+                      >
+                        ● On homepage
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
                     {product.featured ? (
                       <span className="text-xs text-amber-600 font-medium">★ Featured</span>
                     ) : (
@@ -126,7 +149,7 @@ export default async function AdminProductsPage() {
               ))}
               {(!products || products.length === 0) && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-sm text-gray-400">
+                  <td colSpan={7} className="px-5 py-12 text-center text-sm text-gray-400">
                     No products yet.{" "}
                     <Link href="/admin/products/new" className="text-red-700 hover:underline">Add your first product →</Link>
                   </td>

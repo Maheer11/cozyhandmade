@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCart } from "./CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { Product } from "@/lib/products";
-import { parseDescription } from "@/lib/parse-new-in-description";
+import { parseDescription } from "@/lib/parse-featured-piece-description";
 
 interface BelovedPiecesShowcaseProps {
   products: Product[];

@@ -7,9 +7,42 @@ import HeroTiles from "@/components/HeroTiles";
 import HeroSlider from "@/components/HeroSlider";
 import heroTextBg from "@/public/images/newhome1.jpg";
 import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
-import NewInSection, { type NewInCardData } from "@/components/NewInSection";
+import FeaturedPiecesSection, { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
+import {
+  FEATURED_PIECE_STOCK_SELECT,
+  isFeaturedPieceSoldOut,
+  type FeaturedPieceStockSource,
+} from "@/lib/featured-piece-stock";
+
+/** A featured_pieces row for a card, plus the linked product's stock. */
+type DbHeroFeaturedPiece = FeaturedPieceCardData & FeaturedPieceStockSource;
+
+// Featured Pieces no longer carry their own stock (migration 013): they take
+// it from the product they link to, and `sold_out` on the row survives only as
+// a manual override on top of that. Both halves have to be resolved before the
+// card is rendered, or the storefront advertises pieces it cannot sell.
+const FEATURED_PIECE_CARD_COLUMNS =
+  `id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price, ${FEATURED_PIECE_STOCK_SELECT}`;
+
+function toCard(row: DbHeroFeaturedPiece): FeaturedPieceCardData {
+  return { ...row, sold_out: isFeaturedPieceSoldOut(row) };
+}
+
+/** The products columns the hero needs, before normalisation. */
+interface DbHeroProduct {
+  id: string;
+  name: string;
+  image: string | null;
+  images: string[] | null;
+  price: number;
+  original_price: number | null;
+  stock_quantity: number;
+  in_stock: boolean;
+  is_handmade: boolean;
+  created_at: string;
+}
 
 interface DbReview {
   screenshot: string;
@@ -69,12 +102,38 @@ export default async function HomePage() {
     .select("*")
     .order("display_order", { ascending: true });
 
-  // New In is a fully standalone collection now — no join, own price/stock.
-  const { data: dbNewIn } = await db
-    .from("new_in_items")
-    .select("id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price")
+  // Featured Pieces own their price and presentation, but take stock from the
+  // product they link to — hence the embedded products(stock_quantity).
+  const { data: dbFeaturedPieces } = await db
+    .from("featured_pieces")
+    .select(FEATURED_PIECE_CARD_COLUMNS)
     .order("display_order", { ascending: true })
     .limit(10);
+
+  // ── Homepage hero — admin-curated across BOTH catalogues ──
+  // The hero used to be "the first few Featured Pieces by display_order",
+  // capped in the component. It is now whatever the owner ticks
+  // `show_on_homepage` on, in /admin/products or /admin/featured-pieces, with
+  // no cap at either end — the count is theirs to choose. Two queries because
+  // the tables are genuinely separate (own ids, own price/stock columns, own
+  // detail routes); they get normalised into one shape below so HeroTiles
+  // doesn't have to know there were ever two of them.
+  const { data: dbHeroPieces } = await db
+    .from("featured_pieces")
+    .select(FEATURED_PIECE_CARD_COLUMNS)
+    .eq("show_on_homepage", true)
+    .order("display_order", { ascending: true });
+
+  const { data: dbHeroProducts } = await db
+    .from("products")
+    .select("id, name, image, images, price, original_price, stock_quantity, in_stock, is_handmade, created_at")
+    // created_at, not name or price: it's the one field guaranteed present and
+    // never edited, so the order a product holds in the hero doesn't shift
+    // under the owner when they rename or reprice it. Ascending, so newly
+    // toggled products join the end of the row rather than displacing whatever
+    // is already in the spotlight.
+    .eq("show_on_homepage", true)
+    .order("created_at", { ascending: true });
 
   // Reviews are admin-managed (/admin/reviews) — no more hardcoded array.
   const { data: dbReviews } = await db
@@ -83,7 +142,7 @@ export default async function HomePage() {
     .order("display_order", { ascending: true });
 
   const customProducts = ((dbCustom ?? []) as DbCustomProduct[]).map(mapCustomProduct);
-  const newInItems = (dbNewIn ?? []) as NewInCardData[];
+  const featuredPieceItems = ((dbFeaturedPieces ?? []) as DbHeroFeaturedPiece[]).map(toCard);
   const reviews: Review[] = (dbReviews ?? []).map((r: DbReview) => ({
     screenshot: r.screenshot,
     platform: r.platform,
@@ -95,10 +154,48 @@ export default async function HomePage() {
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
 
-  // Hero art is live New In stock. If the collection is ever empty the hero
-  // would render nothing, so the original single-photo hero is the fallback.
-  const hasNewIn = newInItems.length > 0;
-  const heroVisual = hasNewIn ? <HeroTiles items={newInItems} /> : <HeroSlider />;
+  // Both tables normalised onto FeaturedPieceCardData + a `source`
+  // discriminator (same naming as cart items — see CartContext /
+  // lib/checkout/repriceItems.ts), because the two ids live under different
+  // detail routes and the hero renders them side by side.
+  const heroPieces: FeaturedPieceCardData[] = ((dbHeroPieces ?? []) as DbHeroFeaturedPiece[]).map(
+    (p) => ({ ...toCard(p), source: "featured_piece" as const })
+  );
+
+  const heroProducts: FeaturedPieceCardData[] = ((dbHeroProducts ?? []) as DbHeroProduct[]).map((p) => ({
+    source: "product" as const,
+    id: p.id,
+    name: p.name,
+    product_image: p.image ?? "/images/placeholder.jpg",
+    // Products have no dedicated lifestyle shot; their second gallery image is
+    // the closest equivalent and drives the same hover reveal. Null when there
+    // is only one image, which the card already handles.
+    lifestyle_image: p.images?.[1] ?? null,
+    // featured_pieces carries an explicit sold_out flag; products derive it
+    // from stock. in_stock is a generated column (stock_quantity > 0) — the
+    // second check is belt-and-braces for rows read before that ever existed.
+    sold_out: !p.in_stock || p.stock_quantity <= 0,
+    is_handmade: p.is_handmade,
+    // Price shapes are inverted between the two tables. featured_pieces stores
+    // `price` = list and `discount_price` = what you pay; products store
+    // `price` = what you pay and `original_price` = the struck-through was-
+    // price (see ProductCard). Mapping products into the featured_pieces shape
+    // means original_price becomes `price` and the real price becomes
+    // `discount_price`, so the hero strikes through the same number the
+    // /products listing does.
+    price: p.original_price ?? p.price,
+    discount_price: p.original_price ? p.price : null,
+  }));
+
+  // Featured Pieces first, then products. The first item overall becomes the
+  // desktop spotlight, so this makes a curated Featured Piece the headline
+  // whenever one is toggled on — matching what the hero has always led with.
+  const heroItems = [...heroPieces, ...heroProducts];
+
+  // If nothing at all is toggled on, the hero would render nothing, so the
+  // original single-photo hero is the fallback.
+  const hasHeroItems = heroItems.length > 0;
+  const heroVisual = hasHeroItems ? <HeroTiles items={heroItems} /> : <HeroSlider />;
 
   return (
     <>
@@ -110,7 +207,7 @@ export default async function HomePage() {
         <div className="lg:hidden flex flex-col">
           {/* The rail sizes itself from its cards; only the single-photo
               fallback needs a fixed height to have anything to fill. */}
-          <div className={`relative ${hasNewIn ? "" : "h-[60vh]"}`}>
+          <div className={`relative ${hasHeroItems ? "" : "h-[60vh]"}`}>
             {heroVisual}
           </div>
 
@@ -131,11 +228,8 @@ export default async function HomePage() {
                   a shop. Commerce pages (ASOS et al.) render the hero static
                   and confident — motion is reserved for content that scrolls
                   into view further down, via ScrollReveal. */}
-              <h1 className="font-heading text-[2rem] sm:text-4xl font-300 leading-[1.15] mb-4">
-                <span className="block text-deep-brown">Handmade blankets,</span>
-                <span className="block text-gold font-500">
-                  bags &amp; baby <em className="italic">keepsakes</em>
-                </span>
+              <h1 className="font-heading italic text-[2rem] sm:text-4xl font-500 tracking-wide leading-[1.15] mb-4 text-deep-brown animate-fade-up">
+                Slowmade pieces for everyday living
               </h1>
               <p className="text-deep-brown/70 text-sm font-medium leading-relaxed mb-7">
                 Helping people create, connect and find comfort — every piece
@@ -157,10 +251,10 @@ export default async function HomePage() {
                       the only icon here, so the two CTAs read distinctly. */}
                   Shop the Collection
                 </Link>
-                {/* Secondary points at New In — the story section it used to
+                {/* Secondary points at Featured Pieces — the story section it used to
                     link to no longer exists */}
                 <Link
-                  href="/new-in"
+                  href="/featured-pieces"
                   className="group flex items-center justify-center gap-1.5 h-11
                              text-deep-brown/70 font-medium text-sm
                              hover:text-gold active:text-gold transition-colors duration-200"
@@ -216,7 +310,7 @@ export default async function HomePage() {
             className="relative flex flex-col justify-center p-3 overflow-hidden"
           >
             {/* Background photo — this was the hero's original single image,
-                before the column split into text + New In grid. Object-cover
+                before the column split into text + Featured Pieces grid. Object-cover
                 fills the whole column; the text now sits on a frosted dark
                 card instead of the flat milk panel, so the copy needed to
                 flip from dark-on-light to light-on-dark below. */}
@@ -324,10 +418,10 @@ export default async function HomePage() {
                     Shop the Collection
                   </Link>
                   {/* Text link, not a second outline button — the hero needs one
-                      unambiguous primary action. Points at New In since the
+                      unambiguous primary action. Points at Featured Pieces since the
                       story section it used to target is gone. */}
                   <Link
-                    href="/new-in"
+                    href="/featured-pieces"
                     className="group inline-flex items-center gap-1.5 px-2 py-4
                                text-cream/75 font-medium text-sm tracking-wide
                                hover:text-terracotta transition-colors duration-300"
@@ -415,7 +509,7 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          NEW IN — admin-managed via /admin/new-in
+          FEATURED PIECES — admin-managed via /admin/featured-pieces
 
           Desktop only. On mobile the hero already renders this exact rail,
           with the same card component and the full item list — showing it
@@ -423,7 +517,7 @@ export default async function HomePage() {
           both because there the hero is the bento collage, not a rail.
       ══════════════════════════════════════════════ */}
       <div className="hidden lg:block">
-        <NewInSection items={newInItems} />
+        <FeaturedPiecesSection items={featuredPieceItems} />
       </div>
 
       {/* ══════════════════════════════════════════════

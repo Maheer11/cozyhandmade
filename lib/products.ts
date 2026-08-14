@@ -12,7 +12,10 @@ export interface Product {
   details: string[];
   tags: string[];
   inStock: boolean;
+  /** Sort weight on the /products listing — NOT homepage curation. */
   featured: boolean;
+  /** Admin-toggled: this piece appears in the homepage hero (HeroTiles). */
+  showOnHomepage: boolean;
   isHandmade: boolean;
   stockQuantity: number;
   colors: string[];
