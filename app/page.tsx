@@ -229,7 +229,7 @@ export default async function HomePage() {
                   and confident — motion is reserved for content that scrolls
                   into view further down, via ScrollReveal. */}
               <h1 className="font-heading italic text-[2rem] sm:text-4xl font-500 tracking-wide leading-[1.15] mb-4 text-deep-brown animate-fade-up">
-                Slowmade pieces for everyday living
+                Handmade, cozy, thoughtful pieces
               </h1>
               <p className="text-deep-brown/70 text-sm font-medium leading-relaxed mb-7">
                 Born from my own journey back to creativity, slowmade pieces
