@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useDeferredValue, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
@@ -10,6 +10,9 @@ import ScrollReveal from "@/components/ScrollReveal";
 import SocialProofSection, { type Review } from "@/components/SocialProofSection";
 import CategorySlider from "@/components/CategorySlider";
 import type { Product, Category } from "@/lib/products";
+
+/** Navbar is `sticky top-0` with an h-20 bar, so it overlays the first 80px. */
+const NAVBAR_HEIGHT = 80;
 
 const priceRanges = [
   { label: "Under €50",    min: 0,   max: 50       },
@@ -105,8 +108,10 @@ function FilterPill({
 
 function ProductsContentInner({ products, categories, reviews }: { products: Product[]; categories: Category[]; reviews: Review[] }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialCategory = searchParams.get("category") ?? "all";
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const [query,            setQuery]           = useState("");
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -155,6 +160,26 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
     return list;
   }, [deferredQuery, selectedCategory, selectedPrice, sort, products]);
 
+  // Tapping a Curated Categories card filters in place and glides down to the
+  // grid, rather than reloading the page at the top and leaving the customer to
+  // find the results themselves. The landing offset clears the sticky navbar
+  // (h-20) so the first row of products isn't tucked underneath it.
+  const revealCategory = (categoryId: string) => {
+    const next = categoryId === selectedCategory ? "all" : categoryId;
+    setSelectedCategory(next);
+    router.replace(next === "all" ? "/products" : `/products?category=${next}`, { scroll: false });
+
+    // Wait a frame so the grid has re-rendered at its filtered height before
+    // we measure where to land.
+    requestAnimationFrame(() => {
+      const grid = gridRef.current;
+      if (!grid) return;
+      const top = grid.getBoundingClientRect().top + window.scrollY - NAVBAR_HEIGHT - 16;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
+    });
+  };
+
   const clearFilters = () => {
     setSelectedCategory("all");
     setSelectedPrice(null);
@@ -197,7 +222,11 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
           </ScrollReveal>
 
           <ScrollReveal>
-            <CategorySlider categories={categories} />
+            <CategorySlider
+              categories={categories}
+              selected={selectedCategory}
+              onSelect={revealCategory}
+            />
           </ScrollReveal>
         </div>
       </section>
@@ -205,7 +234,10 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
       {/* ══════════════════════════════════════════════
           FILTER & SORT
       ══════════════════════════════════════════════ */}
-      <div className="sticky top-20 z-30 bg-cream/95 backdrop-blur-md border-b border-taupe/20">
+      {/* Not sticky: the search + filter row belongs at the top of the list and
+          scrolls away with it, rather than following the customer down the
+          page and eating a band of the product grid on every screen. */}
+      <div className="relative z-30 bg-cream/95 backdrop-blur-md border-b border-taupe/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
           <div className="flex items-center gap-3 mb-2">
@@ -351,7 +383,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
       {/* ══════════════════════════════════════════════
           FEATURED PRODUCTS INTRO + GRID
       ══════════════════════════════════════════════ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-14">
+      <div ref={gridRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-14">
         <ScrollReveal className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-5 lg:mb-10">
           <div>
             <h2 className="font-heading italic text-2xl sm:text-3xl lg:text-4xl font-400 text-deep-brown mb-3">
@@ -377,7 +409,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
         <div className="flex gap-8 items-start">
 
           {/* Desktop sidebar */}
-          <aside className="hidden lg:block w-56 shrink-0 sticky top-40">
+          <aside className="hidden lg:block w-56 shrink-0 sticky top-24">
             <div className="bg-white rounded-2xl border border-cream-darker border-l-[3px] border-l-gold/40 p-5 shadow-sm">
               <h3 className="font-heading font-600 text-deep-brown text-base mb-4">Category</h3>
               <div className="space-y-1.5 mb-6">

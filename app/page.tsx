@@ -17,6 +17,44 @@ import {
   type FeaturedPieceStockSource,
 } from "@/lib/featured-piece-stock";
 
+/**
+ * The mobile hero headline, set as chips.
+ *
+ * The three fills are deliberately off-palette — sage, powder blue and lilac
+ * appear nowhere else on the site, which is what stops the row reading as
+ * another burgundy-and-gold block and gives the headline its own register. The
+ * burgundy stays where it carries meaning: every label is `text-brown`, so the
+ * chips still belong to the brand even while the fills don't. Icon strokes take
+ * the saturated version of each fill, keeping each chip to two related tones.
+ *
+ * Defined here rather than as theme tokens on purpose — these are one-off
+ * decorative fills for this headline, not colours anything else should reach
+ * for.
+ */
+const heroChips = [
+  {
+    label: "Handmade,",
+    fill: "#E8F1E9",
+    ink: "#5B8266",
+    // A running stitch — the wave is the thread, the gap is the needle's pass.
+    icon: "M3 14c2.5-5 5 5 7.5 0S15 9 17.5 14",
+  },
+  {
+    label: "Cozy,",
+    fill: "#E5EDF7",
+    ink: "#4E7396",
+    // Heart (Heroicons v2, 24-outline).
+    icon: "M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z",
+  },
+  {
+    label: "Thoughtful pieces",
+    fill: "#EDE6F6",
+    ink: "#6B4E9B",
+    // Sparkles — the same mark the footer's build credit uses.
+    icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z",
+  },
+];
+
 /** A featured_pieces row for a card, plus the linked product's stock. */
 type DbHeroFeaturedPiece = FeaturedPieceCardData & FeaturedPieceStockSource;
 
@@ -218,22 +256,52 @@ export default async function HomePage() {
               <p className="text-gold text-[10px] uppercase tracking-[0.28em] font-body font-semibold mb-3">
                 ✦ Handcrafted in Ireland
               </p>
-              {/* Set in caps rather than the serif italic it used to be: the
-                  headline now reads as a statement, with the weight carrying
-                  it instead of the flourish. Block spans force the 2-line
-                  break structurally rather than leaving it to auto-wrap —
-                  1.6rem at 375px keeps "THOUGHTFUL PIECES" on one line, sm
-                  bumps it up. Emphasis stays to a single line (the shimmer on
-                  line two), never both, so it reads as accent and not decor.
-                  Uppercase via CSS, so the accessible name and the document
-                  outline keep normal casing. */}
-              {/* font-extrabold, not font-800: the numeric font-* utilities
+              {/* Set as chips rather than two flat lines of caps: three words
+                  laid on the panel as type read as a paragraph you skim past,
+                  and each one carries a separate idea worth landing on its
+                  own. The pills give the block rhythm and a shape to look at
+                  while keeping it a single <h1> — the accessible name is still
+                  the whole sentence, and caps come from CSS, so the document
+                  outline keeps normal casing.
+
+                  Wrapping, not a forced 2-line break: at 375px the first two
+                  chips share a line and "thoughtful pieces" takes the second,
+                  but the row re-flows on its own at any width instead of
+                  clipping.
+
+                  Fills and icon colours come from `heroChips` above — see there
+                  for why they sit off-palette. Solid fills rather than the old
+                  shimmer sweep: that ran on an infinite loop, which is what a
+                  skeleton placeholder looks like.
+
+                  font-extrabold, not font-800: the numeric font-* utilities
                   used elsewhere in this codebase don't generate under this
                   Tailwind setup and silently resolve to 400. */}
-              <h1 className="font-ios font-extrabold text-[1.6rem] sm:text-[2.1rem] uppercase
-                             tracking-[0.01em] leading-[1.08] mb-3 text-deep-brown animate-fade-up">
-                <span className="block">Handmade, cozy,</span>
-                <span className="block text-shimmer animate-shimmer">Thoughtful pieces</span>
+              <h1 className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 mb-4 animate-fade-up
+                             font-ios font-extrabold text-[0.9rem] sm:text-[1.1rem] uppercase
+                             tracking-[0.02em] leading-none">
+                {heroChips.map(({ label, fill, ink, icon }) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-brown"
+                    style={{ backgroundColor: fill }}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                      fill="none"
+                      stroke={ink}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-3.5 h-3.5 shrink-0"
+                    >
+                      <path d={icon} />
+                    </svg>
+                    {label}
+                  </span>
+                ))}
               </h1>
               {/* Short gold rule under the headline — the caps setting lost the
                   italic's natural taper, and this gives the block a defined
