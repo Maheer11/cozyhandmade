@@ -1550,6 +1550,18 @@ export default function CheckoutPage() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-md
                       border-t border-taupe/20 px-4 pt-3 shadow-2xl"
            style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}>
+        {/* Shipping, spelled out. The OrderSummary that carries the
+            subtotal/shipping breakdown is `hidden lg:block`, so on a phone the
+            only number on screen was the total — which moves the moment the
+            delivery country changes, reading as the price quietly going up.
+            Green and semibold so the fee is the line that gets noticed, and
+            "Free" said outright when pickup or a zero quote applies. */}
+        <div className="flex items-baseline justify-between gap-3 mb-1 text-[11px] tabular-nums">
+          <span className="text-taupe-dark">Subtotal {pricing.formattedSubtotal}</span>
+          <span className="font-semibold text-emerald-600">
+            {shippingEUR === 0 ? "Shipping: Free" : `Shipping: ${pricing.formattedShipping}`}
+          </span>
+        </div>
         <div className="flex items-center justify-between mb-2.5 text-sm">
           <span className="text-taupe-dark text-xs">{step === "shipping" ? "Step 1 of 2" : "Step 2 of 2"}</span>
           <span className="font-semibold text-deep-brown tabular-nums">{pricing.formattedTotal}</span>

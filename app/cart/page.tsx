@@ -424,8 +424,16 @@ export default function CartPage() {
 
         <div className="flex items-center justify-between mb-1.5">
           <div>
+            {/* Shipping in green, not the same muted grey as the item count —
+                it's the part of this line a customer needs to actually see, so
+                it shouldn't read as filler next to it. */}
             <p className="text-xs text-taupe-dark">
-              {itemCount} items · Shipping (est.) {pricing.formattedShipping}
+              {itemCount} items ·{" "}
+              <span className="font-semibold text-emerald-600 tabular-nums">
+                {shippingEstimateEUR === 0
+                  ? "Shipping (est.) Free"
+                  : `Shipping (est.) ${pricing.formattedShipping}`}
+              </span>
             </p>
             <p className="font-semibold text-deep-brown text-base">
               Total: {pricing.formattedTotal}
