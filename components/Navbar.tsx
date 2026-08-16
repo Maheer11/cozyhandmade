@@ -56,12 +56,12 @@ export default function Navbar({ categories }: { categories: { id: string; name:
   // <header> below), where a disappearing nav on a large screen reads as a bug.
   const [hidden,      setHidden]      = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  // Collapsed by default, as the footer's own comment below always intended.
-  // Expanded, it took 383px of a 664px drawer and squeezed the nav scroll area
-  // to 217px — which pushed the whole "Shop by Category" list below the fold of
-  // that strip, where the footer's content painted over it. Taps aimed at a
-  // category landed on the footer instead.
-  const [footerOpen,  setFooterOpen]  = useState(false);
+  // Expanded by default: the drawer opens showing its content, and "More"
+  // collapses it back. Expanding used to take 383px of a 664px drawer and
+  // squeeze the nav scroll area to 217px, hiding "Shop by Category" behind the
+  // footer — the expanded panel is now height-capped and scrolls internally
+  // (see the collapsible region below), so it can't swallow the nav list again.
+  const [footerOpen,  setFooterOpen]  = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   async function handleSignOut() {
@@ -123,13 +123,9 @@ export default function Navbar({ categories }: { categories: { id: string; name:
   /* Close menu on route change */
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
-  /* Footer section resets to COLLAPSED every time the drawer closes, so each
-     open starts with the nav links having the room. It used to reset to open,
-     which took 384px of a 664px drawer and left the scroll area 217px tall —
-     "Shop by Category" then sat below the fold of that strip with the footer's
-     own content painted over it, so taps aimed at a category never reached
-     the link. Users expand "More" when they want it. */
-  useEffect(() => { if (!menuOpen) setFooterOpen(false); }, [menuOpen]);
+  /* Footer section resets to EXPANDED every time the drawer closes, so each
+     open shows its content first and "More" is there to fold it away. */
+  useEffect(() => { if (!menuOpen) setFooterOpen(true); }, [menuOpen]);
 
   /* Lock body scroll when menu open */
   useEffect(() => {
@@ -547,11 +543,15 @@ export default function Navbar({ categories }: { categories: { id: string; name:
             </span>
           </button>
 
+          {/* max-h caps what the expanded panel can take from the nav list
+              above it — the whole reason this section used to open collapsed.
+              Past the cap it scrolls inside itself rather than pushing "Shop by
+              Category" off the drawer. */}
           <div
             className="grid transition-all duration-300 ease-in-out"
             style={{ gridTemplateRows: footerOpen ? "1fr" : "0fr" }}
           >
-            <div className="overflow-hidden">
+            <div className="overflow-x-hidden overflow-y-auto max-h-[38vh]">
               <div className="pl-6 pr-4 pb-2 pt-1 space-y-4">
 
           {/* Social handles — real links, same as the footer */}

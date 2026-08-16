@@ -60,7 +60,7 @@ export const FeaturedPieceCard = memo(function FeaturedPieceCard({
       onTouchStart={() => setRevealed(true)}
       onTouchEnd={() => setRevealed(false)}
       onTouchCancel={() => setRevealed(false)}
-      className={`group relative flex flex-col rounded-3xl overflow-hidden bg-white
+      className={`group relative flex flex-col rounded-sm overflow-hidden bg-white
                  border border-cream-darker shadow-sm
                  hover:-translate-y-1.5 hover:shadow-2xl
                  active:translate-y-0 active:shadow-sm
@@ -141,7 +141,7 @@ const ViewAllTile = memo(function ViewAllTile() {
       style={{ touchAction: "manipulation" }}
       className="group relative flex flex-col items-center justify-center gap-3 shrink-0 snap-start
                  w-[68vw] max-w-[280px] sm:w-72 lg:w-80 aspect-square sm:aspect-auto sm:h-auto
-                 rounded-3xl overflow-hidden bg-cream-dark border border-cream-darker
+                 rounded-sm overflow-hidden bg-cream-dark border border-cream-darker
                  hover:-translate-y-1.5 hover:shadow-2xl active:translate-y-0
                  transition-all duration-300 ease-out
                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"

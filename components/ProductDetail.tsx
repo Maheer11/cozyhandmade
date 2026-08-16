@@ -112,7 +112,10 @@ export default function ProductDetail({
   };
 
   return (
-    <div className="min-h-screen bg-cream">
+    /* pb-28 on mobile clears the sticky add-to-cart bar below. The page used to
+       borrow that space from the layout's build-credit strip, which no longer
+       renders on product routes. */
+    <div className="min-h-screen bg-cream pb-28 lg:pb-0">
       {/* Breadcrumb */}
       <nav className="bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 lg:px-8 py-3">
         <ol className="flex items-center gap-2 text-xs text-taupe-dark max-w-7xl mx-auto">

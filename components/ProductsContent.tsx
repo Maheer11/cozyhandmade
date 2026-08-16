@@ -381,19 +381,15 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
       </div>
 
       {/* ══════════════════════════════════════════════
-          FEATURED PRODUCTS INTRO + GRID
+          PRODUCT GRID
       ══════════════════════════════════════════════ */}
-      <div ref={gridRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-14">
-        <ScrollReveal className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-5 lg:mb-10">
-          <div>
-            <h2 className="font-heading italic text-2xl sm:text-3xl lg:text-4xl font-400 text-deep-brown mb-3">
-              Featured Products
-            </h2>
-            <p className="text-deep-brown/70 text-sm sm:text-base font-medium leading-relaxed max-w-lg">
-              Duvets, baby knits, handbags and more  every piece stitched one at a time,
-              selected for warmth, softness and lasting quality.
-            </p>
-          </div>
+      {/* Tight top padding: with the heading and the count gone there is nothing
+          between the filter bar and the cards, so the old heading-sized gap just
+          read as the grid having fallen away from its controls. */}
+      <div ref={gridRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-6 lg:pt-5 lg:pb-14">
+        {/* Heading removed — the row now carries only the reset link, so it sits
+            at the end rather than being spaced against a title. */}
+        <ScrollReveal className="flex justify-end mb-2 lg:mb-3">
           <button
             onClick={clearFilters}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold
@@ -455,10 +451,6 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
 
           {/* Product grid */}
           <div className="flex-1 min-w-0">
-            <p className="lg:hidden text-xs text-taupe-dark mb-4">
-              <span className="font-medium text-brown">{filtered.length}</span> products
-            </p>
-
             {filtered.length === 0 ? (
               <div className="text-center py-20">
                 <p className="font-heading text-2xl text-deep-brown mb-2">Nothing found</p>

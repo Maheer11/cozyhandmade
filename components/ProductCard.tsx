@@ -25,7 +25,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group flex flex-col bg-white rounded-2xl overflow-hidden
+      className="group flex flex-col bg-white rounded-sm overflow-hidden
                  border border-cream-darker shadow-sm
                  hover:-translate-y-1.5 hover:shadow-xl
                  active:translate-y-0 active:shadow-sm
@@ -86,7 +86,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <button
           onClick={handleAdd}
           disabled={!product.inStock}
-          className="w-full h-11 rounded-xl text-xs sm:text-sm font-semibold tracking-wide
+          className="w-full h-11 rounded-sm text-xs sm:text-sm font-semibold tracking-wide
                      bg-cream-dark text-brown border border-taupe/30
                      hover:bg-gold hover:text-cream hover:border-gold
                      hover:-translate-y-px hover:shadow-md hover:shadow-gold/20
