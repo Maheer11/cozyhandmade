@@ -11,7 +11,6 @@ interface DbReview {
   customer_label: string | null;
   location: string | null;
   review_date: string | null;
-  rating: number | null;
 }
 
 export default async function ProductsPage() {
@@ -47,7 +46,6 @@ export default async function ProductsPage() {
     customerLabel: r.customer_label ?? undefined,
     location: r.location ?? undefined,
     date: r.review_date ?? undefined,
-    rating: r.rating ?? undefined,
   }));
 
   // Merge custom products first, then regular products

@@ -4,8 +4,6 @@ export interface Product {
   price: number;
   originalPrice?: number;
   category: string;
-  rating: number;
-  reviewCount: number;
   image: string;
   images: string[];
   description: string;

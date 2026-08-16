@@ -11,7 +11,6 @@ export interface ReviewItem {
   customer_label: string | null;
   location: string | null;
   review_date: string | null;
-  rating: number | null;
   display_order: number;
 }
 
@@ -21,7 +20,6 @@ interface FormState {
   customer_label: string;
   location: string;
   review_date: string;
-  rating: string;
   display_order: string;
 }
 
@@ -32,7 +30,6 @@ function defaultState(item?: ReviewItem): FormState {
     customer_label: item?.customer_label ?? "",
     location:       item?.location       ?? "",
     review_date:    item?.review_date    ?? "",
-    rating:         item?.rating?.toString() ?? "5",
     display_order:  item?.display_order?.toString() ?? "0",
   };
 }
@@ -119,7 +116,6 @@ export default function AdminReviewForm({ item }: { item?: ReviewItem }) {
       customer_label: form.customer_label.trim() || null,
       location:       form.location.trim() || null,
       review_date:    form.review_date.trim() || null,
-      rating:         form.rating.trim() ? parseInt(form.rating) : 5,
       display_order:  parseInt(form.display_order) || 0,
     };
 
@@ -199,18 +195,6 @@ export default function AdminReviewForm({ item }: { item?: ReviewItem }) {
           >
             <option value="whatsapp">WhatsApp</option>
             <option value="instagram">Instagram DM</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
-          <select
-            value={form.rating}
-            onChange={(e) => set("rating", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-300"
-          >
-            {[5, 4, 3, 2, 1].map((n) => (
-              <option key={n} value={n}>{n} star{n !== 1 ? "s" : ""}</option>
-            ))}
           </select>
         </div>
       </div>

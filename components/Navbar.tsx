@@ -53,7 +53,12 @@ export default function Navbar({ categories }: { categories: { id: string; name:
   const [menuOpen,    setMenuOpen]    = useState(false);
   const [scrolled,    setScrolled]    = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [footerOpen,  setFooterOpen]  = useState(true);
+  // Collapsed by default, as the footer's own comment below always intended.
+  // Expanded, it took 383px of a 664px drawer and squeezed the nav scroll area
+  // to 217px — which pushed the whole "Shop by Category" list below the fold of
+  // that strip, where the footer's content painted over it. Taps aimed at a
+  // category landed on the footer instead.
+  const [footerOpen,  setFooterOpen]  = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   async function handleSignOut() {
@@ -85,9 +90,13 @@ export default function Navbar({ categories }: { categories: { id: string; name:
   /* Close menu on route change */
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
-  /* Footer section starts open every time the drawer opens — users
-     collapse it down when they want the nav links to have the room */
-  useEffect(() => { if (!menuOpen) setFooterOpen(true); }, [menuOpen]);
+  /* Footer section resets to COLLAPSED every time the drawer closes, so each
+     open starts with the nav links having the room. It used to reset to open,
+     which took 384px of a 664px drawer and left the scroll area 217px tall —
+     "Shop by Category" then sat below the fold of that strip with the footer's
+     own content painted over it, so taps aimed at a category never reached
+     the link. Users expand "More" when they want it. */
+  useEffect(() => { if (!menuOpen) setFooterOpen(false); }, [menuOpen]);
 
   /* Lock body scroll when menu open */
   useEffect(() => {
@@ -351,7 +360,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
             <Link
               href="/custom-order"
               onClick={() => setMenuOpen(false)}
-              className="animate-fade-up flex items-center gap-3 mb-5 mr-2 px-4 py-3.5 rounded-2xl
+              className="animate-fade-up flex items-center gap-3 mb-4 mr-2 px-4 py-3 rounded-2xl
                          text-deep-brown shadow-md shadow-black/10
                          active:scale-[0.98] transition-transform duration-100"
               style={{ backgroundColor: "#F7D9C0" }}
@@ -377,7 +386,8 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               <Link
                 key={label}
                 href={href}
-                className="animate-fade-up flex items-center gap-3.5 py-3.5 text-lg font-medium text-brown
+                onClick={() => setMenuOpen(false)}
+                className="animate-fade-up flex items-center gap-3.5 py-3 text-lg font-medium text-brown
                            active:text-gold active:bg-cream-dark/60 transition-colors duration-150 border-b border-taupe/10"
                 style={{ animationDelay: `${100 + i * 40}ms` }}
               >
@@ -386,7 +396,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               </Link>
             ))}
 
-            <p className="animate-fade-up text-[10px] uppercase tracking-widest text-taupe-dark mt-7 mb-2 font-body"
+            <p className="animate-fade-up text-[10px] uppercase tracking-widest text-taupe-dark mt-5 mb-2 font-body"
                style={{ animationDelay: `${100 + navLinks.length * 40}ms` }}>
               Shop by Category
             </p>
@@ -394,7 +404,11 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               <Link
                 key={href}
                 href={href}
-                className="animate-fade-up flex items-center gap-3 py-3 text-base text-brown/80
+                // Without this the drawer stays open on top of /products and
+                // the filtered results are never seen — it reads as the link
+                // having done nothing.
+                onClick={() => setMenuOpen(false)}
+                className="animate-fade-up flex items-center gap-3 py-2.5 text-base text-brown/80
                            active:text-gold active:bg-cream-dark/60 transition-colors duration-150 border-b border-taupe/10"
                 style={{ animationDelay: `${140 + (navLinks.length + i) * 40}ms` }}
               >
@@ -405,12 +419,71 @@ export default function Navbar({ categories }: { categories: { id: string; name:
           </nav>
         )}
 
-        {/* Drawer footer — collapsed to a slim handle by default so it never
-            crowds the nav links; tapping slides the full section open. */}
+        {/* Drawer footer. The account block sits OUTSIDE the collapsible
+            section: signing in is the one action here a customer comes
+            looking for, so it has to be on screen the moment the drawer
+            opens. Everything secondary — socials, currency, build credit —
+            lives behind the "More" arrow, which is what keeps the footer
+            from crowding the nav links above it. */}
         <div
           className="border-t border-taupe/20"
           style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
         >
+          <div className="pl-6 pr-4 pt-3 pb-1">
+            {user ? (
+              <div className="space-y-1">
+                <Link href="/account" onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                  My Account
+                </Link>
+                <Link href="/account/orders" onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z" />
+                  </svg>
+                  My Orders
+                </Link>
+                <button onClick={() => { setMenuOpen(false); handleSignOut(); }}
+                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-red-600 w-full">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              /* Member card — returning customers sign in, new ones create an
+                 account, presented as an explicit choice instead of one
+                 generic button. Kept compact: it is always on screen now, so
+                 every pixel it takes comes straight out of the nav list above
+                 it. The three-benefit line was dropped and padding tightened. */
+              <div className="rounded-2xl bg-white/70 border border-taupe/15 p-3 space-y-2">
+                <p className="text-[13px] font-semibold text-deep-brown font-body text-center">
+                  Join the Cozi family
+                </p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Link href="/auth/login" onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-center h-10 rounded-none text-cream text-[13px]
+                               font-semibold tracking-wide font-body
+                               active:scale-[0.97] transition-transform duration-100"
+                    style={{ backgroundColor: "#8B2035" }}>
+                    Sign In
+                  </Link>
+                  <Link href="/auth/signup" onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-center h-10 rounded-none text-[13px]
+                               font-semibold tracking-wide font-body border border-brown/30 text-brown
+                               active:scale-[0.97] active:border-brown/70 transition-all duration-100"
+                  >
+                    Create Account
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setFooterOpen((o) => !o)}
             aria-expanded={footerOpen}
@@ -438,59 +511,6 @@ export default function Navbar({ categories }: { categories: { id: string; name:
           >
             <div className="overflow-hidden">
               <div className="pl-6 pr-4 pb-2 pt-1 space-y-4">
-
-          {user ? (
-            <div className="space-y-1">
-              <Link href="/account" onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                </svg>
-                My Account
-              </Link>
-              <Link href="/account/orders" onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z" />
-                </svg>
-                My Orders
-              </Link>
-              <button onClick={() => { setMenuOpen(false); handleSignOut(); }}
-                className="flex items-center gap-2 py-2.5 text-sm font-medium text-red-600 w-full">
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                </svg>
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            /* Member card — returning customers sign in, new ones create an
-               account, presented as an explicit choice instead of one generic button */
-            <div className="rounded-2xl bg-white/70 border border-taupe/15 p-4 space-y-3">
-              <div className="text-center">
-                <p className="text-sm font-semibold text-deep-brown font-body">Join the Cozi family</p>
-                <p className="text-[11px] text-taupe-dark font-body mt-0.5">
-                  Faster checkout · order tracking · exclusive drops
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <Link href="/auth/login" onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center h-10 rounded-none text-cream text-[13px]
-                             font-semibold tracking-wide font-body
-                             active:scale-[0.97] transition-transform duration-100"
-                  style={{ backgroundColor: "#8B2035" }}>
-                  Sign In
-                </Link>
-                <Link href="/auth/signup" onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center h-10 rounded-none text-[13px]
-                             font-semibold tracking-wide font-body border border-brown/30 text-brown
-                             active:scale-[0.97] active:border-brown/70 transition-all duration-100"
-                >
-                  Create Account
-                </Link>
-              </div>
-            </div>
-          )}
 
           {/* Social handles — real links, same as the footer */}
           <div className="flex items-center justify-center gap-3 pt-1">

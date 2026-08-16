@@ -41,7 +41,6 @@ export default async function AdminReviewsPage() {
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Screenshot</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Customer</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Platform</th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Rating</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Order</th>
                 <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
               </tr>
@@ -60,7 +59,6 @@ export default async function AdminReviewsPage() {
                     )}
                   </td>
                   <td className="px-5 py-3 text-gray-600 capitalize">{r.platform}</td>
-                  <td className="px-5 py-3 text-gray-600">{r.rating ?? 5}★</td>
                   <td className="px-5 py-3 text-gray-600">{r.display_order}</td>
                   <td className="px-5 py-3 text-right">
                     <AdminReviewActions id={r.id} label={r.customer_label ?? ""} />
@@ -69,7 +67,7 @@ export default async function AdminReviewsPage() {
               ))}
               {(!reviews || reviews.length === 0) && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-sm text-gray-400">
+                  <td colSpan={5} className="px-5 py-12 text-center text-sm text-gray-400">
                     No reviews yet.{" "}
                     <Link href="/admin/reviews/new" className="text-red-700 hover:underline">Add your first one →</Link>
                   </td>

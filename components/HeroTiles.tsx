@@ -129,14 +129,45 @@ export default function HeroTiles({ items }: { items: FeaturedPieceCardData[] })
           product and a featured piece sitting side by side each link to their
           own detail route. */}
       <div className="lg:hidden bg-cream-dark pt-3">
-        <div className="px-4 flex items-baseline justify-between mb-2.5">
-          <h2 className="font-heading text-2xl font-bold text-gold animate-cart-nudge">Featured Pieces</h2>
+        <div className="px-4 mb-2.5 flex items-center justify-between gap-3">
+          {/* Header card — a rectangle sized to the title, not a full-width
+              banner: this sits above the fold on a phone, so it stays as
+              short as the text it holds. Two motion layers, each on its own
+              element so neither fights the other's transform — a glow
+              drifting behind the text and a sheen crossing the box.
+              globals.css's prefers-reduced-motion block flattens both. */}
+          <div className="relative overflow-hidden shrink-0 px-3.5 py-1.5
+                          border border-gold/30
+                          shadow-[0_10px_22px_-16px_rgba(26,8,16,0.55)]">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -top-10 -right-6 w-24 h-24 rounded-full
+                         bg-gold/20 blur-2xl animate-glow-drift"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3
+                         bg-gradient-to-r from-transparent via-white/70 to-transparent
+                         animate-card-sheen"
+            />
+            {/* Small caps, not a display heading: at this size the serif
+                font-heading turns mushy, so this switches to font-body with
+                wide letter-spacing — the same eyebrow treatment the rest of
+                the site uses for "✦ Handcrafted in Ireland" and "Join the
+                Circle". Uppercase via CSS so the accessible name stays
+                "Featured Pieces" for screen readers. */}
+            <h2 className="relative font-body text-[10px] font-semibold uppercase tracking-[0.28em]
+                           text-shimmer animate-shimmer">
+              Featured Pieces
+            </h2>
+          </div>
+
           <Link
             href="/featured-pieces"
             className="group inline-flex items-center gap-1.5 text-xs font-body font-semibold text-gold"
           >
             See all
-            <span className="transition-transform duration-300 group-active:translate-x-1">→</span>
+            <span aria-hidden="true" className="inline-block animate-swipe-nudge">→</span>
           </Link>
         </div>
         <div

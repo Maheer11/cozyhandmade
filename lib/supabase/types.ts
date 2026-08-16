@@ -46,8 +46,6 @@ export interface Database {
           price: number;
           original_price: number | null;
           category: string;
-          rating: number;
-          review_count: number;
           image: string | null;
           images: string[];
           description: string | null;
@@ -71,8 +69,6 @@ export interface Database {
           price: number;
           original_price?: number | null;
           category: string;
-          rating?: number;
-          review_count?: number;
           image?: string | null;
           images?: string[];
           description?: string | null;
@@ -94,8 +90,6 @@ export interface Database {
           price?: number;
           original_price?: number | null;
           category?: string;
-          rating?: number;
-          review_count?: number;
           image?: string | null;
           images?: string[];
           description?: string | null;
@@ -385,8 +379,6 @@ export interface Database {
           price: number;
           original_price: number | null;
           category: string;
-          rating: number;
-          review_count: number;
           image: string | null;
           images: string[];
           description: string | null;
@@ -408,8 +400,6 @@ export interface Database {
           price: number;
           original_price?: number | null;
           category: string;
-          rating?: number;
-          review_count?: number;
           image?: string | null;
           images?: string[];
           description?: string | null;
@@ -429,8 +419,6 @@ export interface Database {
           price?: number;
           original_price?: number | null;
           category?: string;
-          rating?: number;
-          review_count?: number;
           image?: string | null;
           images?: string[];
           description?: string | null;
@@ -453,7 +441,6 @@ export interface Database {
           customer_label: string | null;
           location: string | null;
           review_date: string | null;
-          rating: number | null;
           display_order: number;
           created_at: string;
         };
@@ -464,7 +451,6 @@ export interface Database {
           customer_label?: string | null;
           location?: string | null;
           review_date?: string | null;
-          rating?: number | null;
           display_order?: number;
           created_at?: string;
         };
@@ -474,7 +460,6 @@ export interface Database {
           customer_label?: string | null;
           location?: string | null;
           review_date?: string | null;
-          rating?: number | null;
           display_order?: number;
         };
       };

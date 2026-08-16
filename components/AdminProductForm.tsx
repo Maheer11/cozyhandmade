@@ -220,8 +220,6 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
     const payload = form.productType === "custom"
       ? {
           ...basePayload,
-          rating: 5,
-          review_count: 0,
           stock_quantity: 0,
           in_stock: true,
           colors: [],

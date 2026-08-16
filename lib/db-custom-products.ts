@@ -11,8 +11,6 @@ export function mapCustomProduct(p: DbCustomProduct): Product {
     price: p.price,
     originalPrice: p.original_price ?? undefined,
     category: p.category,
-    rating: p.rating,
-    reviewCount: p.review_count,
     image: img,
     images: p.images?.length ? p.images : [img],
     description: p.description ?? "",

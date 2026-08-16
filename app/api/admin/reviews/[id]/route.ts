@@ -26,7 +26,6 @@ export async function PATCH(
     if (body.customer_label !== undefined) update.customer_label = body.customer_label?.trim() || null;
     if (body.location       !== undefined) update.location       = body.location?.trim() || null;
     if (body.review_date    !== undefined) update.review_date    = body.review_date?.trim() || null;
-    if (body.rating         !== undefined) update.rating         = body.rating === null || body.rating === "" ? null : Number(body.rating);
     if (body.display_order  !== undefined) update.display_order  = Number(body.display_order);
 
     const { error } = await db.from("reviews").update(update).eq("id", id);

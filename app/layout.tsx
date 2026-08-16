@@ -5,7 +5,7 @@ import { CartProvider } from "@/components/CartContext";
 import { CurrencyProvider } from "@/lib/currency/CurrencyContext";
 import { AuthProvider } from "@/lib/supabase/auth-context";
 import { createClient } from "@/lib/supabase/server";
-import { getCategories } from "@/lib/db-categories";
+import { getStockedCategories } from "@/lib/db-categories";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
@@ -42,7 +42,9 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const supabase = await createClient();
-  const categories = await getCategories(supabase);
+  // Stocked-only: the drawer's "Shop by Category" list is navigation, so an
+  // entry that filters down to nothing is a dead end for the customer.
+  const categories = await getStockedCategories(supabase);
 
   return (
     <html lang="en" className={`${cormorant.variable} ${jost.variable}`}>

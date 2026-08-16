@@ -43,8 +43,6 @@ create table if not exists products (
   price          numeric not null,
   original_price numeric,
   category       text not null,
-  rating         numeric default 0,
-  review_count   integer default 0,
   image          text,
   images         text[] default '{}',
   description    text,
@@ -622,7 +620,6 @@ create table if not exists reviews (
   customer_label  text,
   location        text,
   review_date     text,
-  rating          integer default 5,
   display_order   integer default 0,
   created_at      timestamptz default now()
 );

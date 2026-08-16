@@ -50,8 +50,6 @@ export async function POST(request: Request) {
         featured:       body.featured ?? false,
         show_on_homepage: body.show_on_homepage ?? false,
         is_handmade:    body.is_handmade ?? true,
-        rating:         Number(body.rating ?? 5.0),
-        review_count:   Number(body.review_count ?? 0),
         shipping_weight_grams: body.shipping_weight_grams !== undefined && body.shipping_weight_grams !== null && body.shipping_weight_grams !== ""
                             ? Number(body.shipping_weight_grams) : null,
       })

@@ -220,6 +220,31 @@ body {
 .animate-cart-nudge { animation: cart-nudge 9s  ease-in-out infinite; }
 .animate-badge-pop  { animation: badge-pop  3.5s ease-in-out infinite; }
 
+/* ─── Featured Pieces mobile header card ───────────────
+   Mobile-only treatment: the section heading sits in a card that keeps
+   moving instead of a static line of text. Three independent layers so
+   no two animations fight over the same element's transform —
+   a sheen sweeping across the card, a drifting glow behind it, and the
+   swipe hint's arrow nudging toward the rail it describes.
+   The global prefers-reduced-motion block at the bottom of this file
+   flattens all three; nothing here conveys meaning by motion alone. */
+@keyframes cardSheen {
+  0%        { transform: translateX(-120%) skewX(-18deg); }
+  55%, 100% { transform: translateX(320%)  skewX(-18deg); }
+}
+@keyframes glowDrift {
+  0%, 100% { transform: translate3d(0, 0, 0)      scale(1); }
+  50%      { transform: translate3d(14px, -10px, 0) scale(1.12); }
+}
+@keyframes swipeNudge {
+  0%, 70%, 100% { transform: translateX(0); }
+  80%           { transform: translateX(5px); }
+  90%           { transform: translateX(2px); }
+}
+.animate-card-sheen  { animation: cardSheen  5.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.animate-glow-drift  { animation: glowDrift  9s   ease-in-out infinite; }
+.animate-swipe-nudge { animation: swipeNudge 3.2s ease-in-out infinite; }
+
 /* Premium image hover zoom */
 .img-zoom {
   transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);

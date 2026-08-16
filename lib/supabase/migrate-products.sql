@@ -14,9 +14,9 @@ delete from order_items where product_id in (select id from products);
 delete from products;
 
 -- Step 3: Insert all 12 products with correct data
-insert into products (id, name, price, original_price, category, rating, review_count, image, images, description, details, tags, stock_quantity, featured, sizes) values
+insert into products (id, name, price, original_price, category, image, images, description, details, tags, stock_quantity, featured, sizes) values
 
-('1', 'Square Pattern Blanket', 128000, null, 'Blankets', 4.9, 87,
+('1', 'Square Pattern Blanket', 128000, null, 'Blankets',
   '/images/TB1.jpg',
   array['/images/TB1.jpg', '/images/TB2.jpg', '/images/TB3.jpg'],
   'Soft handcrafted throw blanket featuring a modern square pattern design, made for warmth, comfort, and stylish home décor.',
@@ -26,7 +26,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   '[{"label":"Medium  45×60 in","price":128000},{"label":"Large    50×75 in","price":145000},{"label":"XL        80×100 in","price":170000}]'::jsonb
 ),
 
-('2', 'Hand-Knit Baby Cardigan Set', 115000, null, 'baby', 5.0, 143,
+('2', 'Hand-Knit Baby Cardigan Set', 115000, null, 'baby',
   '/images/baby-blanket.jpg',
   array['/images/baby-blanket2.jpg'],
   'A precious set of cardigan, bonnet, and booties knitted from hypoallergenic merino wool. Soft enough for newborn skin, warm enough for every season.',
@@ -35,7 +35,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   10, true, '[]'::jsonb
 ),
 
-('3', 'Broken Herringbone Pattern Blanket', 128000, null, 'Blankets', 4.8, 62,
+('3', 'Broken Herringbone Pattern Blanket', 128000, null, 'Blankets',
   '/images/blanket-room.jpg',
   array['/images/blanket-room.jpg', '/images/hero-grid-2.jpg', '/images/tbk4.jpg'],
   'Beautiful textured blanket inspired by the broken herringbone stitch pattern, offering a unique handcrafted appearance and cozy feel.',
@@ -45,7 +45,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   '[{"label":"Medium  45×60 in","price":128000},{"label":"Large    50×75 in","price":145000},{"label":"XL        80×100 in","price":170000}]'::jsonb
 ),
 
-('4', 'Cozy Cable Blanket', 128000, null, 'Blankets', 4.7, 39,
+('4', 'Cozy Cable Blanket', 128000, null, 'Blankets',
   '/images/tbck1.jpg',
   array['/images/tbck1.jpg', '/images/tbck2.jpg', '/images/tbck3.jpg'],
   'Classic cable-knit throw blanket designed with a luxurious texture to provide warmth and elegance for everyday comfort.',
@@ -55,7 +55,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   '[{"label":"Medium  45×60 in","price":128000},{"label":"Large    50×75 in","price":145000},{"label":"XL        80×100 in","price":170000}]'::jsonb
 ),
 
-('5', 'Chunky Knit Baby Blanket', 130000, null, 'blankets', 4.9, 211,
+('5', 'Chunky Knit Baby Blanket', 130000, null, 'blankets',
   'https://picsum.photos/seed/babyblanket1/600/600',
   array['https://picsum.photos/seed/babyblanket1/600/600','https://picsum.photos/seed/babyblanket1b/600/600'],
   'Arm-knitted from extra-thick merino roving in a single evening of craft. The loose, airy weave is incredibly soft yet breathable — perfect for prams and cots.',
@@ -64,7 +64,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   10, false, '[]'::jsonb
 ),
 
-('6', 'Fair Isle Wool Scarf', 85000, null, 'scarves', 4.8, 94,
+('6', 'Fair Isle Wool Scarf', 85000, null, 'scarves',
   'https://picsum.photos/seed/scarf1/600/600',
   array['https://picsum.photos/seed/scarf1/600/600'],
   'Knitted in the traditional Fair Isle technique with a five-colour geometric pattern. Long enough to wrap twice, warm enough for the coldest mornings.',
@@ -73,7 +73,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   10, false, '[]'::jsonb
 ),
 
-('7', 'Crochet Market Bag', 72000, null, 'handbags', 4.6, 55,
+('7', 'Crochet Market Bag', 72000, null, 'handbags',
   'https://picsum.photos/seed/market1/600/600',
   array['https://picsum.photos/seed/market1/600/600'],
   'Crocheted from natural cotton string in a classic open-weave mesh. Stretches to carry a full grocery shop, then folds to pocket size when empty.',
@@ -82,7 +82,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   10, false, '[]'::jsonb
 ),
 
-('8', 'Hand-Embroidered Coin Wallet', 55000, null, 'wallets', 4.9, 76,
+('8', 'Hand-Embroidered Coin Wallet', 55000, null, 'wallets',
   'https://picsum.photos/seed/wallet1/600/600',
   array['https://picsum.photos/seed/wallet1/600/600'],
   'Hand-stitched with a delicate floral embroidery on soft wool felt. A brass zip closure and cotton lining keep coins and cards safe in style.',
@@ -91,7 +91,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   10, false, '[]'::jsonb
 ),
 
-('9', 'Merino Moses Basket Set', 290000, 360000, 'scarves', 4.8, 34,
+('9', 'Merino Moses Basket Set', 290000, 360000, 'scarves',
   'https://picsum.photos/seed/moses1/600/600',
   array['https://picsum.photos/seed/moses1/600/600','https://picsum.photos/seed/moses1b/600/600'],
   'A complete moses basket dressing set — knitted blanket, fitted sheet, and padded hood — all in 100% merino. The ultimate gift for a new arrival.',
@@ -100,7 +100,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   10, false, '[]'::jsonb
 ),
 
-('10', 'Bobble Stitch Throw Blanket', 195000, null, 'blankets', 4.7, 48,
+('10', 'Bobble Stitch Throw Blanket', 195000, null, 'blankets',
   'https://picsum.photos/seed/throw1/600/600',
   array['https://picsum.photos/seed/throw1/600/600','https://picsum.photos/seed/throw1b/600/600'],
   'The bobble stitch creates a beautiful textured surface that is as tactile as it is cosy. Knitted from a wool-cotton blend in warm neutral tones.',
@@ -109,7 +109,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   10, false, '[]'::jsonb
 ),
 
-('11', 'Structured Knit Handbag', 225000, null, 'handbags', 4.9, 28,
+('11', 'Structured Knit Handbag', 225000, null, 'handbags',
   'https://picsum.photos/seed/handbag1/600/600',
   array['https://picsum.photos/seed/handbag1/600/600','https://picsum.photos/seed/handbag1b/600/600'],
   'A structured frame bag knitted in fine merino with a rigid base and clasp closure. Sophisticated enough for evenings out, roomy enough for everyday essentials.',
@@ -118,7 +118,7 @@ insert into products (id, name, price, original_price, category, rating, review_
   10, false, '[]'::jsonb
 ),
 
-('12', 'Hand-Sewn Baby Sleeping Bag', 155000, null, 'scarves', 4.8, 91,
+('12', 'Hand-Sewn Baby Sleeping Bag', 155000, null, 'scarves',
   'https://picsum.photos/seed/sleepbag1/600/600',
   array['https://picsum.photos/seed/sleepbag1/600/600'],
   'A tog-rated sleeping bag hand-sewn from quilted merino panels. The side-zip opening and adjustable shoulder poppers make night feeds simple and stress-free.',

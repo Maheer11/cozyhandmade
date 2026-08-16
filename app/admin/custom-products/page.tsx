@@ -11,8 +11,6 @@ interface CustomProduct {
   price: number;
   original_price: number | null;
   category: string;
-  rating: number;
-  review_count: number;
   image: string | null;
   images: string[];
   description: string | null;
@@ -40,8 +38,6 @@ export default function AdminCustomProductsPage() {
     price: 0,
     original_price: null,
     category: "",
-    rating: 5,
-    review_count: 0,
     image: "",
     images: [],
     description: "",
@@ -106,8 +102,6 @@ export default function AdminCustomProductsPage() {
         price: 0,
         original_price: null,
         category: "",
-        rating: 5,
-        review_count: 0,
         image: "",
         images: [],
         description: "",
@@ -196,8 +190,6 @@ export default function AdminCustomProductsPage() {
                 price: 0,
                 original_price: null,
                 category: "",
-                rating: 5,
-                review_count: 0,
                 image: "",
                 images: [],
                 description: "",
@@ -261,14 +253,6 @@ export default function AdminCustomProductsPage() {
                               </span>
                             )}
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gold font-semibold">
-                              {product.rating}★
-                            </span>
-                            <span className="text-xs text-taupe-dark">
-                              ({product.review_count} reviews)
-                            </span>
-                          </div>
                           <p className="text-xs text-taupe/60 mt-1 line-clamp-2">
                             {product.description}
                           </p>

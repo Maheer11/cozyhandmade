@@ -7,6 +7,7 @@ import HeroTiles from "@/components/HeroTiles";
 import HeroSlider from "@/components/HeroSlider";
 import heroTextBg from "@/public/images/newhome1.jpg";
 import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
+import ShopCollectionCard from "@/components/ShopCollectionCard";
 import FeaturedPiecesSection, { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
@@ -50,7 +51,6 @@ interface DbReview {
   customer_label: string | null;
   location: string | null;
   review_date: string | null;
-  rating: number | null;
 }
 
 /* ─── Marquee strip — refined, emoji-free ─────────── */
@@ -149,7 +149,6 @@ export default async function HomePage() {
     customerLabel: r.customer_label ?? undefined,
     location: r.location ?? undefined,
     date: r.review_date ?? undefined,
-    rating: r.rating ?? undefined,
   }));
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
@@ -219,18 +218,27 @@ export default async function HomePage() {
               <p className="text-gold text-[10px] uppercase tracking-[0.28em] font-body font-semibold mb-3">
                 ✦ Handcrafted in Ireland
               </p>
-              {/* Two block-level spans force the 2-line break structurally
-                  rather than leaving it to auto-wrap. 2rem at 375px keeps line
-                  two on a single line; sm bumps it back up. Italic rule: one
-                  emphasis word only — see the desktop copy below.
-                  No entrance animation: a cascading fade-up-per-line on the
-                  first thing a visitor sees reads as a slide-deck reveal, not
-                  a shop. Commerce pages (ASOS et al.) render the hero static
-                  and confident — motion is reserved for content that scrolls
-                  into view further down, via ScrollReveal. */}
-              <h1 className="font-heading italic text-[2rem] sm:text-4xl font-500 tracking-wide leading-[1.15] mb-4 text-deep-brown animate-fade-up">
-                Handmade, cozy, thoughtful pieces
+              {/* Set in caps rather than the serif italic it used to be: the
+                  headline now reads as a statement, with the weight carrying
+                  it instead of the flourish. Block spans force the 2-line
+                  break structurally rather than leaving it to auto-wrap —
+                  1.6rem at 375px keeps "THOUGHTFUL PIECES" on one line, sm
+                  bumps it up. Emphasis stays to a single line (the shimmer on
+                  line two), never both, so it reads as accent and not decor.
+                  Uppercase via CSS, so the accessible name and the document
+                  outline keep normal casing. */}
+              {/* font-extrabold, not font-800: the numeric font-* utilities
+                  used elsewhere in this codebase don't generate under this
+                  Tailwind setup and silently resolve to 400. */}
+              <h1 className="font-ios font-extrabold text-[1.6rem] sm:text-[2.1rem] uppercase
+                             tracking-[0.01em] leading-[1.08] mb-3 text-deep-brown animate-fade-up">
+                <span className="block">Handmade, cozy,</span>
+                <span className="block text-shimmer animate-shimmer">Thoughtful pieces</span>
               </h1>
+              {/* Short gold rule under the headline — the caps setting lost the
+                  italic's natural taper, and this gives the block a defined
+                  bottom edge before the body copy starts. */}
+              <span aria-hidden="true" className="block w-12 h-0.5 bg-gold/70 mb-4" />
               <p className="text-deep-brown/70 text-sm font-medium leading-relaxed mb-7">
                 Born from my own journey back to creativity, slowmade pieces
                 that bring warmth, beauty and a little more intention to
@@ -238,20 +246,7 @@ export default async function HomePage() {
               </p>
 
               <div className="flex flex-col gap-3">
-                <Link
-                  href="/products"
-                  className="group flex items-center justify-center h-13 px-8 rounded-none
-                             bg-gold text-cream font-semibold text-sm tracking-wide
-                             shadow-[0_10px_28px_-12px_rgba(139,32,53,0.75)]
-                             hover:bg-gold-dark active:bg-gold-dark active:scale-[0.98]
-                             transition-all duration-200"
-                  style={{ touchAction: "manipulation" }}
-                >
-                  {/* No icon: the bag glyph duplicated the navbar cart icon
-                      directly above it. The arrow on the secondary CTA is now
-                      the only icon here, so the two CTAs read distinctly. */}
-                  Shop the Collection
-                </Link>
+                <ShopCollectionCard />
                 {/* Secondary points at Featured Pieces — the story section it used to
                     link to no longer exists */}
                 <Link
