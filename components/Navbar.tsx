@@ -52,6 +52,9 @@ export default function Navbar({ categories }: { categories: { id: string; name:
   const router   = useRouter();
   const [menuOpen,    setMenuOpen]    = useState(false);
   const [scrolled,    setScrolled]    = useState(false);
+  // Mobile only — the desktop header stays put (see the lg: overrides on the
+  // <header> below), where a disappearing nav on a large screen reads as a bug.
+  const [hidden,      setHidden]      = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   // Collapsed by default, as the footer's own comment below always intended.
   // Expanded, it took 383px of a 664px drawer and squeezed the nav scroll area
@@ -80,12 +83,42 @@ export default function Navbar({ categories }: { categories: { id: string; name:
     return () => document.removeEventListener("mousedown", onOutsideClick);
   }, []);
 
-  /* Shadow navbar on scroll */
+  /* Shadow on scroll, plus hide-on-scroll-down for the mobile header.
+     One listener drives both so they can never disagree about scroll state.
+
+     Direction, not absolute position: the header slides away as you read
+     down the page and comes straight back the moment you scroll up, so the
+     logo and the cart icon are always one small upward flick away. Hiding
+     purely on "scrolled past X" would strand the cart — since the bottom nav
+     no longer carries a Cart tab, this header is the only way into it.
+
+     THRESHOLD absorbs jitter (a 1–2px scroll from an image settling would
+     otherwise flicker the bar), and REVEAL_ABOVE keeps the header pinned
+     near the top of the page where hiding it just looks like a glitch. */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
+    const THRESHOLD = 6;
+    const REVEAL_ABOVE = 80;
+    let lastY = window.scrollY;
+
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 4);
+
+      if (y < REVEAL_ABOVE) setHidden(false);
+      else if (y > lastY + THRESHOLD) setHidden(true);
+      else if (y < lastY - THRESHOLD) setHidden(false);
+
+      lastY = y;
+    };
+
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  /* Never leave the header hidden behind an open drawer — closing the drawer
+     would otherwise reveal a page with no way back to the top nav until the
+     customer scrolled up. */
+  useEffect(() => { if (menuOpen) setHidden(false); }, [menuOpen]);
 
   /* Close menu on route change */
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -116,7 +149,9 @@ export default function Navbar({ categories }: { categories: { id: string; name:
           ${scrolled
             ? "backdrop-blur-md shadow-md border-b border-taupe/20"
             : "border-b border-transparent"
-          }`}
+          }
+          ${hidden ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"}
+          lg:opacity-100 lg:translate-y-0 lg:pointer-events-auto`}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div className="flex items-center justify-between h-20 px-4 sm:px-6 lg:px-10 max-w-7xl mx-auto">
@@ -208,8 +243,15 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               </span>
             </Link>
 
-            {/* User account button */}
-            <div className="relative" ref={userMenuRef}>
+            {/* User account button — DESKTOP ONLY.
+                On mobile the bottom nav owns the account slot (its last tab is
+                Account / Sign In), and the drawer carries My Account, My
+                Orders and Sign Out. Showing this too put the same profile
+                glyph at the top and bottom of the same screen once signed in.
+                The signed-out branch below was already `hidden lg:inline-flex`,
+                so only the signed-in state was duplicating; this lifts the
+                same rule to cover both states consistently. */}
+            <div className="relative hidden lg:block" ref={userMenuRef}>
               {user ? (
                 <>
                   <button

@@ -55,8 +55,11 @@ export default async function RootLayout({
           {/* Top bar — always visible */}
           <Navbar categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
 
-          {/* Page content — extra bottom padding on mobile for bottom nav */}
-          <main className="flex-1 pb-nav lg:pb-0">{children}</main>
+          {/* Page content. No bottom-nav padding here: on mobile the credit
+              strip directly below is what sits above the fixed bottom nav and
+              carries the pb-nav clearance itself. Doubling it up left a band
+              of cream between the last section and the strip. */}
+          <main className="flex-1">{children}</main>
 
           {/* Desktop footer — hidden on mobile (bottom nav handles navigation) */}
           <div className="hidden lg:block">

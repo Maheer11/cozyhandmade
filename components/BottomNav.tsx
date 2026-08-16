@@ -2,12 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCart } from "./CartContext";
 import { useAuth } from "@/lib/supabase/auth-context";
 
 export default function BottomNav() {
   const pathname  = usePathname();
-  const { itemCount, openCart } = useCart();
   const { user }  = useAuth();
 
   // These pages have their own full-width sticky bars — hide the bottom nav
@@ -22,7 +20,6 @@ export default function BottomNav() {
     href: string;
     label: string;
     active: boolean;
-    onClick?: () => void;
     icon: (on: boolean) => React.ReactNode;
   }[] = [
     {
@@ -42,48 +39,18 @@ export default function BottomNav() {
       href: "/products",
       label: "Shop",
       active: pathname.startsWith("/products"),
-      // Storefront, NOT a shopping bag. This tab previously used the exact
-      // same bag path as the Cart tab three positions along, so the bar
-      // showed two identical bag icons. A bag universally reads as "my
-      // cart", so users skipped this tab as a duplicate rather than
-      // recognising it as the way into the shop.
+      // A four-square grid — the standard "browse the catalogue" glyph.
+      // Replaces a detailed storefront (awning + door + window) whose strokes
+      // collapsed into a smudge at 24px in the pill. Deliberately not a bag:
+      // that reads as "my cart", and the header's cart icon is right there.
       icon: (on: boolean) => (
         <svg className={`w-6 h-6 ${on ? "stroke-gold" : "stroke-taupe-dark"} fill-none`}
              viewBox="0 0 24 24" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round"
-                d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72l1.189-1.19A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72M6.75 18h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .414.336.75.75.75z" />
+          <rect x="3.25"  y="3.25"  width="7.5" height="7.5" rx="1.75" />
+          <rect x="13.25" y="3.25"  width="7.5" height="7.5" rx="1.75" />
+          <rect x="3.25"  y="13.25" width="7.5" height="7.5" rx="1.75" />
+          <rect x="13.25" y="13.25" width="7.5" height="7.5" rx="1.75" />
         </svg>
-      ),
-    },
-    {
-      href: "/products?focusSearch=1",
-      label: "Search",
-      active: false,
-      icon: (on: boolean) => (
-        <svg className={`w-6 h-6 ${on ? "stroke-gold" : "stroke-taupe-dark"} fill-none`}
-             viewBox="0 0 24 24" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z" />
-        </svg>
-      ),
-    },
-    {
-      href: "/cart",
-      label: "Cart",
-      active: false,
-      onClick: openCart,
-      icon: (on: boolean) => (
-        <div className="relative">
-          <svg className={`w-6 h-6 ${on ? "stroke-gold" : "stroke-taupe-dark"} fill-none`}
-               viewBox="0 0 24 24" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-          </svg>
-          {itemCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gold text-cream
-                             text-[9px] font-bold rounded-full flex items-center justify-center">
-              {itemCount > 9 ? "9+" : itemCount}
-            </span>
-          )}
-        </div>
       ),
     },
     {
@@ -100,31 +67,40 @@ export default function BottomNav() {
   ];
 
   return (
+    /* A floating pill, not a full-width bar. With Search and Cart removed,
+       three tabs stretched edge to edge left big dead gaps between them and
+       read as a bar missing its other buttons. Sized to its contents and
+       centred, the same three items read as a deliberate set.
+       The active tab is marked by a filled capsule behind it rather than the
+       old hairline above it — at this width a 8px dash floating over a
+       detached pill had nothing to align to. */
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40
-                 bg-cream/95 backdrop-blur-md border-t border-taupe/25"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center pointer-events-none"
+      style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}
+      aria-label="Primary"
     >
-      <div className="flex items-stretch h-14">
-        {tabs.map(({ href, label, active, icon, onClick }) => (
+      <div className="pointer-events-auto flex items-stretch gap-1 p-1.5
+                      rounded-full bg-cream/95 backdrop-blur-md
+                      border border-taupe/25 shadow-[0_10px_30px_-12px_rgba(26,8,16,0.45)]">
+        {tabs.map(({ href, label, active, icon }) => (
           <Link
             key={label}
             href={href}
-            onClick={onClick ? (e) => { e.preventDefault(); onClick(); } : undefined}
             style={{ touchAction: "manipulation" }}
-            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 pt-1
-                       active:scale-95 transition-transform duration-100
-                       ${active ? "text-gold" : "text-taupe-dark"}`}
+            className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full
+                       active:scale-95 transition-all duration-150
+                       ${active ? "bg-gold/10 text-gold" : "text-taupe-dark"}`}
             aria-label={label}
             aria-current={active ? "page" : undefined}
           >
-            {active && (
-              <span className="absolute top-0.5 w-8 h-1 rounded-full bg-gold" aria-hidden="true" />
-            )}
             {icon(active)}
-            <span className={`text-[10px] font-medium tracking-wide ${active ? "text-gold" : "text-taupe-dark"}`}>
-              {label}
-            </span>
+            {/* Label only on the active tab: three icon+label pairs made the
+                pill wider than the screen on a 375px device. */}
+            {active && (
+              <span className="text-[11px] font-semibold tracking-wide whitespace-nowrap">
+                {label}
+              </span>
+            )}
           </Link>
         ))}
       </div>
