@@ -21,7 +21,7 @@ const navIcons: Record<string, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
     </svg>
   ),
-  "New In": (
+  "Featured Pieces": (
     <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
     </svg>
@@ -36,26 +36,31 @@ const navIcons: Record<string, React.ReactNode> = {
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Collections" },
-  { href: "/new-in", label: "New In" },
+  { href: "/featured-pieces", label: "Featured Pieces" },
   { href: "/#newsletter", label: "Journal" },
 ];
 
-const drawerCategories = [
-  { href: "/products?category=Blankets", label: "Throw Blankets" },
-  { href: "/products?category=baby", label: "Baby Blankets" },
-  { href: "/products?category=handbags", label: "Handbags & Totes" },
-  { href: "/products?category=wallets", label: "Purses & Wallets" },
-  { href: "/products?category=scarves", label: "Scarves & Wraps" },
-];
+export default function Navbar({ categories }: { categories: { id: string; name: string }[] }) {
+  const drawerCategories = categories.map((c) => ({
+    href: `/products?category=${c.id}`,
+    label: c.name,
+  }));
 
-export default function Navbar() {
   const { itemCount, openCart } = useCart();
   const { user } = useAuth();
   const pathname = usePathname();
   const router   = useRouter();
   const [menuOpen,    setMenuOpen]    = useState(false);
   const [scrolled,    setScrolled]    = useState(false);
+  // Mobile only — the desktop header stays put (see the lg: overrides on the
+  // <header> below), where a disappearing nav on a large screen reads as a bug.
+  const [hidden,      setHidden]      = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  // Expanded by default: the drawer opens showing its content, and "More"
+  // collapses it back. Expanding used to take 383px of a 664px drawer and
+  // squeeze the nav scroll area to 217px, hiding "Shop by Category" behind the
+  // footer — the expanded panel is now height-capped and scrolls internally
+  // (see the collapsible region below), so it can't swallow the nav list again.
   const [footerOpen,  setFooterOpen]  = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -78,18 +83,48 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", onOutsideClick);
   }, []);
 
-  /* Shadow navbar on scroll */
+  /* Shadow on scroll, plus hide-on-scroll-down for the mobile header.
+     One listener drives both so they can never disagree about scroll state.
+
+     Direction, not absolute position: the header slides away as you read
+     down the page and comes straight back the moment you scroll up, so the
+     logo and the cart icon are always one small upward flick away. Hiding
+     purely on "scrolled past X" would strand the cart — since the bottom nav
+     no longer carries a Cart tab, this header is the only way into it.
+
+     THRESHOLD absorbs jitter (a 1–2px scroll from an image settling would
+     otherwise flicker the bar), and REVEAL_ABOVE keeps the header pinned
+     near the top of the page where hiding it just looks like a glitch. */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
+    const THRESHOLD = 6;
+    const REVEAL_ABOVE = 80;
+    let lastY = window.scrollY;
+
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 4);
+
+      if (y < REVEAL_ABOVE) setHidden(false);
+      else if (y > lastY + THRESHOLD) setHidden(true);
+      else if (y < lastY - THRESHOLD) setHidden(false);
+
+      lastY = y;
+    };
+
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /* Never leave the header hidden behind an open drawer — closing the drawer
+     would otherwise reveal a page with no way back to the top nav until the
+     customer scrolled up. */
+  useEffect(() => { if (menuOpen) setHidden(false); }, [menuOpen]);
+
   /* Close menu on route change */
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
-  /* Footer section starts open every time the drawer opens — users
-     collapse it down when they want the nav links to have the room */
+  /* Footer section resets to EXPANDED every time the drawer closes, so each
+     open shows its content first and "More" is there to fold it away. */
   useEffect(() => { if (!menuOpen) setFooterOpen(true); }, [menuOpen]);
 
   /* Lock body scroll when menu open */
@@ -110,7 +145,9 @@ export default function Navbar() {
           ${scrolled
             ? "backdrop-blur-md shadow-md border-b border-taupe/20"
             : "border-b border-transparent"
-          }`}
+          }
+          ${hidden ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"}
+          lg:opacity-100 lg:translate-y-0 lg:pointer-events-auto`}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div className="flex items-center justify-between h-20 px-4 sm:px-6 lg:px-10 max-w-7xl mx-auto">
@@ -138,7 +175,8 @@ export default function Navbar() {
 
           {/* ── Logo ── */}
           <Link href="/" className="flex items-center group shrink-0">
-            <CoziLogo className="w-44 h-14 transition-opacity duration-200 group-hover:opacity-75" />
+            {/* Slightly smaller on mobile, full size from sm up. */}
+            <CoziLogo className="w-36 h-11 sm:w-44 sm:h-14 transition-opacity duration-200 group-hover:opacity-75" />
           </Link>
 
           {/* ── Desktop nav links ── */}
@@ -201,8 +239,15 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* User account button */}
-            <div className="relative" ref={userMenuRef}>
+            {/* User account button — DESKTOP ONLY.
+                On mobile the bottom nav owns the account slot (its last tab is
+                Account / Sign In), and the drawer carries My Account, My
+                Orders and Sign Out. Showing this too put the same profile
+                glyph at the top and bottom of the same screen once signed in.
+                The signed-out branch below was already `hidden lg:inline-flex`,
+                so only the signed-in state was duplicating; this lifts the
+                same rule to cover both states consistently. */}
+            <div className="relative hidden lg:block" ref={userMenuRef}>
               {user ? (
                 <>
                   <button
@@ -329,14 +374,6 @@ export default function Navbar() {
         aria-modal="true"
         aria-label="Navigation menu"
       >
-        {/* Left stitched border accent */}
-        <div
-          className="absolute left-0 top-0 bottom-0 w-1"
-          style={{
-            backgroundImage: "repeating-linear-gradient(180deg, #8B2035 0px, #8B2035 8px, transparent 8px, transparent 14px)",
-          }}
-        />
-
         {/* Drawer header */}
         <div className="flex items-center justify-between h-16 px-5 pl-6 border-b border-taupe/20">
           <Link href="/" onClick={() => setMenuOpen(false)}>
@@ -361,7 +398,7 @@ export default function Navbar() {
             <Link
               href="/custom-order"
               onClick={() => setMenuOpen(false)}
-              className="animate-fade-up flex items-center gap-3 mb-5 mr-2 px-4 py-3.5 rounded-2xl
+              className="animate-fade-up flex items-center gap-3 mb-4 mr-2 px-4 py-3 rounded-2xl
                          text-deep-brown shadow-md shadow-black/10
                          active:scale-[0.98] transition-transform duration-100"
               style={{ backgroundColor: "#F7D9C0" }}
@@ -387,7 +424,8 @@ export default function Navbar() {
               <Link
                 key={label}
                 href={href}
-                className="animate-fade-up flex items-center gap-3.5 py-3.5 text-lg font-medium text-brown
+                onClick={() => setMenuOpen(false)}
+                className="animate-fade-up flex items-center gap-3.5 py-3 text-lg font-medium text-brown
                            active:text-gold active:bg-cream-dark/60 transition-colors duration-150 border-b border-taupe/10"
                 style={{ animationDelay: `${100 + i * 40}ms` }}
               >
@@ -396,7 +434,7 @@ export default function Navbar() {
               </Link>
             ))}
 
-            <p className="animate-fade-up text-[10px] uppercase tracking-widest text-taupe-dark mt-7 mb-2 font-body"
+            <p className="animate-fade-up text-[10px] uppercase tracking-widest text-taupe-dark mt-5 mb-2 font-body"
                style={{ animationDelay: `${100 + navLinks.length * 40}ms` }}>
               Shop by Category
             </p>
@@ -404,7 +442,11 @@ export default function Navbar() {
               <Link
                 key={href}
                 href={href}
-                className="animate-fade-up flex items-center gap-3 py-3 text-base text-brown/80
+                // Without this the drawer stays open on top of /products and
+                // the filtered results are never seen — it reads as the link
+                // having done nothing.
+                onClick={() => setMenuOpen(false)}
+                className="animate-fade-up flex items-center gap-3 py-2.5 text-base text-brown/80
                            active:text-gold active:bg-cream-dark/60 transition-colors duration-150 border-b border-taupe/10"
                 style={{ animationDelay: `${140 + (navLinks.length + i) * 40}ms` }}
               >
@@ -415,12 +457,71 @@ export default function Navbar() {
           </nav>
         )}
 
-        {/* Drawer footer — collapsed to a slim handle by default so it never
-            crowds the nav links; tapping slides the full section open. */}
+        {/* Drawer footer. The account block sits OUTSIDE the collapsible
+            section: signing in is the one action here a customer comes
+            looking for, so it has to be on screen the moment the drawer
+            opens. Everything secondary — socials, currency, build credit —
+            lives behind the "More" arrow, which is what keeps the footer
+            from crowding the nav links above it. */}
         <div
           className="border-t border-taupe/20"
           style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
         >
+          <div className="pl-6 pr-4 pt-3 pb-1">
+            {user ? (
+              <div className="space-y-1">
+                <Link href="/account" onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                  My Account
+                </Link>
+                <Link href="/account/orders" onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z" />
+                  </svg>
+                  My Orders
+                </Link>
+                <button onClick={() => { setMenuOpen(false); handleSignOut(); }}
+                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-red-600 w-full">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              /* Member card — returning customers sign in, new ones create an
+                 account, presented as an explicit choice instead of one
+                 generic button. Kept compact: it is always on screen now, so
+                 every pixel it takes comes straight out of the nav list above
+                 it. The three-benefit line was dropped and padding tightened. */
+              <div className="rounded-2xl bg-white/70 border border-taupe/15 p-3 space-y-2">
+                <p className="text-[13px] font-semibold text-deep-brown font-body text-center">
+                  Join the Cozi family
+                </p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Link href="/auth/login" onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-center h-10 rounded-none text-cream text-[13px]
+                               font-semibold tracking-wide font-body
+                               active:scale-[0.97] transition-transform duration-100"
+                    style={{ backgroundColor: "#8B2035" }}>
+                    Sign In
+                  </Link>
+                  <Link href="/auth/signup" onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-center h-10 rounded-none text-[13px]
+                               font-semibold tracking-wide font-body border border-brown/30 text-brown
+                               active:scale-[0.97] active:border-brown/70 transition-all duration-100"
+                  >
+                    Create Account
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setFooterOpen((o) => !o)}
             aria-expanded={footerOpen}
@@ -442,65 +543,16 @@ export default function Navbar() {
             </span>
           </button>
 
+          {/* max-h caps what the expanded panel can take from the nav list
+              above it — the whole reason this section used to open collapsed.
+              Past the cap it scrolls inside itself rather than pushing "Shop by
+              Category" off the drawer. */}
           <div
             className="grid transition-all duration-300 ease-in-out"
             style={{ gridTemplateRows: footerOpen ? "1fr" : "0fr" }}
           >
-            <div className="overflow-hidden">
+            <div className="overflow-x-hidden overflow-y-auto max-h-[38vh]">
               <div className="pl-6 pr-4 pb-2 pt-1 space-y-4">
-
-          {user ? (
-            <div className="space-y-1">
-              <Link href="/account" onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                </svg>
-                My Account
-              </Link>
-              <Link href="/account/orders" onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z" />
-                </svg>
-                My Orders
-              </Link>
-              <button onClick={() => { setMenuOpen(false); handleSignOut(); }}
-                className="flex items-center gap-2 py-2.5 text-sm font-medium text-red-600 w-full">
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                </svg>
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            /* Member card — returning customers sign in, new ones create an
-               account, presented as an explicit choice instead of one generic button */
-            <div className="rounded-2xl bg-white/70 border border-taupe/15 p-4 space-y-3">
-              <div className="text-center">
-                <p className="text-sm font-semibold text-deep-brown font-body">Join the Cozi family</p>
-                <p className="text-[11px] text-taupe-dark font-body mt-0.5">
-                  Faster checkout · order tracking · exclusive drops
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <Link href="/auth/login" onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center h-10 rounded-none text-cream text-[13px]
-                             font-semibold tracking-wide font-body
-                             active:scale-[0.97] transition-transform duration-100"
-                  style={{ backgroundColor: "#8B2035" }}>
-                  Sign In
-                </Link>
-                <Link href="/auth/signup" onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center h-10 rounded-none text-[13px]
-                             font-semibold tracking-wide font-body border border-brown/30 text-brown
-                             active:scale-[0.97] active:border-brown/70 transition-all duration-100"
-                >
-                  Create Account
-                </Link>
-              </div>
-            </div>
-          )}
 
           {/* Social handles — real links, same as the footer */}
           <div className="flex items-center justify-center gap-3 pt-1">

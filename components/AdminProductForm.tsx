@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { DbProduct } from "@/lib/db-products";
-import { categories } from "@/lib/products";
+import type { Category } from "@/lib/products";
 
 interface FormState {
   productType: "regular" | "custom";
@@ -18,6 +18,7 @@ interface FormState {
   stock_quantity: string;
   in_stock: boolean;
   featured: boolean;
+  show_on_homepage: boolean;
   is_handmade: boolean;
   shipping_weight_grams: string;
   image: string;
@@ -35,38 +36,59 @@ function variantKey(color: string, size: string) {
   return size;
 }
 
-function defaultState(product?: DbProduct): FormState {
+// Prefill for a product seeded from a Featured Piece item — same shape as the
+// fields defaultState() would otherwise pull off a DbProduct, but sourced
+// from featured_pieces instead. The admin still reviews and submits through
+// this form (and its POST /api/admin/products route) like any other new
+// product, so nothing bypasses the normal add-product path.
+export interface ProductPrefill {
+  name?: string;
+  price?: string;
+  description?: string;
+  tags?: string;
+  stock_quantity?: string;
+  is_handmade?: boolean;
+  shipping_weight_grams?: string;
+  image?: string;
+  images?: string[];
+  colors?: string[];
+  sizes?: string[];
+  variant_price?: Record<string, number>;
+}
+
+function defaultState(product?: DbProduct, prefill?: ProductPrefill, categories?: Category[]): FormState {
   return {
     productType:    "regular",
-    name:           product?.name           ?? "",
-    price:          product?.price.toString()         ?? "",
+    name:           product?.name           ?? prefill?.name ?? "",
+    price:          product?.price.toString()         ?? prefill?.price ?? "",
     original_price: product?.original_price?.toString() ?? "",
-    category:       product?.category       ?? categories[0]?.id ?? "",
-    description:    product?.description    ?? "",
+    category:       product?.category       ?? categories?.[0]?.id ?? "",
+    description:    product?.description    ?? prefill?.description ?? "",
     details:        product?.details?.join("\n")      ?? "",
-    tags:           product?.tags?.join(", ")         ?? "",
-    stock_quantity: product?.stock_quantity?.toString() ?? "0",
+    tags:           product?.tags?.join(", ")         ?? prefill?.tags ?? "",
+    stock_quantity: product?.stock_quantity?.toString() ?? prefill?.stock_quantity ?? "0",
     in_stock:       product?.in_stock       ?? true,
     featured:       product?.featured       ?? false,
-    is_handmade:    product?.is_handmade    ?? true,
-    shipping_weight_grams: product?.shipping_weight_grams?.toString() ?? "",
-    image:          product?.image          ?? "",
-    images:         product?.images         ?? [],
-    colors:         product?.colors         ?? [],
-    sizes:          product?.sizes          ?? [],
+    show_on_homepage: product?.show_on_homepage ?? false,
+    is_handmade:    product?.is_handmade    ?? prefill?.is_handmade ?? true,
+    shipping_weight_grams: product?.shipping_weight_grams?.toString() ?? prefill?.shipping_weight_grams ?? "",
+    image:          product?.image          ?? prefill?.image ?? "",
+    images:         product?.images         ?? prefill?.images ?? [],
+    colors:         product?.colors         ?? prefill?.colors ?? [],
+    sizes:          product?.sizes          ?? prefill?.sizes ?? [],
     variant_stock:  (product?.variant_stock as Record<string, number>) ?? {},
-    variant_price:  (product?.variant_price as Record<string, number>) ?? {},
+    variant_price:  (product?.variant_price as Record<string, number>) ?? prefill?.variant_price ?? {},
     display_order:  "0",
   };
 }
 
-export default function AdminProductForm({ product }: { product?: DbProduct }) {
+export default function AdminProductForm({ product, prefill, fromFeaturedPieceId, categories }: { product?: DbProduct; prefill?: ProductPrefill; fromFeaturedPieceId?: string; categories: Category[] }) {
   const isEdit = !!product;
   const router = useRouter();
   const fileRef  = useRef<HTMLInputElement>(null);
   const moreRef  = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState<FormState>(defaultState(product));
+  const [form, setForm] = useState<FormState>(defaultState(product, prefill, categories));
   const [uploadingMain, setUploadingMain] = useState(false);
   const [uploadingMore, setUploadingMore] = useState(false);
   const [mainProgress,  setMainProgress]  = useState(0);
@@ -134,7 +156,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
     if (url) {
       set("image", url);
     } else {
-      setMainImgError("Upload failed — check your connection and try again.");
+      setMainImgError("Upload failed. Check your connection and try again.");
     }
     setUploadingMain(false);
     setMainProgress(0);
@@ -158,7 +180,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
     );
     const valid = urls.filter(Boolean) as string[];
     if (valid.length < files.length) {
-      setMoreImgError(`${files.length - valid.length} image(s) failed to upload — try again.`);
+      setMoreImgError(`${files.length - valid.length} image(s) failed to upload, try again.`);
     }
     if (valid.length > 0) set("images", [...form.images, ...valid]);
     setUploadingMore(false);
@@ -198,8 +220,6 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
     const payload = form.productType === "custom"
       ? {
           ...basePayload,
-          rating: 5,
-          review_count: 0,
           stock_quantity: 0,
           in_stock: true,
           colors: [],
@@ -216,6 +236,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
           variant_stock:  form.variant_stock,
           variant_price:  form.variant_price,
           featured:       form.featured,
+          show_on_homepage: form.show_on_homepage,
           is_handmade:    form.is_handmade,
           shipping_weight_grams: form.shipping_weight_grams.trim() ? parseInt(form.shipping_weight_grams) : null,
         };
@@ -235,6 +256,22 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
       setSaving(false);
       return;
     }
+
+    // Point the source Featured Piece at the product just created, so the two
+    // share one stock counter instead of drifting apart (migration 013). This
+    // is what makes the flow a link rather than a duplicate.
+    //
+    // Custom products are excluded deliberately: they live in their own table,
+    // and featured_pieces.product_id is a foreign key into `products`, so
+    // linking one would be rejected by the database.
+    if (fromFeaturedPieceId && endpoint === "products" && json.id) {
+      await fetch(`/api/admin/featured-pieces/${fromFeaturedPieceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: json.id, added_to_collections: true }),
+      });
+    }
+
     router.push("/admin/products");
     router.refresh();
   }
@@ -523,11 +560,32 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
     );
   }
 
+  // A featured piece has no stock of its own to copy across (migration 013 —
+  // it inherits its linked product's), so the prefill carries a single total
+  // read from that product, with no per-color/size breakdown. If the source
+  // item had colors/sizes, this form switches to per-variant stock (see
+  // computedStock above) and that grid starts every cell at 0. Silently
+  // defaulting it to, say, an even split would be presenting a guess as real
+  // inventory, so instead this surfaces the gap and makes the admin fill in
+  // real numbers.
+  const prefillStockGap = !!prefill && (prefill.colors?.length || prefill.sizes?.length)
+    ? Number(prefill.stock_quantity ?? 0)
+    : 0;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
           {error}
+        </div>
+      )}
+
+      {prefillStockGap > 0 && (
+        <div className="px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg">
+          This item had <strong>{prefillStockGap} unit{prefillStockGap === 1 ? "" : "s"}</strong> total in Featured Pieces,
+          but Featured Pieces doesn&apos;t track stock per colour/size. The stock grid below starts at 0 for every
+          variant, so enter the real per-variant counts (they should add up to {prefillStockGap}, or to whatever
+          you actually have on hand) before creating, otherwise this product will show as out of stock.
         </div>
       )}
 
@@ -594,7 +652,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
               />
             </div>
             <div>
-              <label className={labelCls}>Original Price (€) — for sale</label>
+              <label className={labelCls}>Original Price (€) for sale</label>
               <input
                 type="number"
                 value={form.original_price}
@@ -668,7 +726,7 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
               onChange={(e) => set("description", e.target.value)}
               rows={4}
               className={inputCls}
-              placeholder="Describe the product — materials, dimensions, care instructions…"
+              placeholder="Describe the product: materials, dimensions, care instructions…"
             />
           </div>
 
@@ -698,15 +756,43 @@ export default function AdminProductForm({ product }: { product?: DbProduct }) {
 
           {/* Toggles — Regular Products Only */}
           {form.productType === "regular" && (
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <div className="space-y-3.5">
+              {/* Two separate switches that both sound like "featured", so each
+                  spells out where it actually shows. `featured` was labelled
+                  "Featured on homepage" before this — it never touched the
+                  homepage, it only sorts the /products listing, and leaving
+                  that label next to the real homepage toggle below would have
+                  made the pair unreadable. */}
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.show_on_homepage}
+                  onChange={(e) => set("show_on_homepage", e.target.checked)}
+                  className="w-4 h-4 mt-0.5 rounded accent-red-700"
+                />
+                <span>
+                  <span className="text-sm text-gray-700 font-medium">Show on homepage</span>
+                  <span className="block text-xs text-gray-400 mt-0.5">
+                    Puts this product in the homepage hero, alongside any Featured Pieces
+                    that are switched on. There is no limit. The hero shows exactly what
+                    you tick here, so a handful reads best.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={form.featured}
                   onChange={(e) => set("featured", e.target.checked)}
-                  className="w-4 h-4 rounded accent-red-700"
+                  className="w-4 h-4 mt-0.5 rounded accent-red-700"
                 />
-                <span className="text-sm text-gray-700 font-medium">Featured on homepage</span>
+                <span>
+                  <span className="text-sm text-gray-700 font-medium">Featured in shop listing</span>
+                  <span className="block text-xs text-gray-400 mt-0.5">
+                    Sorts this product to the top of the /products page. Does not affect
+                    the homepage.
+                  </span>
+                </span>
               </label>
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input

@@ -7,7 +7,7 @@ import { cartLineKey, capQuantity } from "@/components/CartContext";
 // quantity and silently discarded the tier the customer actually chose —
 // wrong item shipped, wrong total charged, badge still incremented.
 describe("cartLineKey", () => {
-  const vase = { id: "vase-1", source: "new_in" as const };
+  const vase = { id: "vase-1", source: "featured_piece" as const };
 
   it("distinguishes two variants of the same row — the bug this exists to prevent", () => {
     expect(cartLineKey({ ...vase, variant: "With Stand" }))
@@ -23,9 +23,19 @@ describe("cartLineKey", () => {
     expect(cartLineKey({ ...vase, variant: "With Stand" })).not.toBe(cartLineKey(vase));
   });
 
-  it("distinguishes the same id across the products and new_in tables", () => {
+  it("distinguishes the same id across the products and featured_pieces tables", () => {
     expect(cartLineKey({ id: "x", source: "product" }))
-      .not.toBe(cartLineKey({ id: "x", source: "new_in" }));
+      .not.toBe(cartLineKey({ id: "x", source: "featured_piece" }));
+  });
+
+  // "new_in" is the legacy value featured_pieces items used to carry before
+  // the New In → Featured Pieces rename. A cart line still sitting in a
+  // customer's localStorage under the old value must not silently merge
+  // with a "featured_piece" line for the same id — they're different carts'
+  // worth of history, not (yet) the same line.
+  it("keeps a legacy 'new_in' line distinct from a 'featured_piece' line with the same id", () => {
+    expect(cartLineKey({ id: "x", source: "new_in" }))
+      .not.toBe(cartLineKey({ id: "x", source: "featured_piece" }));
   });
 
   // `source` was added after the cart shipped, so carts persisted in

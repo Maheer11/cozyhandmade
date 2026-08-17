@@ -5,18 +5,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "./CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
-import type { NewInCardData } from "./NewInSection";
-import { parseDescription } from "@/lib/parse-new-in-description";
+import type { FeaturedPieceCardData } from "./FeaturedPiecesSection";
+import { parseDescription } from "@/lib/parse-featured-piece-description";
+import {
+  featuredPieceMaxQuantity,
+  isFeaturedPieceSoldOut,
+  type EmbeddedProductStock,
+} from "@/lib/featured-piece-stock";
 
-export interface NewInDetailData extends NewInCardData {
+export interface FeaturedPieceDetailData extends FeaturedPieceCardData {
   colors: string[];
   sizes: string[];
   description: string;
-  stock_quantity: number;
   variant_price: Record<string, number>;
+  // Stock source — this page reads the LINKED PRODUCT's stock, since migration
+  // 013 left featured_pieces with no counter of its own. `sold_out` on the
+  // card data above is now only the manual override half of the answer;
+  // isFeaturedPieceSoldOut() combines the two.
+  product_id: string | null;
+  products: EmbeddedProductStock;
 }
 
-export default function NewInDetail({ item }: { item: NewInDetailData }) {
+export default function FeaturedPieceDetail({ item }: { item: FeaturedPieceDetailData }) {
   const { addItem, openCart } = useCart();
   const { formatAmount } = useCurrency();
 
@@ -46,8 +56,12 @@ export default function NewInDetail({ item }: { item: NewInDetailData }) {
   const displayPrice = (selectedSize && item.variant_price[selectedSize] !== undefined)
     ? item.variant_price[selectedSize]
     : (item.discount_price ?? item.price);
-  const isOutOfStock = item.sold_out || item.stock_quantity <= 0;
-  const maxQty = item.stock_quantity;
+  // Availability = the manual sold_out override OR the linked product being
+  // empty (or missing entirely). Same rule the storefront cards, the admin
+  // list and checkout_verified_order() all apply — see
+  // lib/featured-piece-stock.ts.
+  const isOutOfStock = isFeaturedPieceSoldOut(item);
+  const maxQty = featuredPieceMaxQuantity(item);
 
   const variantLabel = [selectedColor, selectedSize].filter(Boolean).join(" / ");
   const cartName = variantLabel ? `${item.name} (${variantLabel})` : item.name;
@@ -60,7 +74,7 @@ export default function NewInDetail({ item }: { item: NewInDetailData }) {
         name: cartName,
         price: displayPrice,
         image: item.product_image,
-        source: "new_in",
+        source: "featured_piece", // new code always writes the new value; comparisons elsewhere still accept legacy "new_in"
         variant: selectedSize ?? undefined,
         color: selectedColor ?? undefined,
         maxQuantity: maxQty,
@@ -79,7 +93,7 @@ export default function NewInDetail({ item }: { item: NewInDetailData }) {
         <ol className="flex items-center gap-2 text-xs text-taupe-dark max-w-7xl mx-auto">
           <li><Link href="/" className="active:text-gold transition-colors">Home</Link></li>
           <li className="text-taupe">/</li>
-          <li><Link href="/new-in" className="active:text-gold transition-colors">New In</Link></li>
+          <li><Link href="/featured-pieces" className="active:text-gold transition-colors">Featured Pieces</Link></li>
           <li className="text-taupe">/</li>
           <li className="text-brown font-medium truncate">{item.name}</li>
         </ol>
@@ -113,7 +127,7 @@ export default function NewInDetail({ item }: { item: NewInDetailData }) {
                 </span>
               )}
               <Link
-                href="/new-in"
+                href="/featured-pieces"
                 className="lg:hidden absolute top-4 right-4 w-11 h-11 bg-cream/90 backdrop-blur-sm
                            rounded-full flex items-center justify-center shadow-md
                            active:scale-90 transition-transform duration-100"
@@ -169,9 +183,9 @@ export default function NewInDetail({ item }: { item: NewInDetailData }) {
                   Out of Stock
                 </span>
               )}
-              {!isOutOfStock && item.stock_quantity <= 3 && (
+              {!isOutOfStock && maxQty <= 3 && (
                 <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                  Only {item.stock_quantity} left
+                  Only {maxQty} left
                 </span>
               )}
             </div>

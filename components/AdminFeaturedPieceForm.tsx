@@ -3,8 +3,9 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
-export interface NewInItem {
+export interface FeaturedPieceItem {
   id: string;
   name: string;
   product_image: string;
@@ -18,9 +19,23 @@ export interface NewInItem {
   sizes: string[];
   description: string | null;
   sku: string | null;
-  stock_quantity: number;
   variant_price: Record<string, number>;
   shipping_weight_grams: number | null;
+  added_to_collections: boolean;
+  show_on_homepage: boolean;
+  /**
+   * The product this piece draws its stock from. Featured Pieces have had no
+   * stock counter of their own since migration 013 — see
+   * lib/featured-piece-stock.ts.
+   */
+  product_id: string | null;
+}
+
+/** The products the picker offers, loaded server-side by the pages below. */
+export interface StockProductOption {
+  id: string;
+  name: string;
+  stock_quantity: number;
 }
 
 interface FormState {
@@ -29,6 +44,7 @@ interface FormState {
   lifestyle_image: string;
   sold_out: boolean;
   is_handmade: boolean;
+  show_on_homepage: boolean;
   display_order: string;
   price: string;
   discount_price: string;
@@ -36,18 +52,19 @@ interface FormState {
   sizes: string;  // comma-separated in the UI, split on submit
   description: string;
   sku: string;
-  stock_quantity: string;
+  product_id: string; // "" = nothing picked yet
   variantPrice: Record<string, string>; // size -> price string, e.g. "With Stand": "215.00"
   shipping_weight_grams: string;
 }
 
-function defaultState(item?: NewInItem): FormState {
+function defaultState(item?: FeaturedPieceItem): FormState {
   return {
     name:            item?.name            ?? "",
     product_image:   item?.product_image   ?? "",
     lifestyle_image: item?.lifestyle_image ?? "",
     sold_out:        item?.sold_out        ?? false,
     is_handmade:     item?.is_handmade     ?? true,
+    show_on_homepage: item?.show_on_homepage ?? false,
     display_order:   item?.display_order?.toString() ?? "0",
     price:           item?.price?.toString() ?? "",
     discount_price:  item?.discount_price?.toString() ?? "",
@@ -55,7 +72,7 @@ function defaultState(item?: NewInItem): FormState {
     sizes:           item?.sizes?.join(", ")  ?? "",
     description:     item?.description ?? "",
     sku:             item?.sku ?? "",
-    stock_quantity:  item?.stock_quantity?.toString() ?? "0",
+    product_id:      item?.product_id ?? "",
     variantPrice:    Object.fromEntries(
       Object.entries(item?.variant_price ?? {}).map(([k, v]) => [k, v.toString()])
     ),
@@ -77,7 +94,7 @@ function optimizeCloudinaryUrl(url: string): string {
 }
 
 // Same unsigned-upload Cloudinary pattern as AdminProductForm.tsx, just a
-// different destination folder so New In assets stay organized.
+// different destination folder so Featured Pieces assets stay organized.
 function uploadFile(file: File, folder: string, onProgress: (pct: number) => void): Promise<string | null> {
   return new Promise((resolve) => {
     const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -140,7 +157,7 @@ function ImageDropzone({
     setUploading(true);
     const uploadedUrl = await uploadFile(file, folder, setProgress);
     if (uploadedUrl) onUploaded(uploadedUrl);
-    else setError("Upload failed — check your connection and try again.");
+    else setError("Upload failed. Check your connection and try again.");
     setUploading(false);
     setProgress(0);
   }
@@ -190,7 +207,14 @@ function ImageDropzone({
   );
 }
 
-export default function AdminNewInForm({ item }: { item?: NewInItem }) {
+export default function AdminFeaturedPieceForm({
+  item,
+  products,
+}: {
+  item?: FeaturedPieceItem;
+  /** Every product, for the stock-source picker. Loaded server-side by the page. */
+  products: StockProductOption[];
+}) {
   const isEdit = !!item;
   const router = useRouter();
   const [form, setForm] = useState<FormState>(defaultState(item));
@@ -202,6 +226,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
     setForm((f) => ({ ...f, variantPrice: { ...f.variantPrice, [size]: v } }));
 
   const sizeList = form.sizes.split(",").map((s) => s.trim()).filter(Boolean);
+  const linkedProduct = products.find((p) => p.id === form.product_id) ?? null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -210,6 +235,11 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
     if (!form.product_image.trim()) { setError("Upload a product image."); return; }
     if (!form.price.trim() || Number.isNaN(parseFloat(form.price))) { setError("Price is required."); return; }
     if (!form.description.trim())   { setError("Description is required."); return; }
+    // Required: without it the piece has no stock source at all. Checkout
+    // refuses to sell an unlinked piece (UNLINKED_FEATURED_PIECE), so catching
+    // it here is the difference between an inline message and a customer
+    // getting charged and refunded.
+    if (!form.product_id)           { setError("Pick the product this piece takes its stock from."); return; }
     if (
       form.discount_price.trim() &&
       !Number.isNaN(parseFloat(form.discount_price)) &&
@@ -232,6 +262,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
       lifestyle_image: form.lifestyle_image || null,
       sold_out:        form.sold_out,
       is_handmade:     form.is_handmade,
+      show_on_homepage: form.show_on_homepage,
       display_order:   parseInt(form.display_order) || 0,
       price:           parseFloat(form.price),
       discount_price:  form.discount_price.trim() ? parseFloat(form.discount_price) : null,
@@ -239,13 +270,13 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
       sizes:           sizeList,
       description:     form.description.trim(),
       sku:             form.sku.trim() || null,
-      stock_quantity:  parseInt(form.stock_quantity) || 0,
+      product_id:      form.product_id,
       variant_price,
       shipping_weight_grams: form.shipping_weight_grams.trim() ? parseInt(form.shipping_weight_grams) : null,
     };
 
     const res = await fetch(
-      isEdit ? `/api/admin/new-in/${item!.id}` : "/api/admin/new-in",
+      isEdit ? `/api/admin/featured-pieces/${item!.id}` : "/api/admin/featured-pieces",
       {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -256,11 +287,11 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
     setSaving(false);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Something went wrong — please try again.");
+      setError(body.error ?? "Something went wrong, please try again.");
       return;
     }
 
-    router.push("/admin/new-in");
+    router.push("/admin/featured-pieces");
     router.refresh();
   }
 
@@ -269,14 +300,14 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
       <div className="flex flex-wrap gap-6">
         <ImageDropzone
           label="Product image"
-          hint="Tight/close shot — shown by default"
+          hint="Tight/close shot, shown by default"
           url={form.product_image}
           onUploaded={(url) => set("product_image", url)}
           folder="new-in-product"
         />
         <ImageDropzone
           label="Lifestyle image"
-          hint="Item in use — shown on hover / press"
+          hint="Item in use, shown on hover / press"
           url={form.lifestyle_image}
           onUploaded={(url) => set("lifestyle_image", url)}
           folder="new-in-lifestyle"
@@ -298,7 +329,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Price (€)</label>
           <p className="text-xs text-gray-400 mb-1.5">
-            Entered and shown in pounds directly — no currency conversion for New In items.
+            Entered and shown in pounds directly, with no currency conversion for Featured Pieces items.
           </p>
           <input
             type="number"
@@ -354,7 +385,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Price per size (optional)</label>
           <p className="text-xs text-gray-400 mb-2">
-            Set a different price for one or more sizes — e.g. for a product sold in configurations
+            Set a different price for one or more sizes, e.g. for a product sold in configurations
             like &quot;Without Stand&quot; / &quot;With Stand&quot;. Leave blank to use the base price above.
           </p>
           <div className="space-y-2">
@@ -406,7 +437,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">SKU (optional)</label>
           <input
@@ -414,16 +445,7 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
             value={form.sku}
             onChange={(e) => set("sku", e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-300"
-            placeholder="NEWIN-001"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Stock quantity</label>
-          <input
-            type="number"
-            value={form.stock_quantity}
-            onChange={(e) => set("stock_quantity", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+            placeholder="FEAT-001"
           />
         </div>
         <div>
@@ -437,16 +459,99 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
         </div>
       </div>
 
+      {/* Stock source. Featured Pieces used to carry their own stock number,
+          which meant the same physical item listed here and in Products had
+          two counters that drifted apart. Stock now lives on the product and
+          only there — this picker says which product, and the count beside it
+          is read-only on purpose: editing it here is exactly the split-brain
+          the change removes. */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-2">
+        <label className="block text-sm font-medium text-gray-700">Stock comes from this product</label>
+        <p className="text-xs text-gray-500">
+          Pick the product this piece is. Its stock is the stock: sell one here or in the shop and the
+          same number goes down. To change the count, edit the product.
+        </p>
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <select
+            value={form.product_id}
+            onChange={(e) => set("product_id", e.target.value)}
+            className="flex-1 min-w-[240px] px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+          >
+            <option value="">Select a product</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+
+          {linkedProduct ? (
+            <span
+              className={`shrink-0 text-sm font-medium px-3 py-2 rounded-lg border ${
+                linkedProduct.stock_quantity > 0
+                  ? "bg-white border-gray-200 text-gray-700"
+                  : "bg-red-50 border-red-200 text-red-700"
+              }`}
+            >
+              Stock: {linkedProduct.stock_quantity}, managed on the product
+            </span>
+          ) : (
+            <span className="shrink-0 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+              No product linked, so this piece can&apos;t be sold
+            </span>
+          )}
+        </div>
+        {linkedProduct && (
+          <p className="pt-0.5">
+            <Link
+              href={`/admin/products/${linkedProduct.id}/edit`}
+              className="text-xs text-red-700 hover:underline"
+            >
+              Edit {linkedProduct.name} to change its stock →
+            </Link>
+          </p>
+        )}
+      </div>
+
+      {/* Availability. Kept as an explicit two-state control rather than a
+          "Sold out" tick, because with stock now coming from the product it is
+          no longer obvious what ticking a box would even mean — spelling out
+          both states, and what each one overrides, is the difference. */}
+      <div className="rounded-xl border border-gray-200 p-4 space-y-2">
+        <span className="block text-sm font-medium text-gray-700">Availability</span>
+        <div className="flex flex-wrap items-center gap-5 pt-0.5">
+          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="radio"
+              name="availability"
+              checked={!form.sold_out}
+              onChange={() => set("sold_out", false)}
+              className="w-4 h-4 accent-red-700"
+            />
+            Available
+          </label>
+          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="radio"
+              name="availability"
+              checked={form.sold_out}
+              onChange={() => set("sold_out", true)}
+              className="w-4 h-4 accent-red-700"
+            />
+            Out of stock
+          </label>
+        </div>
+        <p className="text-xs text-gray-500">
+          A manual override. &quot;Out of stock&quot; hides this piece from sale even when the linked
+          product still has stock. Use it to pull something early. &quot;Available&quot; follows the
+          product: once its stock hits zero, this piece shows as sold out on its own.
+          {linkedProduct && !form.sold_out && linkedProduct.stock_quantity <= 0 && (
+            <span className="block mt-1 text-amber-700">
+              {linkedProduct.name} currently has no stock, so this piece is showing as sold out right now.
+            </span>
+          )}
+        </p>
+      </div>
+
       <div className="flex items-center gap-6">
-        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <input
-            type="checkbox"
-            checked={form.sold_out}
-            onChange={(e) => set("sold_out", e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300"
-          />
-          Sold out
-        </label>
         <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
           <input
             type="checkbox"
@@ -455,6 +560,31 @@ export default function AdminNewInForm({ item }: { item?: NewInItem }) {
             className="w-4 h-4 rounded border-gray-300"
           />
           Handmade
+        </label>
+      </div>
+
+      {/* Homepage hero curation. Own block rather than a third checkbox in the
+          row above: unlike "Sold out"/"Handmade", which describe the item, this
+          one decides where it appears, and it needs the explanation to be
+          usable — the hero has no count cap anymore, so what's ticked here is
+          literally what visitors see. */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={form.show_on_homepage}
+            onChange={(e) => set("show_on_homepage", e.target.checked)}
+            className="w-4 h-4 mt-0.5 rounded border-gray-300"
+          />
+          <span>
+            <span className="text-sm font-medium text-gray-700">Show on homepage</span>
+            <span className="block text-xs text-gray-500 mt-0.5">
+              Puts this piece in the homepage hero, alongside any Products that are
+              switched on. There is no limit. The hero shows exactly what you tick,
+              so a handful reads best. The first one (by display order) becomes the
+              large spotlight image.
+            </span>
+          </span>
         </label>
       </div>
 

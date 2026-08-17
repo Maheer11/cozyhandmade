@@ -46,8 +46,6 @@ export interface Database {
           price: number;
           original_price: number | null;
           category: string;
-          rating: number;
-          review_count: number;
           image: string | null;
           images: string[];
           description: string | null;
@@ -56,6 +54,7 @@ export interface Database {
           stock_quantity: number;
           in_stock: boolean;
           featured: boolean;
+          show_on_homepage: boolean;
           is_handmade: boolean;
           colors: string[];
           sizes: string[];
@@ -70,8 +69,6 @@ export interface Database {
           price: number;
           original_price?: number | null;
           category: string;
-          rating?: number;
-          review_count?: number;
           image?: string | null;
           images?: string[];
           description?: string | null;
@@ -83,6 +80,7 @@ export interface Database {
           variant_stock?: Record<string, number>;
           variant_price?: Record<string, number>;
           featured?: boolean;
+          show_on_homepage?: boolean;
           is_handmade?: boolean;
           shipping_weight_grams?: number | null;
           created_at?: string;
@@ -92,8 +90,6 @@ export interface Database {
           price?: number;
           original_price?: number | null;
           category?: string;
-          rating?: number;
-          review_count?: number;
           image?: string | null;
           images?: string[];
           description?: string | null;
@@ -105,6 +101,7 @@ export interface Database {
           variant_stock?: Record<string, number>;
           variant_price?: Record<string, number>;
           featured?: boolean;
+          show_on_homepage?: boolean;
           is_handmade?: boolean;
           shipping_weight_grams?: number | null;
         };
@@ -299,7 +296,7 @@ export interface Database {
           updated_at?: string;
         };
       };
-      new_in_items: {
+      featured_pieces: {
         Row: {
           id: string;
           name: string;
@@ -314,11 +311,21 @@ export interface Database {
           sizes: string[];
           description: string | null;
           sku: string | null;
+          /** @deprecated Migration 013 — stock comes from the linked product
+           *  (product_id → products.stock_quantity). Nothing reads or writes
+           *  this; the column is kept only until 013 is verified in prod. */
           stock_quantity: number;
           updated_at: string;
           variant_price: Record<string, number>;
           is_handmade: boolean;
           shipping_weight_grams: number | null;
+          added_to_collections: boolean;
+          show_on_homepage: boolean;
+          // Stock source. Featured pieces have had no stock counter of their
+          // own since migration 013 — they inherit products.stock_quantity
+          // through this link. Nullable only because 013 had to add the column
+          // to existing rows; the admin API requires it on create.
+          product_id: string | null;
         };
         Insert: {
           id?: string;
@@ -339,6 +346,9 @@ export interface Database {
           variant_price?: Record<string, number>;
           is_handmade?: boolean;
           shipping_weight_grams?: number | null;
+          added_to_collections?: boolean;
+          show_on_homepage?: boolean;
+          product_id?: string | null;
         };
         Update: {
           name?: string;
@@ -357,6 +367,9 @@ export interface Database {
           variant_price?: Record<string, number>;
           is_handmade?: boolean;
           shipping_weight_grams?: number | null;
+          added_to_collections?: boolean;
+          show_on_homepage?: boolean;
+          product_id?: string | null;
         };
       };
       custom_products: {
@@ -366,8 +379,6 @@ export interface Database {
           price: number;
           original_price: number | null;
           category: string;
-          rating: number;
-          review_count: number;
           image: string | null;
           images: string[];
           description: string | null;
@@ -389,8 +400,6 @@ export interface Database {
           price: number;
           original_price?: number | null;
           category: string;
-          rating?: number;
-          review_count?: number;
           image?: string | null;
           images?: string[];
           description?: string | null;
@@ -410,8 +419,6 @@ export interface Database {
           price?: number;
           original_price?: number | null;
           category?: string;
-          rating?: number;
-          review_count?: number;
           image?: string | null;
           images?: string[];
           description?: string | null;
@@ -434,7 +441,6 @@ export interface Database {
           customer_label: string | null;
           location: string | null;
           review_date: string | null;
-          rating: number | null;
           display_order: number;
           created_at: string;
         };
@@ -445,7 +451,6 @@ export interface Database {
           customer_label?: string | null;
           location?: string | null;
           review_date?: string | null;
-          rating?: number | null;
           display_order?: number;
           created_at?: string;
         };
@@ -455,7 +460,30 @@ export interface Database {
           customer_label?: string | null;
           location?: string | null;
           review_date?: string | null;
-          rating?: number | null;
+          display_order?: number;
+        };
+      };
+      categories: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          image: string | null;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          description?: string;
+          image?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string;
+          image?: string | null;
           display_order?: number;
         };
       };

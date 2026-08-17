@@ -58,7 +58,7 @@ export async function PATCH(
 
     if (status && !ADMIN_SETTABLE_STATUSES.includes(status)) {
       return NextResponse.json(
-        { error: "Admin can only mark an order as shipped, delivered, or cancelled — all other statuses are system-managed" },
+        { error: "Admin can only mark an order as shipped, delivered, or cancelled. All other statuses are system-managed." },
         { status: 400 }
       );
     }

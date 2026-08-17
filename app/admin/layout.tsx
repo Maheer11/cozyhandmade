@@ -10,6 +10,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!user || !isAdminEmail(user.email)) redirect("/");
 
+  
+
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#F3F0EB" }}>
       {/* Sidebar */}

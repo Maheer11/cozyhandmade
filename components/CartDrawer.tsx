@@ -10,16 +10,14 @@ import { useCurrency } from "@/lib/currency/CurrencyContext";
 function DrawerItem({
   item,
   onRemove,
-  onUpdateQty,
 }: {
   item: CartItem;
   onRemove: (lineKey: string) => void;
-  onUpdateQty: (lineKey: string, qty: number) => void;
 }) {
   const { formatAmount } = useCurrency();
-  const itemHref = item.source === "new_in" ? `/new-in/${item.id}` : `/products/${item.id}`;
-  // See the same guard in app/cart/page.tsx — undefined means no known cap.
-  const atMax = item.maxQuantity !== undefined && item.quantity >= item.maxQuantity;
+  // "new_in" accepted alongside "featured_piece" for carts persisted before
+  // the New In → Featured Pieces rename.
+  const itemHref = (item.source === "new_in" || item.source === "featured_piece") ? `/featured-pieces/${item.id}` : `/products/${item.id}`;
   const [offset, setOffset] = useState(0);
   const [removing, setRemoving] = useState(false);
   const startX = useRef(0);
@@ -93,31 +91,17 @@ function DrawerItem({
           <p className="text-sm font-semibold text-brown mt-0.5">{formatAmount(item.price)}</p>
 
           <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center border border-taupe/30 rounded-lg overflow-hidden">
-              <button
-                onClick={() => onUpdateQty(cartLineKey(item), item.quantity - 1)}
-                className="w-8 h-8 flex items-center justify-center text-brown active:bg-cream-dark active:scale-90 transition-transform duration-100"
-                style={{ touchAction: "manipulation" }}
-                aria-label="Decrease quantity"
-              >
-                −
-              </button>
-              <span className="w-6 text-center text-xs font-semibold text-deep-brown">{item.quantity}</span>
-              <button
-                onClick={() => onUpdateQty(cartLineKey(item), item.quantity + 1)}
-                disabled={atMax}
-                className="w-8 h-8 flex items-center justify-center text-brown active:bg-cream-dark active:scale-90 transition-transform duration-100 disabled:opacity-30 disabled:active:scale-100"
-                style={{ touchAction: "manipulation" }}
-                aria-label="Increase quantity"
-              >
-                +
-              </button>
-            </div>
-            {atMax && (
-              <span className="text-[10px] text-[#8B2035] whitespace-nowrap">
-                Max {item.maxQuantity}
-              </span>
-            )}
+            {/* Read-only. Quantity is chosen on the product page, where the
+                stepper is capped against the real stock for the exact variant
+                selected. The cart's own stepper could exceed that: lines added
+                by quick-add from a listing card carry no maxQuantity at all,
+                so "+" here was uncapped and let a customer build an order for
+                more units than exist. To change the count, remove the line and
+                re-add it with the quantity you want. */}
+            <span className="inline-flex items-center h-8 px-2.5 border border-taupe/30 rounded-lg
+                             text-xs font-semibold text-deep-brown">
+              Qty {item.quantity}
+            </span>
             <button
               onClick={triggerRemove}
               className="hidden sm:flex w-7 h-7 items-center justify-center text-taupe hover:text-[#8B2035] transition-colors rounded-lg"
@@ -135,7 +119,7 @@ function DrawerItem({
 }
 
 export default function CartDrawer() {
-  const { items, removeItem, updateQuantity, total, itemCount, isOpen, closeCart } = useCart();
+  const { items, removeItem, total, itemCount, isOpen, closeCart } = useCart();
   const { priceCheckout } = useCurrency();
 
   // Drawer shows the subtotal only — shipping is added at checkout.
@@ -216,7 +200,7 @@ export default function CartDrawer() {
                 Swipe left to remove items
               </p>
               {items.map((item) => (
-                <DrawerItem key={cartLineKey(item)} item={item} onRemove={removeItem} onUpdateQty={updateQuantity} />
+                <DrawerItem key={cartLineKey(item)} item={item} onRemove={removeItem} />
               ))}
               <button
                 onClick={closeCart}

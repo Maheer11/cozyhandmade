@@ -7,9 +7,81 @@ import HeroTiles from "@/components/HeroTiles";
 import HeroSlider from "@/components/HeroSlider";
 import heroTextBg from "@/public/images/newhome1.jpg";
 import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
-import NewInSection, { type NewInCardData } from "@/components/NewInSection";
+import ShopCollectionCard from "@/components/ShopCollectionCard";
+import FeaturedPiecesSection, { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
+import {
+  FEATURED_PIECE_STOCK_SELECT,
+  isFeaturedPieceSoldOut,
+  type FeaturedPieceStockSource,
+} from "@/lib/featured-piece-stock";
+
+/**
+ * The mobile hero headline, set as chips.
+ *
+ * The three fills are deliberately off-palette — sage, powder blue and lilac
+ * appear nowhere else on the site, which is what stops the row reading as
+ * another burgundy-and-gold block and gives the headline its own register. The
+ * burgundy stays where it carries meaning: every label is `text-brown`, so the
+ * chips still belong to the brand even while the fills don't. Icon strokes take
+ * the saturated version of each fill, keeping each chip to two related tones.
+ *
+ * Defined here rather than as theme tokens on purpose — these are one-off
+ * decorative fills for this headline, not colours anything else should reach
+ * for.
+ */
+const heroChips = [
+  {
+    label: "Handmade,",
+    fill: "#E8F1E9",
+    ink: "#5B8266",
+    // A running stitch — the wave is the thread, the gap is the needle's pass.
+    icon: "M3 14c2.5-5 5 5 7.5 0S15 9 17.5 14",
+  },
+  {
+    label: "Cozy,",
+    fill: "#E5EDF7",
+    ink: "#4E7396",
+    // Heart (Heroicons v2, 24-outline).
+    icon: "M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z",
+  },
+  {
+    label: "Thoughtful pieces",
+    fill: "#EDE6F6",
+    ink: "#6B4E9B",
+    // Sparkles — the same mark the footer's build credit uses.
+    icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z",
+  },
+];
+
+/** A featured_pieces row for a card, plus the linked product's stock. */
+type DbHeroFeaturedPiece = FeaturedPieceCardData & FeaturedPieceStockSource;
+
+// Featured Pieces no longer carry their own stock (migration 013): they take
+// it from the product they link to, and `sold_out` on the row survives only as
+// a manual override on top of that. Both halves have to be resolved before the
+// card is rendered, or the storefront advertises pieces it cannot sell.
+const FEATURED_PIECE_CARD_COLUMNS =
+  `id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price, ${FEATURED_PIECE_STOCK_SELECT}`;
+
+function toCard(row: DbHeroFeaturedPiece): FeaturedPieceCardData {
+  return { ...row, sold_out: isFeaturedPieceSoldOut(row) };
+}
+
+/** The products columns the hero needs, before normalisation. */
+interface DbHeroProduct {
+  id: string;
+  name: string;
+  image: string | null;
+  images: string[] | null;
+  price: number;
+  original_price: number | null;
+  stock_quantity: number;
+  in_stock: boolean;
+  is_handmade: boolean;
+  created_at: string;
+}
 
 interface DbReview {
   screenshot: string;
@@ -17,7 +89,6 @@ interface DbReview {
   customer_label: string | null;
   location: string | null;
   review_date: string | null;
-  rating: number | null;
 }
 
 /* ─── Marquee strip — refined, emoji-free ─────────── */
@@ -34,7 +105,7 @@ const marqueeItems: { text: string; icon: "star" | "diamond" }[] = [
 const testimonials = [
   {
     quote:
-      "The baby cardigan I ordered arrived beautifully wrapped — my daughter wore it home from hospital. It's already a family heirloom.",
+      "The baby cardigan I ordered arrived beautifully wrapped. My daughter wore it home from hospital. It's already a family heirloom.",
     name: "Sarah M.",
     location: "London",
   },
@@ -69,12 +140,38 @@ export default async function HomePage() {
     .select("*")
     .order("display_order", { ascending: true });
 
-  // New In is a fully standalone collection now — no join, own price/stock.
-  const { data: dbNewIn } = await db
-    .from("new_in_items")
-    .select("id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price")
+  // Featured Pieces own their price and presentation, but take stock from the
+  // product they link to — hence the embedded products(stock_quantity).
+  const { data: dbFeaturedPieces } = await db
+    .from("featured_pieces")
+    .select(FEATURED_PIECE_CARD_COLUMNS)
     .order("display_order", { ascending: true })
     .limit(10);
+
+  // ── Homepage hero — admin-curated across BOTH catalogues ──
+  // The hero used to be "the first few Featured Pieces by display_order",
+  // capped in the component. It is now whatever the owner ticks
+  // `show_on_homepage` on, in /admin/products or /admin/featured-pieces, with
+  // no cap at either end — the count is theirs to choose. Two queries because
+  // the tables are genuinely separate (own ids, own price/stock columns, own
+  // detail routes); they get normalised into one shape below so HeroTiles
+  // doesn't have to know there were ever two of them.
+  const { data: dbHeroPieces } = await db
+    .from("featured_pieces")
+    .select(FEATURED_PIECE_CARD_COLUMNS)
+    .eq("show_on_homepage", true)
+    .order("display_order", { ascending: true });
+
+  const { data: dbHeroProducts } = await db
+    .from("products")
+    .select("id, name, image, images, price, original_price, stock_quantity, in_stock, is_handmade, created_at")
+    // created_at, not name or price: it's the one field guaranteed present and
+    // never edited, so the order a product holds in the hero doesn't shift
+    // under the owner when they rename or reprice it. Ascending, so newly
+    // toggled products join the end of the row rather than displacing whatever
+    // is already in the spotlight.
+    .eq("show_on_homepage", true)
+    .order("created_at", { ascending: true });
 
   // Reviews are admin-managed (/admin/reviews) — no more hardcoded array.
   const { data: dbReviews } = await db
@@ -83,22 +180,59 @@ export default async function HomePage() {
     .order("display_order", { ascending: true });
 
   const customProducts = ((dbCustom ?? []) as DbCustomProduct[]).map(mapCustomProduct);
-  const newInItems = (dbNewIn ?? []) as NewInCardData[];
+  const featuredPieceItems = ((dbFeaturedPieces ?? []) as DbHeroFeaturedPiece[]).map(toCard);
   const reviews: Review[] = (dbReviews ?? []).map((r: DbReview) => ({
     screenshot: r.screenshot,
     platform: r.platform,
     customerLabel: r.customer_label ?? undefined,
     location: r.location ?? undefined,
     date: r.review_date ?? undefined,
-    rating: r.rating ?? undefined,
   }));
   const marqueeDouble = [...marqueeItems, ...marqueeItems];
 
 
-  // Hero art is live New In stock. If the collection is ever empty the hero
-  // would render nothing, so the original single-photo hero is the fallback.
-  const hasNewIn = newInItems.length > 0;
-  const heroVisual = hasNewIn ? <HeroTiles items={newInItems} /> : <HeroSlider />;
+  // Both tables normalised onto FeaturedPieceCardData + a `source`
+  // discriminator (same naming as cart items — see CartContext /
+  // lib/checkout/repriceItems.ts), because the two ids live under different
+  // detail routes and the hero renders them side by side.
+  const heroPieces: FeaturedPieceCardData[] = ((dbHeroPieces ?? []) as DbHeroFeaturedPiece[]).map(
+    (p) => ({ ...toCard(p), source: "featured_piece" as const })
+  );
+
+  const heroProducts: FeaturedPieceCardData[] = ((dbHeroProducts ?? []) as DbHeroProduct[]).map((p) => ({
+    source: "product" as const,
+    id: p.id,
+    name: p.name,
+    product_image: p.image ?? "/images/placeholder.jpg",
+    // Products have no dedicated lifestyle shot; their second gallery image is
+    // the closest equivalent and drives the same hover reveal. Null when there
+    // is only one image, which the card already handles.
+    lifestyle_image: p.images?.[1] ?? null,
+    // featured_pieces carries an explicit sold_out flag; products derive it
+    // from stock. in_stock is a generated column (stock_quantity > 0) — the
+    // second check is belt-and-braces for rows read before that ever existed.
+    sold_out: !p.in_stock || p.stock_quantity <= 0,
+    is_handmade: p.is_handmade,
+    // Price shapes are inverted between the two tables. featured_pieces stores
+    // `price` = list and `discount_price` = what you pay; products store
+    // `price` = what you pay and `original_price` = the struck-through was-
+    // price (see ProductCard). Mapping products into the featured_pieces shape
+    // means original_price becomes `price` and the real price becomes
+    // `discount_price`, so the hero strikes through the same number the
+    // /products listing does.
+    price: p.original_price ?? p.price,
+    discount_price: p.original_price ? p.price : null,
+  }));
+
+  // Featured Pieces first, then products. The first item overall becomes the
+  // desktop spotlight, so this makes a curated Featured Piece the headline
+  // whenever one is toggled on — matching what the hero has always led with.
+  const heroItems = [...heroPieces, ...heroProducts];
+
+  // If nothing at all is toggled on, the hero would render nothing, so the
+  // original single-photo hero is the fallback.
+  const hasHeroItems = heroItems.length > 0;
+  const heroVisual = hasHeroItems ? <HeroTiles items={heroItems} /> : <HeroSlider />;
 
   return (
     <>
@@ -110,7 +244,7 @@ export default async function HomePage() {
         <div className="lg:hidden flex flex-col">
           {/* The rail sizes itself from its cards; only the single-photo
               fallback needs a fixed height to have anything to fill. */}
-          <div className={`relative ${hasNewIn ? "" : "h-[60vh]"}`}>
+          <div className={`relative ${hasHeroItems ? "" : "h-[60vh]"}`}>
             {heroVisual}
           </div>
 
@@ -122,45 +256,69 @@ export default async function HomePage() {
               <p className="text-gold text-[10px] uppercase tracking-[0.28em] font-body font-semibold mb-3">
                 ✦ Handcrafted in Ireland
               </p>
-              {/* Two block-level spans force the 2-line break structurally
-                  rather than leaving it to auto-wrap. 2rem at 375px keeps line
-                  two on a single line; sm bumps it back up. Italic rule: one
-                  emphasis word only — see the desktop copy below.
-                  No entrance animation: a cascading fade-up-per-line on the
-                  first thing a visitor sees reads as a slide-deck reveal, not
-                  a shop. Commerce pages (ASOS et al.) render the hero static
-                  and confident — motion is reserved for content that scrolls
-                  into view further down, via ScrollReveal. */}
-              <h1 className="font-heading text-[2rem] sm:text-4xl font-300 leading-[1.15] mb-4">
-                <span className="block text-deep-brown">Handmade blankets,</span>
-                <span className="block text-gold font-500">
-                  bags &amp; baby <em className="italic">keepsakes</em>
-                </span>
+              {/* Set as chips rather than two flat lines of caps: three words
+                  laid on the panel as type read as a paragraph you skim past,
+                  and each one carries a separate idea worth landing on its
+                  own. The pills give the block rhythm and a shape to look at
+                  while keeping it a single <h1> — the accessible name is still
+                  the whole sentence, and caps come from CSS, so the document
+                  outline keeps normal casing.
+
+                  Wrapping, not a forced 2-line break: at 375px the first two
+                  chips share a line and "thoughtful pieces" takes the second,
+                  but the row re-flows on its own at any width instead of
+                  clipping.
+
+                  Fills and icon colours come from `heroChips` above — see there
+                  for why they sit off-palette. Solid fills rather than the old
+                  shimmer sweep: that ran on an infinite loop, which is what a
+                  skeleton placeholder looks like.
+
+                  font-extrabold, not font-800: the numeric font-* utilities
+                  used elsewhere in this codebase don't generate under this
+                  Tailwind setup and silently resolve to 400. */}
+              <h1 className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 mb-4 animate-fade-up
+                             font-ios font-extrabold text-[0.9rem] sm:text-[1.1rem] uppercase
+                             tracking-[0.02em] leading-none">
+                {heroChips.map(({ label, fill, ink, icon }) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-brown"
+                    style={{ backgroundColor: fill }}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                      fill="none"
+                      stroke={ink}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-3.5 h-3.5 shrink-0"
+                    >
+                      <path d={icon} />
+                    </svg>
+                    {label}
+                  </span>
+                ))}
               </h1>
+              {/* Short gold rule under the headline — the caps setting lost the
+                  italic's natural taper, and this gives the block a defined
+                  bottom edge before the body copy starts. */}
+              <span aria-hidden="true" className="block w-12 h-0.5 bg-gold/70 mb-4" />
               <p className="text-deep-brown/70 text-sm font-medium leading-relaxed mb-7">
-                Helping people create, connect and find comfort — every piece
-                handcrafted in Ireland from premium materials.
+                Born from my own journey back to creativity, slowmade pieces
+                that bring warmth, beauty and a little more intention to
+                everyday life.
               </p>
 
               <div className="flex flex-col gap-3">
-                <Link
-                  href="/products"
-                  className="group flex items-center justify-center h-13 px-8 rounded-none
-                             bg-gold text-cream font-semibold text-sm tracking-wide
-                             shadow-[0_10px_28px_-12px_rgba(139,32,53,0.75)]
-                             hover:bg-gold-dark active:bg-gold-dark active:scale-[0.98]
-                             transition-all duration-200"
-                  style={{ touchAction: "manipulation" }}
-                >
-                  {/* No icon: the bag glyph duplicated the navbar cart icon
-                      directly above it. The arrow on the secondary CTA is now
-                      the only icon here, so the two CTAs read distinctly. */}
-                  Shop the Collection
-                </Link>
-                {/* Secondary points at New In — the story section it used to
+                <ShopCollectionCard />
+                {/* Secondary points at Featured Pieces — the story section it used to
                     link to no longer exists */}
                 <Link
-                  href="/new-in"
+                  href="/featured-pieces"
                   className="group flex items-center justify-center gap-1.5 h-11
                              text-deep-brown/70 font-medium text-sm
                              hover:text-gold active:text-gold transition-colors duration-200"
@@ -216,7 +374,7 @@ export default async function HomePage() {
             className="relative flex flex-col justify-center p-3 overflow-hidden"
           >
             {/* Background photo — this was the hero's original single image,
-                before the column split into text + New In grid. Object-cover
+                before the column split into text + Featured Pieces grid. Object-cover
                 fills the whole column; the text now sits on a frosted dark
                 card instead of the flat milk panel, so the copy needed to
                 flip from dark-on-light to light-on-dark below. */}
@@ -304,7 +462,7 @@ export default async function HomePage() {
                   className="text-cream/80 text-base xl:text-lg font-medium leading-relaxed mb-9"
                   style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
                 >
-                  Helping people create, connect and find comfort — every piece
+                  Helping people create, connect and find comfort, every piece
                   handcrafted in Ireland from premium materials.
                 </p>
 
@@ -324,10 +482,10 @@ export default async function HomePage() {
                     Shop the Collection
                   </Link>
                   {/* Text link, not a second outline button — the hero needs one
-                      unambiguous primary action. Points at New In since the
+                      unambiguous primary action. Points at Featured Pieces since the
                       story section it used to target is gone. */}
                   <Link
-                    href="/new-in"
+                    href="/featured-pieces"
                     className="group inline-flex items-center gap-1.5 px-2 py-4
                                text-cream/75 font-medium text-sm tracking-wide
                                hover:text-terracotta transition-colors duration-300"
@@ -415,7 +573,7 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          NEW IN — admin-managed via /admin/new-in
+          FEATURED PIECES — admin-managed via /admin/featured-pieces
 
           Desktop only. On mobile the hero already renders this exact rail,
           with the same card component and the full item list — showing it
@@ -423,7 +581,7 @@ export default async function HomePage() {
           both because there the hero is the bento collage, not a rail.
       ══════════════════════════════════════════════ */}
       <div className="hidden lg:block">
-        <NewInSection items={newInItems} />
+        <FeaturedPiecesSection items={featuredPieceItems} />
       </div>
 
       {/* ══════════════════════════════════════════════
@@ -478,28 +636,11 @@ export default async function HomePage() {
                   className="object-cover"
                 />
               </div>
-              <span
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-8deg] z-40
-                               bg-white/95 shadow-md px-4 py-1.5 rounded text-gold font-heading italic text-sm
-                               border border-taupe/20"
-              >
-                handmade with love
-              </span>
             </div>
 
-            {/* Postcard/letter card — stitched-dash left edge echoes the mobile
-                nav drawer's accent, tying "Letters from our Studio" to an
-                actual handwritten-letter feel instead of a generic dark band. */}
+            {/* Postcard/letter card — the photo collage carries the studio feel
+                on its own, so the card stays a clean white panel. */}
             <div className="relative bg-white rounded-3xl shadow-[0_20px_50px_-15px_rgba(26,8,16,0.25)] overflow-hidden lg:flex lg:flex-col lg:justify-center">
-              {/* Stitched border accent */}
-              <div
-                className="absolute left-0 top-0 bottom-0 w-1"
-                style={{
-                  backgroundImage:
-                    "repeating-linear-gradient(180deg, #8B2035 0px, #8B2035 8px, transparent 8px, transparent 14px)",
-                }}
-              />
-
               <div className="text-center lg:text-left px-6 sm:px-14 lg:px-14 py-10 sm:py-14">
                 {/* Wax-seal style mark */}
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold/10 text-gold text-lg mb-5">
@@ -513,7 +654,7 @@ export default async function HomePage() {
                   Letters from our Studio
                 </h2>
                 <p className="text-brown/70 text-base leading-relaxed mb-9 font-body max-w-md mx-auto lg:mx-0">
-                  New pieces, knitting stories, and seasonal inspiration —
+                  New pieces, knitting stories, and seasonal inspiration,
                   delivered gently to your inbox.
                 </p>
                 <div className="lg:mx-0 mx-auto max-w-md">

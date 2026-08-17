@@ -11,7 +11,7 @@
 
 export type ShippingZone = "domestic" | "uk" | "eu" | "north_america" | "nigeria" | "rest_of_world";
 
-// A product/new-in row with no shipping_weight_grams set (admin forgot to
+// A product/featured-piece row with no shipping_weight_grams set (admin forgot to
 // fill it in, or it predates this feature). Deliberately HIGH, not 0 or a
 // plausible-looking average — undercharging shipping is the exact bug this
 // module exists to fix, so an unknown weight must err toward the more

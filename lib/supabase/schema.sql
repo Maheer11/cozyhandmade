@@ -43,8 +43,6 @@ create table if not exists products (
   price          numeric not null,
   original_price numeric,
   category       text not null,
-  rating         numeric default 0,
-  review_count   integer default 0,
   image          text,
   images         text[] default '{}',
   description    text,
@@ -53,9 +51,19 @@ create table if not exists products (
   stock_quantity integer default 0,
   in_stock       boolean generated always as (stock_quantity > 0) stored,
   featured       boolean default false,
+  -- Curated homepage hero (components/HeroTiles.tsx), toggled per-row from
+  -- /admin/products. Separate from `featured` above on purpose: that one only
+  -- drives sort order on the /products listing, and the owner needs the two
+  -- independent. Added in migration 012_show_on_homepage.sql.
+  show_on_homepage boolean not null default false,
   is_handmade    boolean not null default true,
   created_at     timestamptz default now()
 );
+
+-- Partial index — the homepage only reads the `true` rows, a hand-picked
+-- handful, while the catalogue itself grows. See migration 012.
+create index if not exists products_show_on_homepage_idx
+  on products (show_on_homepage) where show_on_homepage;
 
 
 -- TABLE 3: orders
@@ -221,16 +229,24 @@ alter table orders add column if not exists shipped_at   timestamptz;
 alter table orders add column if not exists delivered_at timestamptz;
 
 -- ============================================================
--- NEW IN — standalone curated collection, admin-managed via Cloudinary
--- uploads. NOT linked to products — it has its own price, stock, colors,
--- sizes and description, and its own detail route (/new-in/[id]).
+-- FEATURED PIECES — curated collection, admin-managed via Cloudinary uploads.
+-- Owns its own price, colors, sizes, description and detail route
+-- (/featured-pieces/[id]), but NOT its stock: since migration
+-- 013_featured_pieces_stock_from_product.sql each row links to a product via
+-- product_id and inherits that product's stock_quantity, so the same physical
+-- item listed in both catalogues can no longer have two counters that drift.
+-- Formerly "New In" / new_in_items — renamed in migration
+-- 011_rename_new_in_to_featured_pieces.sql.
 -- ============================================================
 
-create table if not exists new_in_items (
+create table if not exists featured_pieces (
   id              uuid primary key default gen_random_uuid(),
   name            text not null,
   product_image   text not null,
   lifestyle_image text,
+  -- Manual availability OVERRIDE, not a stock value: true hides the piece from
+  -- sale even when the linked product still has stock. Effective availability
+  -- is `sold_out = false AND linked product stock_quantity > 0`.
   sold_out        boolean default false,
   display_order   integer default 0,
   created_at      timestamptz default now(),
@@ -240,6 +256,9 @@ create table if not exists new_in_items (
   sizes           text[] default '{}',
   description     text,
   sku             text unique,
+  -- DEPRECATED (migration 013) — no application code reads or writes this.
+  -- Stock lives on the linked product now; the column is retained only so 013
+  -- stays reversible, and gets dropped in a later migration.
   stock_quantity  integer not null default 0,
   updated_at      timestamptz default now(),
   -- Per-tier pricing, e.g. {"Without Stand": 189.99, "With Stand": 215.00}.
@@ -247,20 +266,47 @@ create table if not exists new_in_items (
   -- already used on the `products` table. Falls back to `price`/`discount_price`
   -- when a selected size has no entry (or `sizes` is empty entirely).
   variant_price   jsonb not null default '{}'::jsonb,
-  is_handmade     boolean not null default true
+  is_handmade     boolean not null default true,
+  -- Curated homepage hero, toggled per-row from /admin/featured-pieces. The
+  -- hero used to be the first N rows of this table by display_order; it is now
+  -- whatever is flagged here, across BOTH this table and products, with no
+  -- count cap. Added in migration 012_show_on_homepage.sql.
+  show_on_homepage boolean not null default false,
+  -- The product this piece takes its stock from. TEXT, because products.id is
+  -- text rather than uuid. ON DELETE RESTRICT so a product cannot be deleted
+  -- out from under a featured piece that depends on it for stock — the owner
+  -- gets an error at delete time instead of a listing with no stock source.
+  -- Required in practice for new rows (enforced by the admin API route);
+  -- nullable in the schema only because migration 013 had to add it to
+  -- existing rows before backfilling them.
+  product_id      text references products(id) on delete restrict
 );
 
-alter table new_in_items enable row level security;
+-- Partial index — see the equivalent on products, same reasoning.
+create index if not exists featured_pieces_show_on_homepage_idx
+  on featured_pieces (show_on_homepage) where show_on_homepage;
 
--- Public read (homepage + /new-in), no insert/update/delete policy — only
--- the service-role client used by app/api/admin/new-in/** can write, same
--- pattern as the products table.
-create policy "New In items are publicly readable"
-  on new_in_items for select using (true);
+-- Every storefront read joins through this to resolve stock, and the FK's
+-- RESTRICT check scans it on every product delete.
+create index if not exists featured_pieces_product_id_idx on featured_pieces (product_id);
 
-drop trigger if exists new_in_items_updated_at on new_in_items;
-create trigger new_in_items_updated_at
-  before update on new_in_items
+comment on column featured_pieces.stock_quantity is
+  'DEPRECATED (migration 013) — superseded by product_id → products.stock_quantity; retained temporarily so the change is reversible; drop in a later migration once verified in production. No application code reads or writes this column.';
+
+comment on column featured_pieces.product_id is
+  'The product this featured piece takes its stock from. Required for new rows (enforced in app/api/admin/featured-pieces). Checkout checks and decrements THIS product''s stock_quantity. featured_pieces.sold_out remains as a manual override on top of it.';
+
+alter table featured_pieces enable row level security;
+
+-- Public read (homepage + /featured-pieces), no insert/update/delete policy —
+-- only the service-role client used by app/api/admin/featured-pieces/** can
+-- write, same pattern as the products table.
+create policy "Featured Pieces are publicly readable"
+  on featured_pieces for select using (true);
+
+drop trigger if exists featured_pieces_updated_at on featured_pieces;
+create trigger featured_pieces_updated_at
+  before update on featured_pieces
   for each row execute function update_updated_at();
 
 
@@ -276,15 +322,68 @@ create trigger new_in_items_updated_at
 -- locks the relevant rows (SELECT ... FOR UPDATE) so two concurrent
 -- checkouts for the same item can never both succeed on the last unit.
 --
--- Each element of p_items carries item_type: 'product' items are checked/
--- decremented against products.stock_quantity and get product_id set on
--- their order_items row; 'new_in' items are checked/decremented against
--- new_in_items.stock_quantity instead and always get product_id = NULL
--- (order_items.product_id references products, so a new_in_items id can
--- never go there — product_name/product_image/unit_price are the snapshot).
+-- Each element of p_items carries item_type. 'product' items are checked/
+-- decremented against their own products.stock_quantity and get product_id
+-- set on their order_items row. Non-product items ('featured_piece', or the
+-- legacy 'new_in' value still present on orders placed before the rename) are
+-- resolved through featured_pieces.product_id and checked/decremented against
+-- THAT PRODUCT's stock — featured pieces have had no stock counter of their
+-- own since migration 013 — and always get product_id = NULL on order_items
+-- (that column references products, so a featured_pieces id can never go
+-- there — product_name/product_image/unit_price are the snapshot).
 --
 -- Raises 'OUT_OF_STOCK:<name>' if any item can't be fulfilled — the whole
 -- call rolls back automatically (nothing is created, nothing decremented).
+-- The webhook route parses that prefix and refunds the customer.
+--
+-- Everything about this function other than featured-piece stock handling is
+-- unchanged from 011: same signature, security definer, search_path, the same
+-- orders/order_items/transactions inserts, the same OUT_OF_STOCK:<name>
+-- exception contract (app/api/payments/stripe/webhook/route.ts parses that
+-- prefix to decide "permanent failure → refund the customer"), and the same
+-- revoke/grant at the end.
+--
+-- THREE things needed care here:
+--
+-- (a) LOCK ORDERING. The old version locked products, then featured_pieces.
+--     Now a featured piece resolves to a product row, so the set of product
+--     rows this call mutates includes products referenced only indirectly via
+--     featured_pieces — locking just the directly-ordered product ids would
+--     leave those unprotected and reintroduce the exact oversell race the
+--     locking exists to prevent. So both id sets are merged into ONE product
+--     lock.
+--
+--     The order is now featured_pieces first, then products. That inverts the
+--     old order, which is safe because this function is the only thing that
+--     takes both locks (admin writes are single-row updates) — what matters is
+--     that every caller agrees, and they all run this one function. It is also
+--     required rather than arbitrary: resolving a featured piece to its
+--     product_id is itself a read of featured_pieces, and locking those rows
+--     before reading product_id means the mapping cannot be repointed out from
+--     under us between resolving and locking.
+--
+--     Both locking statements carry an explicit ORDER BY. `... where id =
+--     any(sorted_array) for update` does NOT lock in array order — the array
+--     order is invisible to the planner and rows get locked in whatever order
+--     the scan emits them, which is what the old sorted array_agg was really
+--     doing (nothing). ORDER BY puts a Sort below the LockRows node, so rows
+--     really are locked in id order and two overlapping concurrent checkouts
+--     cannot deadlock.
+--
+-- (b) SAME PRODUCT TWICE. If one order contains a product directly AND a
+--     featured piece that resolves to that same product, the two quantities
+--     are competing for ONE stock number. Grouping by (item_type, ref_id) —
+--     what the old version did — would check 2 against stock and 1 against
+--     stock separately and happily let both through on a stock of 2, then
+--     decrement 3. So the grouping key is the RESOLVED PRODUCT ID: both lines
+--     collapse into one group whose summed quantity is checked, and
+--     decremented, once.
+--
+-- (c) MISCONFIGURATION. A featured piece with product_id IS NULL has no stock
+--     source. Treating that as "no limit" would sell stock that doesn't exist,
+--     so it raises instead — with a distinct prefix, not OUT_OF_STOCK, because
+--     it is not a customer-facing stock outcome but a data problem only the
+--     owner can fix, and it must be diagnosable as such in the logs.
 create or replace function public.checkout_verified_order(
   p_user_id          uuid,
   p_total_amount     numeric,
@@ -301,65 +400,185 @@ security definer
 set search_path to 'public'
 as $$
 declare
-  v_order_id     uuid;
-  v_product_ids  text[];
-  v_new_in_ids   uuid[];
-  v_row          record;
+  v_order_id           uuid;
+  v_featured_piece_ids uuid[];
+  v_product_ids        text[];
+  v_name               text;
+  v_row                record;
 begin
-  -- Lock every row involved, in a stable (sorted) order, so two concurrent
-  -- checkouts touching overlapping items can never deadlock.
-  select array_agg(distinct (elem->>'ref_id') order by (elem->>'ref_id'))
+  -- Guard the discriminator before anything trusts it. 'featured_piece' is the
+  -- current value; 'new_in' is the legacy one still stored on orders placed
+  -- before the New In → Featured Pieces rename (migration 011) and on carts
+  -- persisted in localStorage since then, so both must keep working. Anything
+  -- else is a bug in the caller, and silently skipping such a line would mean
+  -- shipping an item without ever decrementing stock for it.
+  select elem->>'item_type'
+    into v_name
+  from jsonb_array_elements(p_items) elem
+  -- coalesce, not `not in (...)` alone: a NULL item_type would make the NOT IN
+  -- evaluate to NULL rather than true, slipping past this guard and then being
+  -- dropped silently from the stock grouping below — shipped, never decremented.
+  where coalesce(elem->>'item_type', '') not in ('product', 'featured_piece', 'new_in')
+  limit 1;
+  if v_name is not null then
+    raise exception 'UNKNOWN_ITEM_TYPE:%', v_name;
+  end if;
+
+  -- ── Lock featured_pieces first (see note (a) above) ──
+  select array_agg(distinct (elem->>'ref_id')::uuid)
+    into v_featured_piece_ids
+  from jsonb_array_elements(p_items) elem
+  where elem->>'item_type' in ('featured_piece', 'new_in');
+
+  perform 1
+     from featured_pieces
+    where id = any(v_featured_piece_ids)
+    order by id
+      for update;
+
+  -- Misconfiguration: a featured piece that is missing, or linked to nothing,
+  -- has no stock source. Fail loudly rather than sell from nowhere.
+  select coalesce(fp.name, elem->>'ref_id')
+    into v_name
+  from jsonb_array_elements(p_items) elem
+  -- The uuid cast is guarded by the same CASE used further down: a JOIN's ON
+  -- clause is evaluated for EVERY row, product lines included, and
+  -- products.id is TEXT that need not be uuid-shaped — an unguarded cast here
+  -- would error out on a perfectly ordinary product id.
+  left join featured_pieces fp
+    on fp.id = case
+                 when elem->>'item_type' in ('featured_piece', 'new_in')
+                 then (elem->>'ref_id')::uuid
+               end
+  where elem->>'item_type' in ('featured_piece', 'new_in')
+    and (fp.id is null or fp.product_id is null)
+  limit 1;
+  if v_name is not null then
+    raise exception 'UNLINKED_FEATURED_PIECE:%', v_name;
+  end if;
+
+  -- Manual override: sold_out = true means unavailable no matter how much
+  -- stock the linked product has. Reported as OUT_OF_STOCK with the featured
+  -- piece's own name, because to the customer it is exactly that, and the
+  -- refund email built from this message names the item they bought.
+  select fp.name
+    into v_name
+  from jsonb_array_elements(p_items) elem
+  -- CASE-guarded cast, same reason as the join above.
+  join featured_pieces fp
+    on fp.id = case
+                 when elem->>'item_type' in ('featured_piece', 'new_in')
+                 then (elem->>'ref_id')::uuid
+               end
+  where elem->>'item_type' in ('featured_piece', 'new_in')
+    and fp.sold_out
+  limit 1;
+  if v_name is not null then
+    raise exception 'OUT_OF_STOCK:%', v_name;
+  end if;
+
+  -- ── One merged, sorted product lock: directly-ordered products PLUS the
+  -- products behind the featured pieces (see note (a) above) ──
+  select array_agg(distinct t.product_id)
     into v_product_ids
-  from jsonb_array_elements(p_items) elem
-  where elem->>'item_type' = 'product';
-
-  select array_agg(distinct (elem->>'ref_id')::uuid order by (elem->>'ref_id'))
-    into v_new_in_ids
-  from jsonb_array_elements(p_items) elem
-  where elem->>'item_type' = 'new_in';
-
-  perform 1 from products where id = any(v_product_ids) for update;
-  perform 1 from new_in_items where id = any(v_new_in_ids) for update;
-
-  -- Check every item has enough stock BEFORE changing anything.
-  for v_row in
-    select (elem->>'item_type') as item_type,
-           (elem->>'ref_id') as ref_id,
-           sum((elem->>'quantity')::int) as qty
+  from (
+    select case
+             when elem->>'item_type' = 'product' then elem->>'ref_id'
+             else fp.product_id
+           end as product_id
     from jsonb_array_elements(p_items) elem
-    group by (elem->>'item_type'), (elem->>'ref_id')
+    -- The cast to uuid is inside a CASE so it is only evaluated for featured
+    -- piece lines: products.id is TEXT and need not be uuid-shaped, and an
+    -- unconditional cast would error on a perfectly valid product id.
+    left join featured_pieces fp
+      on fp.id = case
+                   when elem->>'item_type' in ('featured_piece', 'new_in')
+                   then (elem->>'ref_id')::uuid
+                 end
+  ) t
+  where t.product_id is not null;
+
+  perform 1
+     from products
+    where id = any(v_product_ids)
+    order by id
+      for update;
+
+  -- ── Check every RESOLVED PRODUCT has enough stock BEFORE changing anything,
+  -- with direct and via-featured-piece quantities summed together (note (b)) ──
+  for v_row in
+    with lines as (
+      select elem->>'item_type'        as item_type,
+             elem->>'ref_id'           as ref_id,
+             (elem->>'quantity')::int  as qty,
+             fp.product_id             as fp_product_id,
+             fp.name                   as fp_name
+      from jsonb_array_elements(p_items) elem
+      left join featured_pieces fp
+        on fp.id = case
+                     when elem->>'item_type' in ('featured_piece', 'new_in')
+                     then (elem->>'ref_id')::uuid
+                   end
+    ),
+    grouped as (
+      -- fp_product_id is non-null for every featured-piece line (guaranteed by
+      -- the UNLINKED_FEATURED_PIECE check above) and null for product lines,
+      -- where ref_id IS the product id — so this coalesce is the resolution.
+      select coalesce(l.fp_product_id, l.ref_id) as product_id,
+             sum(l.qty)                          as qty,
+             -- Name the customer would recognise: the featured piece's name
+             -- when the shortfall involves one, else the product's own name.
+             min(l.fp_name)                      as fp_name
+      from lines l
+      group by 1
+    )
+    select g.product_id,
+           g.qty,
+           coalesce(g.fp_name, p.name) as display_name,
+           coalesce(p.stock_quantity, 0) as stock_quantity
+    from grouped g
+    left join products p on p.id = g.product_id
   loop
-    if v_row.item_type = 'product' then
-      if not exists (select 1 from products where id = v_row.ref_id and stock_quantity >= v_row.qty) then
-        raise exception 'OUT_OF_STOCK:%', (select name from products where id = v_row.ref_id);
-      end if;
-    else
-      if not exists (select 1 from new_in_items where id = v_row.ref_id::uuid and stock_quantity >= v_row.qty) then
-        raise exception 'OUT_OF_STOCK:%', (select name from new_in_items where id = v_row.ref_id::uuid);
-      end if;
+    if v_row.stock_quantity < v_row.qty then
+      raise exception 'OUT_OF_STOCK:%', coalesce(v_row.display_name, v_row.product_id);
     end if;
   end loop;
 
-  -- All items available — decrement stock for real.
-  for v_row in
-    select (elem->>'item_type') as item_type,
-           (elem->>'ref_id') as ref_id,
-           sum((elem->>'quantity')::int) as qty
+  -- All items available — decrement stock for real. Set-based and grouped by
+  -- the same resolved product id, so a product ordered both directly and via a
+  -- featured piece is decremented ONCE, by the summed quantity.
+  with lines as (
+    select elem->>'item_type'        as item_type,
+           elem->>'ref_id'           as ref_id,
+           (elem->>'quantity')::int  as qty,
+           fp.product_id             as fp_product_id
     from jsonb_array_elements(p_items) elem
-    group by (elem->>'item_type'), (elem->>'ref_id')
-  loop
-    if v_row.item_type = 'product' then
-      update products set stock_quantity = stock_quantity - v_row.qty where id = v_row.ref_id;
-    else
-      update new_in_items set stock_quantity = stock_quantity - v_row.qty where id = v_row.ref_id::uuid;
-    end if;
-  end loop;
+    left join featured_pieces fp
+      on fp.id = case
+                   when elem->>'item_type' in ('featured_piece', 'new_in')
+                   then (elem->>'ref_id')::uuid
+                 end
+  ),
+  grouped as (
+    select coalesce(l.fp_product_id, l.ref_id) as product_id,
+           sum(l.qty)                          as qty
+    from lines l
+    group by 1
+  )
+  update products p
+     set stock_quantity = p.stock_quantity - g.qty
+    from grouped g
+   where p.id = g.product_id;
 
   -- Create the order — straight to "processing", no manual "paid" wait step.
   insert into orders (user_id, status, total_amount, delivery_address)
   values (p_user_id, 'processing', p_total_amount, p_delivery_address)
   returning id into v_order_id;
 
+  -- order_items.product_id references products, and featured pieces still get
+  -- NULL there — unchanged. It stays a snapshot table keyed on
+  -- product_name/product_image/unit_price, and back-filling it from the new
+  -- link would rewrite what historical non-product order lines mean.
   insert into order_items (order_id, product_id, product_name, product_image, quantity, unit_price)
   select v_order_id,
          case when elem->>'item_type' = 'product' then elem->>'ref_id' else null end,
@@ -401,7 +620,6 @@ create table if not exists reviews (
   customer_label  text,
   location        text,
   review_date     text,
-  rating          integer default 5,
   display_order   integer default 0,
   created_at      timestamptz default now()
 );
@@ -410,6 +628,6 @@ alter table reviews enable row level security;
 
 -- Public read (homepage + products page), no insert/update/delete policy —
 -- only the service-role client used by app/api/admin/reviews/** can write,
--- same pattern as products/new_in_items.
+-- same pattern as products/featured_pieces.
 create policy "Reviews are publicly readable"
   on reviews for select using (true);

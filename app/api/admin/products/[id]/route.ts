@@ -32,9 +32,8 @@ export async function PATCH(
     if (body.variant_stock !== undefined) update.variant_stock  = body.variant_stock;
     if (body.variant_price !== undefined) update.variant_price  = body.variant_price;
     if (body.featured      !== undefined) update.featured       = body.featured;
+    if (body.show_on_homepage !== undefined) update.show_on_homepage = !!body.show_on_homepage;
     if (body.is_handmade   !== undefined) update.is_handmade    = body.is_handmade;
-    if (body.rating        !== undefined) update.rating         = Number(body.rating);
-    if (body.review_count  !== undefined) update.review_count   = Number(body.review_count);
     if (body.shipping_weight_grams !== undefined) {
       update.shipping_weight_grams = body.shipping_weight_grams === null || body.shipping_weight_grams === ""
         ? null : Number(body.shipping_weight_grams);

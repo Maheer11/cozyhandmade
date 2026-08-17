@@ -163,10 +163,6 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
         </div>
-
-        <p className="text-center text-[10px] text-taupe-dark font-body mt-6 italic">
-          est. 2018 · handcrafted with ♡
-        </p>
       </div>
     </div>
   );

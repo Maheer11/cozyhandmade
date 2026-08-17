@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useDeferredValue, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
@@ -10,6 +10,9 @@ import ScrollReveal from "@/components/ScrollReveal";
 import SocialProofSection, { type Review } from "@/components/SocialProofSection";
 import CategorySlider from "@/components/CategorySlider";
 import type { Product, Category } from "@/lib/products";
+
+/** Navbar is `sticky top-0` with an h-20 bar, so it overlays the first 80px. */
+const NAVBAR_HEIGHT = 80;
 
 const priceRanges = [
   { label: "Under €50",    min: 0,   max: 50       },
@@ -22,28 +25,9 @@ const sortOptions = [
   { value: "featured",   label: "Featured" },
   { value: "price-asc",  label: "Price: Low → High" },
   { value: "price-desc", label: "Price: High → Low" },
-  { value: "rating",     label: "Highest Rated" },
 ];
 
 const whyUsFeatures = [
-  {
-    label: "100% Natural Wool",
-    description: "Merino & Shetland fleece, sourced with care and worked entirely by hand.",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12a7.5 7.5 0 1115 0 7.5 7.5 0 01-15 0zm7.5-7.5v3m0 9v3m7.5-7.5h-3m-9 0h-3" />
-      </svg>
-    ),
-  },
-  {
-    label: "Handcrafted with Care",
-    description: "Every piece is stitched one at a time by a skilled Creative in the world of needle and thread.",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
-      </svg>
-    ),
-  },
   {
     label: "Gift Wrapped, Always",
     description: "Every order arrives ready to give thoughtfully packaged on delivery.",
@@ -124,8 +108,10 @@ function FilterPill({
 
 function ProductsContentInner({ products, categories, reviews }: { products: Product[]; categories: Category[]; reviews: Review[] }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialCategory = searchParams.get("category") ?? "all";
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const [query,            setQuery]           = useState("");
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -170,10 +156,29 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
     }
     if (sort === "price-asc")  list.sort((a, b) => a.price - b.price);
     else if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
-    else if (sort === "rating")     list.sort((a, b) => b.rating - a.rating);
     else list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return list;
   }, [deferredQuery, selectedCategory, selectedPrice, sort, products]);
+
+  // Tapping a Curated Categories card filters in place and glides down to the
+  // grid, rather than reloading the page at the top and leaving the customer to
+  // find the results themselves. The landing offset clears the sticky navbar
+  // (h-20) so the first row of products isn't tucked underneath it.
+  const revealCategory = (categoryId: string) => {
+    const next = categoryId === selectedCategory ? "all" : categoryId;
+    setSelectedCategory(next);
+    router.replace(next === "all" ? "/products" : `/products?category=${next}`, { scroll: false });
+
+    // Wait a frame so the grid has re-rendered at its filtered height before
+    // we measure where to land.
+    requestAnimationFrame(() => {
+      const grid = gridRef.current;
+      if (!grid) return;
+      const top = grid.getBoundingClientRect().top + window.scrollY - NAVBAR_HEIGHT - 16;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
+    });
+  };
 
   const clearFilters = () => {
     setSelectedCategory("all");
@@ -212,12 +217,16 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               </Link>
             </div>
             <p className="font-heading italic text-lg sm:text-xl text-taupe-dark leading-snug lg:text-right lg:max-w-xs">
-              From Cozi throws to hand-stitched keepsakes — every piece, one place.
+              From Cozi throws to hand-stitched keepsakes. Every piece, one place.
             </p>
           </ScrollReveal>
 
           <ScrollReveal>
-            <CategorySlider categories={categories} />
+            <CategorySlider
+              categories={categories}
+              selected={selectedCategory}
+              onSelect={revealCategory}
+            />
           </ScrollReveal>
         </div>
       </section>
@@ -225,7 +234,10 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
       {/* ══════════════════════════════════════════════
           FILTER & SORT
       ══════════════════════════════════════════════ */}
-      <div className="sticky top-20 z-30 bg-cream/95 backdrop-blur-md border-b border-taupe/20">
+      {/* Not sticky: the search + filter row belongs at the top of the list and
+          scrolls away with it, rather than following the customer down the
+          page and eating a band of the product grid on every screen. */}
+      <div className="relative z-30 bg-cream/95 backdrop-blur-md border-b border-taupe/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
           <div className="flex items-center gap-3 mb-2">
@@ -369,19 +381,15 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
       </div>
 
       {/* ══════════════════════════════════════════════
-          FEATURED PRODUCTS INTRO + GRID
+          PRODUCT GRID
       ══════════════════════════════════════════════ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-14">
-        <ScrollReveal className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-5 lg:mb-10">
-          <div>
-            <h2 className="font-heading italic text-2xl sm:text-3xl lg:text-4xl font-400 text-deep-brown mb-3">
-              Featured Products
-            </h2>
-            <p className="text-deep-brown/70 text-sm sm:text-base font-medium leading-relaxed max-w-lg">
-              Duvets, baby knits, handbags and more  every piece stitched one at a time,
-              selected for warmth, softness and lasting quality.
-            </p>
-          </div>
+      {/* Tight top padding: with the heading and the count gone there is nothing
+          between the filter bar and the cards, so the old heading-sized gap just
+          read as the grid having fallen away from its controls. */}
+      <div ref={gridRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-6 lg:pt-5 lg:pb-14">
+        {/* Heading removed — the row now carries only the reset link, so it sits
+            at the end rather than being spaced against a title. */}
+        <ScrollReveal className="flex justify-end mb-2 lg:mb-3">
           <button
             onClick={clearFilters}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold
@@ -397,7 +405,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
         <div className="flex gap-8 items-start">
 
           {/* Desktop sidebar */}
-          <aside className="hidden lg:block w-56 shrink-0 sticky top-40">
+          <aside className="hidden lg:block w-56 shrink-0 sticky top-24">
             <div className="bg-white rounded-2xl border border-cream-darker border-l-[3px] border-l-gold/40 p-5 shadow-sm">
               <h3 className="font-heading font-600 text-deep-brown text-base mb-4">Category</h3>
               <div className="space-y-1.5 mb-6">
@@ -443,10 +451,6 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
 
           {/* Product grid */}
           <div className="flex-1 min-w-0">
-            <p className="lg:hidden text-xs text-taupe-dark mb-4">
-              <span className="font-medium text-brown">{filtered.length}</span> products
-            </p>
-
             {filtered.length === 0 ? (
               <div className="text-center py-20">
                 <p className="font-heading text-2xl text-deep-brown mb-2">Nothing found</p>
@@ -476,7 +480,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
             {/* Text */}
             <ScrollReveal>
               <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
-                04 — Why Cozi Handmade
+                04 · Why Cozi Handmade
               </p>
               <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown mb-5 leading-tight">
                 The Cozi Standard
@@ -533,7 +537,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
                 </div>
                 <div className="absolute -bottom-4 left-3 bg-cream rounded-lg px-3 py-1.5 shadow-lg border border-taupe/20">
                   <p className="text-[10px] uppercase tracking-[0.15em] text-deep-brown font-semibold">
-                    Fig. 02 — Texture
+                    Fig. 02 · Texture
                   </p>
                 </div>
               </div>

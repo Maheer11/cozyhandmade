@@ -2,10 +2,10 @@
 -- Run ONCE — products will then be managed via the /admin panel
 -- NOTE: in_stock is a generated column (auto = stock_quantity > 0), so it is excluded here
 
-INSERT INTO products (name, price, original_price, category, rating, review_count, image, images, description, details, tags, stock_quantity, featured)
+INSERT INTO products (name, price, original_price, category, image, images, description, details, tags, stock_quantity, featured)
 VALUES
 (
-  'Textured Square Pattern Blanket', 380000, 480000, 'Blankets', 4.9, 87,
+  'Textured Square Pattern Blanket', 380000, 480000, 'Blankets',
   '/images/TB1.jpg',
   ARRAY['/images/TB1.jpg', '/images/TB2.jpg', '/images/TB3.jpg'],
   'Hand-stitched from premium cotton patchwork squares, each duvet takes over 40 hours to complete. Filled with 100% natural wool batting for breathable warmth all year.',
@@ -14,7 +14,7 @@ VALUES
   10, true
 ),
 (
-  'Hand-Knit Baby Cardigan Set', 115000, NULL, 'baby', 5.0, 143,
+  'Hand-Knit Baby Cardigan Set', 115000, NULL, 'baby',
   '/images/baby-blanket.jpg',
   ARRAY['/images/baby-blanket.jpg', '/images/baby-blanket2.jpg'],
   'A precious set of cardigan, bonnet, and booties knitted from hypoallergenic merino wool. Soft enough for newborn skin, warm enough for every season.',
@@ -23,7 +23,7 @@ VALUES
   15, true
 ),
 (
-  'Cozy Herringbone Blanket', 150000, NULL, 'Blankets', 4.8, 62,
+  'Cozy Herringbone Blanket', 150000, NULL, 'Blankets',
   '/images/blanket-room.jpg',
   ARRAY['/images/blanket-room.jpg', '/images/hero-grid-2.jpg', '/images/tbk4.jpg'],
   'A beautiful herringbone-weave throw blanket, hand-loomed from premium wool. The chevron pattern adds a classic touch to any living space.',
@@ -32,7 +32,7 @@ VALUES
   8, true
 ),
 (
-  'Cozy Cable Blanket', 95000, 130000, 'Blankets', 4.7, 39,
+  'Cozy Cable Blanket', 95000, 130000, 'Blankets',
   '/images/tbck1.jpg',
   ARRAY['/images/tbck1.jpg', '/images/tbck2.jpg', '/images/tbck3.jpg'],
   'Classic cable-knit blanket crafted from thick merino wool. The raised cable pattern creates an eye-catching texture that is as tactile as it is beautiful.',
@@ -41,7 +41,7 @@ VALUES
   12, false
 ),
 (
-  'Chunky Knit Baby Blanket', 130000, NULL, 'baby', 4.9, 211,
+  'Chunky Knit Baby Blanket', 130000, NULL, 'baby',
   'https://picsum.photos/seed/babyblanket1/600/600',
   ARRAY['https://picsum.photos/seed/babyblanket1/600/600', 'https://picsum.photos/seed/babyblanket1b/600/600'],
   'Arm-knitted from extra-thick merino roving in a single evening of craft. The loose, airy weave is incredibly soft yet breathable — perfect for prams and cots.',
@@ -50,7 +50,7 @@ VALUES
   20, false
 ),
 (
-  'Fair Isle Wool Scarf', 85000, NULL, 'scarves', 4.8, 94,
+  'Fair Isle Wool Scarf', 85000, NULL, 'scarves',
   'https://picsum.photos/seed/scarf1/600/600',
   ARRAY['https://picsum.photos/seed/scarf1/600/600'],
   'Knitted in the traditional Fair Isle technique with a five-colour geometric pattern. Long enough to wrap twice, warm enough for the coldest mornings.',
@@ -59,7 +59,7 @@ VALUES
   15, false
 ),
 (
-  'Crochet Market Bag', 72000, NULL, 'handbags', 4.6, 55,
+  'Crochet Market Bag', 72000, NULL, 'handbags',
   'https://picsum.photos/seed/market1/600/600',
   ARRAY['https://picsum.photos/seed/market1/600/600'],
   'Crocheted from natural cotton string in a classic open-weave mesh. Stretches to carry a full grocery shop, then folds to pocket size when empty.',
@@ -68,7 +68,7 @@ VALUES
   25, false
 ),
 (
-  'Hand-Embroidered Coin Wallet', 55000, NULL, 'wallets', 4.9, 76,
+  'Hand-Embroidered Coin Wallet', 55000, NULL, 'wallets',
   'https://picsum.photos/seed/wallet1/600/600',
   ARRAY['https://picsum.photos/seed/wallet1/600/600'],
   'Hand-stitched with delicate floral embroidery on soft wool felt. A brass zip closure and cotton lining keep coins and cards safe in style.',
@@ -77,7 +77,7 @@ VALUES
   18, false
 ),
 (
-  'Merino Moses Basket Set', 290000, 360000, 'baby', 4.8, 34,
+  'Merino Moses Basket Set', 290000, 360000, 'baby',
   'https://picsum.photos/seed/moses1/600/600',
   ARRAY['https://picsum.photos/seed/moses1/600/600', 'https://picsum.photos/seed/moses1b/600/600'],
   'A complete moses basket dressing set — knitted blanket, fitted sheet, and padded hood — all in 100% merino. The ultimate gift for a new arrival.',
@@ -86,7 +86,7 @@ VALUES
   6, false
 ),
 (
-  'Bobble Stitch Throw Blanket', 195000, NULL, 'Blankets', 4.7, 48,
+  'Bobble Stitch Throw Blanket', 195000, NULL, 'Blankets',
   'https://picsum.photos/seed/throw1/600/600',
   ARRAY['https://picsum.photos/seed/throw1/600/600', 'https://picsum.photos/seed/throw1b/600/600'],
   'The bobble stitch creates a beautiful textured surface that is as tactile as it is cosy. Knitted from a wool-cotton blend in warm neutral tones.',
@@ -95,7 +95,7 @@ VALUES
   10, false
 ),
 (
-  'Structured Knit Handbag', 225000, NULL, 'handbags', 4.9, 28,
+  'Structured Knit Handbag', 225000, NULL, 'handbags',
   'https://picsum.photos/seed/handbag1/600/600',
   ARRAY['https://picsum.photos/seed/handbag1/600/600', 'https://picsum.photos/seed/handbag1b/600/600'],
   'A structured frame bag knitted in fine merino with a rigid base and clasp closure. Sophisticated enough for evenings out, roomy enough for everyday essentials.',
@@ -104,7 +104,7 @@ VALUES
   7, false
 ),
 (
-  'Hand-Sewn Baby Sleeping Bag', 155000, NULL, 'baby', 4.8, 91,
+  'Hand-Sewn Baby Sleeping Bag', 155000, NULL, 'baby',
   'https://picsum.photos/seed/sleepbag1/600/600',
   ARRAY['https://picsum.photos/seed/sleepbag1/600/600'],
   'A tog-rated sleeping bag hand-sewn from quilted merino panels. The side-zip opening and adjustable shoulder poppers make night feeds simple and stress-free.',

@@ -95,17 +95,14 @@ function TrustBadges() {
 function SwipeableItem({
   item,
   onRemove,
-  onUpdateQty,
 }: {
   item: CartItem;
   onRemove: (lineKey: string) => void;
-  onUpdateQty: (lineKey: string, qty: number) => void;
 }) {
   const { formatAmount } = useCurrency();
-  const itemHref = item.source === "new_in" ? `/new-in/${item.id}` : `/products/${item.id}`;
-  // undefined maxQuantity = no known stock cap (quick-add from a listing
-  // card), which must stay uncapped rather than reading as a cap of 0.
-  const atMax = item.maxQuantity !== undefined && item.quantity >= item.maxQuantity;
+  // "new_in" accepted alongside "featured_piece" for carts persisted before
+  // the New In → Featured Pieces rename.
+  const itemHref = (item.source === "new_in" || item.source === "featured_piece") ? `/featured-pieces/${item.id}` : `/products/${item.id}`;
   const [offset, setOffset] = useState(0);
   const [removing, setRemoving] = useState(false);
   const startX = useRef(0);
@@ -189,36 +186,19 @@ function SwipeableItem({
           <p className="text-sm font-semibold text-brown mt-0.5">{formatAmount(item.price)}</p>
 
           <div className="flex items-center justify-between mt-2.5">
-            <div className="flex items-center border border-taupe/30 rounded-xl overflow-hidden">
-              <button
-                onClick={() => onUpdateQty(cartLineKey(item), item.quantity - 1)}
-                className="w-11 h-11 flex items-center justify-center text-brown
-                           active:bg-cream-dark active:scale-90 transition-transform duration-100"
-                style={{ touchAction: "manipulation" }}
-                aria-label="Decrease quantity"
-              >−</button>
-              <span className="w-7 text-center text-xs font-semibold text-deep-brown">
-                {item.quantity}
-              </span>
-              <button
-                onClick={() => onUpdateQty(cartLineKey(item), item.quantity + 1)}
-                disabled={atMax}
-                className="w-11 h-11 flex items-center justify-center text-brown
-                           active:bg-cream-dark active:scale-90 transition-transform duration-100
-                           disabled:opacity-30 disabled:active:scale-100"
-                style={{ touchAction: "manipulation" }}
-                aria-label="Increase quantity"
-              >+</button>
-            </div>
+            {/* Read-only — see the matching note in components/CartDrawer.tsx.
+                The quantity a customer chose on the product page was capped
+                against that variant's real stock; this stepper was not, so it
+                could push a line past what exists. Removing the line and
+                re-adding is the way to change it. */}
+            <span className="inline-flex items-center h-11 px-3.5 border border-taupe/30 rounded-xl
+                             text-xs font-semibold text-deep-brown">
+              Qty {item.quantity}
+            </span>
             <p className="text-sm font-bold text-deep-brown">
               {formatAmount(item.price * item.quantity)}
             </p>
           </div>
-          {atMax && (
-            <p className="text-[11px] text-[#8B2035] mt-1.5">
-              Only {item.maxQuantity} available
-            </p>
-          )}
         </div>
 
         <button
@@ -240,7 +220,7 @@ function SwipeableItem({
    CART PAGE
 ───────────────────────────────────────────────────────── */
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, total, itemCount } = useCart();
+  const { items, removeItem, total, itemCount } = useCart();
   const { priceCheckout } = useCurrency();
 
   // No delivery address exists yet at this point in the flow — the country
@@ -326,7 +306,6 @@ export default function CartPage() {
               key={cartLineKey(item)}
               item={item}
               onRemove={removeItem}
-              onUpdateQty={updateQuantity}
             />
           ))}
         </div>
@@ -445,8 +424,16 @@ export default function CartPage() {
 
         <div className="flex items-center justify-between mb-1.5">
           <div>
+            {/* Shipping in green, not the same muted grey as the item count —
+                it's the part of this line a customer needs to actually see, so
+                it shouldn't read as filler next to it. */}
             <p className="text-xs text-taupe-dark">
-              {itemCount} items · Shipping (est.) {pricing.formattedShipping}
+              {itemCount} items ·{" "}
+              <span className="font-semibold text-emerald-600 tabular-nums">
+                {shippingEstimateEUR === 0
+                  ? "Shipping (est.) Free"
+                  : `Shipping (est.) ${pricing.formattedShipping}`}
+              </span>
             </p>
             <p className="font-semibold text-deep-brown text-base">
               Total: {pricing.formattedTotal}

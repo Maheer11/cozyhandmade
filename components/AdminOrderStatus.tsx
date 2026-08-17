@@ -49,7 +49,7 @@ export default function AdminOrderStatus({
     if (!res.ok) {
       setStatus(prev);
       const body = await res.json().catch(() => ({}));
-      alert(body.error ?? "Failed to update status — please try again.");
+      alert(body.error ?? "Failed to update status, please try again.");
     } else {
       router.refresh();
     }

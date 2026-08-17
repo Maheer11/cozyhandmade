@@ -45,8 +45,6 @@ export async function POST(request: Request) {
         customer_label: body.customer_label?.trim() || null,
         location:       body.location?.trim() || null,
         review_date:    body.review_date?.trim() || null,
-        rating:         body.rating !== undefined && body.rating !== null && body.rating !== ""
-                          ? Number(body.rating) : 5,
         display_order:  Number(body.display_order ?? 0),
       })
       .select("id")
