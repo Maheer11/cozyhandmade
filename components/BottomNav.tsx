@@ -67,40 +67,40 @@ export default function BottomNav() {
   ];
 
   return (
-    /* A floating pill, not a full-width bar. With Search and Cart removed,
-       three tabs stretched edge to edge left big dead gaps between them and
-       read as a bar missing its other buttons. Sized to its contents and
-       centred, the same three items read as a deliberate set.
-       The active tab is marked by a filled capsule behind it rather than the
-       old hairline above it — at this width a 8px dash floating over a
-       detached pill had nothing to align to. */
+    /* A full-width bar, not a floating pill. The pill left the strip of page
+       it was reserving visible around it — a band of near-white between the
+       last content and the bottom of the screen that read as the page being
+       unfinished. A solid bar occupies that reserved space instead of hovering
+       over it, so there is nothing empty left to see.
+
+       Every tab carries its label now. Labels were previously shown on the
+       active tab only, because three icon+label pairs made the *pill* wider
+       than a 375px screen; stacked icon-over-label at full width they fit
+       comfortably, and three evenly spread columns read as a deliberate tab
+       bar rather than a row with gaps in it. */
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center pointer-events-none"
-      style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40
+                 bg-cream/95 backdrop-blur-md border-t border-taupe/25
+                 shadow-[0_-6px_20px_-12px_rgba(26,8,16,0.35)]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Primary"
     >
-      <div className="pointer-events-auto flex items-stretch gap-1 p-1.5
-                      rounded-full bg-cream/95 backdrop-blur-md
-                      border border-taupe/25 shadow-[0_10px_30px_-12px_rgba(26,8,16,0.45)]">
+      <div className="flex items-stretch">
         {tabs.map(({ href, label, active, icon }) => (
           <Link
             key={label}
             href={href}
             style={{ touchAction: "manipulation" }}
-            className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2
                        active:scale-95 transition-all duration-150
-                       ${active ? "bg-gold/10 text-gold" : "text-taupe-dark"}`}
+                       ${active ? "text-gold" : "text-taupe-dark"}`}
             aria-label={label}
             aria-current={active ? "page" : undefined}
           >
             {icon(active)}
-            {/* Label only on the active tab: three icon+label pairs made the
-                pill wider than the screen on a 375px device. */}
-            {active && (
-              <span className="text-[11px] font-semibold tracking-wide whitespace-nowrap">
-                {label}
-              </span>
-            )}
+            <span className="text-[10px] font-semibold tracking-wide whitespace-nowrap">
+              {label}
+            </span>
           </Link>
         ))}
       </div>

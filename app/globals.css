@@ -37,6 +37,18 @@
 
 html {
   scroll-behavior: smooth;
+  /* The canvas colour — what an overscroll bounce reveals behind the document.
+     body's own white paints only the body box, so dragging past the end of the
+     page used to expose a slab of white under the last section. Painting the
+     root to match what the page actually ends on means the bounce continues
+     the page instead of flashing white: the mobile credit strip's milk below
+     `lg`, the footer's deep brown above it. (body carries
+     overscroll-behavior-y: none, which stops pull-to-refresh but does not stop
+     the bounce itself on iOS.) */
+  background-color: var(--color-cream-darker);
+}
+@media (min-width: 1024px) {
+  html { background-color: var(--color-deep-brown); }
 }
 
 body {

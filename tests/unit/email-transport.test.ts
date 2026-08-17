@@ -110,7 +110,7 @@ describe("templates", () => {
 
     const body = bodyOf(fetchSpy, 0);
     const text = body.text as string;
-    expect(body.subject).toBe("Order confirmed — #A1B2C3D4");
+    expect(body.subject).toBe("Order confirmed: #A1B2C3D4");
     expect(text).toContain("Ceramic Vase");
     expect(text).toContain("Company registration number: 790221");
 
