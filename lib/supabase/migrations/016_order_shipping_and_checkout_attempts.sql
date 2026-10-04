@@ -277,15 +277,21 @@ grant execute on function public.checkout_verified_order(uuid, numeric, jsonb, t
 
 commit;
 
--- ── Check after applying ─────────────────────────────────────────────────
--- Should return exactly ONE row, ending in "p_shipping_amount numeric DEFAULT 0":
---   select pg_get_function_identity_arguments(p.oid), pg_get_function_arguments(p.oid)
---     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
---    where n.nspname = 'public' and p.proname = 'checkout_verified_order';
--- Should return three rows: orders.subtotal_amount, orders.shipping_amount,
--- pending_stripe_orders.checkout_attempt_id:
---   select table_name, column_name from information_schema.columns
---    where table_schema = 'public'
---      and (table_name, column_name) in (('orders', 'subtotal_amount'),
---                                        ('orders', 'shipping_amount'),
---                                        ('pending_stripe_orders', 'checkout_attempt_id'));
+-- ── Check after applying (run in a NEW query, on the same project) ──────
+-- Remove the leading "-- " from the lines below, or copy them from
+-- docs/checkout-deferred-intent-rollout.md. Expected: ONE row where
+-- function_count = 1 and the other four columns are all true.
+-- function_count = 2 means the old function is still there: stop and ask.
+--
+-- select
+--   (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--     where n.nspname = 'public' and p.proname = 'checkout_verified_order')               as function_count,
+--   exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--     where n.nspname = 'public' and p.proname = 'checkout_verified_order'
+--       and pg_get_function_arguments(p.oid) like '%p_shipping_amount%')                   as has_shipping_param,
+--   exists (select 1 from information_schema.columns where table_schema = 'public'
+--     and table_name = 'orders' and column_name = 'subtotal_amount')                       as orders_subtotal,
+--   exists (select 1 from information_schema.columns where table_schema = 'public'
+--     and table_name = 'orders' and column_name = 'shipping_amount')                       as orders_shipping,
+--   exists (select 1 from information_schema.columns where table_schema = 'public'
+--     and table_name = 'pending_stripe_orders' and column_name = 'checkout_attempt_id')    as attempt_column;
