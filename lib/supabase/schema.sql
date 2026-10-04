@@ -74,6 +74,10 @@ create table if not exists orders (
   status           text default 'pending'
                      check (status in ('pending','paid','processing','shipped','delivered','cancelled')),
   total_amount     numeric not null,
+  -- total_amount = subtotal_amount + shipping_amount, all EUR (migration 016).
+  -- Orders placed before 016 have 0 / 0 here.
+  subtotal_amount  numeric default 0,
+  shipping_amount  numeric default 0,
   delivery_address jsonb,
   notes            text,
   created_at       timestamptz default now(),
@@ -149,8 +153,16 @@ create table if not exists pending_stripe_orders (
   items              jsonb not null,
   delivery_address   jsonb not null,
   total_amount       numeric not null,
+  subtotal_amount    numeric,               -- migration 006
+  shipping_amount    numeric,               -- migration 006
   currency           text not null,
-  created_at         timestamptz not null default now()
+  created_at         timestamptz not null default now(),
+  -- Set once the webhook has resolved this payment: order created, or
+  -- refunded out of stock (migration 007; rows are kept, never deleted).
+  resolved_at        timestamptz,
+  -- One random id per checkout visit; app/api/checkout/intent reuses this
+  -- attempt's PaymentIntent rather than creating another (migration 016).
+  checkout_attempt_id uuid unique
 );
 
 
@@ -392,7 +404,8 @@ create or replace function public.checkout_verified_order(
   p_stripe_reference text,
   p_payment_channel  text,
   p_items            jsonb,  -- [{item_type, ref_id, product_name, product_image, quantity, unit_price}, ...]
-  p_charged_amount   numeric default null  -- actual amount charged in p_currency; falls back to p_total_amount (EUR) when same-currency
+  p_charged_amount   numeric default null, -- actual amount charged in p_currency; falls back to p_total_amount (EUR) when same-currency
+  p_shipping_amount  numeric default 0     -- shipping part of p_total_amount (EUR); 0 for free Dublin pickup
 )
 returns uuid
 language plpgsql
@@ -406,6 +419,12 @@ declare
   v_name               text;
   v_row                record;
 begin
+  -- Shipping is part of the total, so it can never be negative or exceed it.
+  -- subtotal_amount below is derived as total - shipping.
+  if p_shipping_amount is null or p_shipping_amount < 0 or p_shipping_amount > p_total_amount then
+    raise exception 'INVALID_SHIPPING_AMOUNT:% of %', p_shipping_amount, p_total_amount;
+  end if;
+
   -- Guard the discriminator before anything trusts it. 'featured_piece' is the
   -- current value; 'new_in' is the legacy one still stored on orders placed
   -- before the New In → Featured Pieces rename (migration 011) and on carts
@@ -571,8 +590,8 @@ begin
    where p.id = g.product_id;
 
   -- Create the order — straight to "processing", no manual "paid" wait step.
-  insert into orders (user_id, status, total_amount, delivery_address)
-  values (p_user_id, 'processing', p_total_amount, p_delivery_address)
+  insert into orders (user_id, status, total_amount, subtotal_amount, shipping_amount, delivery_address)
+  values (p_user_id, 'processing', p_total_amount, p_total_amount - p_shipping_amount, p_shipping_amount, p_delivery_address)
   returning id into v_order_id;
 
   -- order_items.product_id references products, and featured pieces still get
@@ -604,8 +623,8 @@ $$;
 
 -- Locked down to service_role/postgres only — no anon/authenticated grant.
 -- The webhook route (and it alone) calls this via the service-role client.
-revoke all on function public.checkout_verified_order from public, anon, authenticated;
-grant execute on function public.checkout_verified_order to service_role;
+revoke all on function public.checkout_verified_order(uuid, numeric, jsonb, text, text, text, jsonb, numeric, numeric) from public, anon, authenticated;
+grant execute on function public.checkout_verified_order(uuid, numeric, jsonb, text, text, text, jsonb, numeric, numeric) to service_role;
 
 
 -- ============================================================

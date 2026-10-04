@@ -14,13 +14,17 @@ European and North American. Nigeria is not the target market.
 The flow is **webhook-driven**, not client-asserted: the browser never tells
 the server "payment succeeded" and gets trusted. Instead:
 
-1. The browser asks the server to create a Stripe PaymentIntent
-   (`POST /api/payments/stripe/create-intent`). The server re-prices the cart
-   from the database itself — it never trusts a client-submitted total — and
-   stages the verified cart + delivery address in `pending_stripe_orders`,
-   keyed by the PaymentIntent id.
-2. The browser collects card details with Stripe's `PaymentElement` (card
-   data never touches our servers) and confirms the payment.
+1. The browser collects card details with Stripe's `PaymentElement` in
+   deferred mode (no PaymentIntent exists yet; card data never touches our
+   servers). Only signed-in customers can reach this step.
+2. When the customer presses Pay, the browser calls
+   `POST /api/checkout/intent`. The server re-prices the cart and shipping
+   from the database and the delivery address — it never trusts a
+   client-submitted price or total — and creates (or, for the same checkout
+   attempt, reuses) ONE PaymentIntent in EUR. It stages the verified cart,
+   address, subtotal, shipping and total in `pending_stripe_orders`, keyed by
+   the PaymentIntent id and the checkout attempt id, then returns the client
+   secret, and the browser confirms the payment with it.
 3. Stripe calls our webhook (`POST /api/payments/stripe/webhook`) with a
    cryptographically signed `payment_intent.succeeded` event. **Only this
    webhook ever creates an order** — after checking the event hasn't already
@@ -164,7 +168,7 @@ signal is the first mismatched event delivery.
 **Created**
 - `lib/stripe/env.ts`, `lib/stripe/server.ts`, `lib/stripe/client.ts`
 - `lib/checkout/repriceItems.ts`, `lib/checkout/updateSpendTier.ts`
-- `app/api/payments/stripe/create-intent/route.ts`
+- `app/api/checkout/intent/route.ts` (replaced `app/api/payments/stripe/create-intent`, migration 016)
 - `app/api/payments/stripe/webhook/route.ts`
 - `app/api/payments/stripe/status/route.ts`
 - `lib/supabase/migrations/005_add_pending_orders_and_webhook_dedupe.sql`
@@ -247,10 +251,15 @@ server before trusting it; fix any selector drift you find.
 
 ## Security invariants (verified in code + tests)
 
-- **Client-submitted prices/totals are never trusted.** `create-intent`
-  re-fetches real prices from `products`/`new_in_items` (`repriceItems()`)
-  and sets the PaymentIntent's amount from that — a tampered client total
-  simply gets ignored. Covered by `tests/integration/checkout-stripe-tampered-price.test.ts`.
+- **Client-submitted prices/totals are never trusted.** `/api/checkout/intent`
+  re-fetches real prices from `products`/`featured_pieces` (`repriceItems()`)
+  and shipping from their weights + the delivery address, and sets the
+  PaymentIntent's amount from that — a tampered client price is ignored, and
+  a page showing a different total is refused before anything is charged.
+  The webhook only creates an order when `amount_received` equals the staged
+  total exactly. Covered by `tests/unit/checkout-intent-route.test.ts`,
+  `tests/unit/webhook-order-recording.test.ts` and
+  `tests/integration/checkout-intent-guards.test.ts`.
 - **Signature verified before anything else.** No database read, no
   logging of payload contents, no side effects until
   `stripe.webhooks.constructEvent()` succeeds. Covered by

@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import type { StripeElementsOptionsMode } from "@stripe/stripe-js";
+import { useAuth } from "@/lib/supabase/auth-context";
+import { orderAmounts, STRIPE_CHARGE_CURRENCY } from "@/lib/checkout/amounts";
 import { getStripePromise } from "@/lib/stripe/client";
 import { useCart, cartLineKey } from "@/components/CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
@@ -10,7 +13,7 @@ import { socialLinks, whatsappLink } from "@/lib/social-links";
 import InstagramIcon from "@/components/icons/InstagramIcon";
 import WhatsAppIcon from "@/components/icons/WhatsAppIcon";
 import type { } from "@/lib/products";
-import type { CheckoutPricing, CurrencyCode } from "@/lib/currency/types";
+import type { CurrencyCode } from "@/lib/currency/types";
 import { formatCurrency } from "@/lib/currency/pricingUtils";
 import { CURRENCIES } from "@/lib/currency/constants";
 import { calculateShipping, isDublinPickupEligible, type ShippingItemInput, type ShippingZone } from "@/lib/checkout/shipping";
@@ -34,6 +37,29 @@ interface OrderConfirmationSummary {
   chargedAmount: number;
   currency: CurrencyCode;
   paymentChannel: string;
+}
+
+// Totals as shown on the page. All EUR; approxTotal is the customer's
+// selected currency, display only, or null when that currency is EUR.
+interface DisplayTotals {
+  formattedSubtotal: string;
+  formattedShipping: string;
+  formattedTotal: string;
+  approxTotal: string | null;
+  isFreeShipping: boolean;
+}
+
+// Response of POST /api/checkout/intent.
+interface IntentResponse {
+  client_secret?: string;
+  payment_intent_id?: string;
+  error?: string;
+  code?: string;
+  quote?: { subtotal_eur: number; shipping_eur: number; total_eur: number; total_cents: number };
+}
+
+function formatEUR(amount: number): string {
+  return formatCurrency(amount, CURRENCIES.EUR);
 }
 
 const STEPS = [
@@ -168,7 +194,7 @@ function TermsModal({ onClose }: { onClose: () => void }) {
             },
             {
               title: "3. Pricing & Payment",
-              body: `Prices are displayed in your selected currency and are subject to change without notice. All payments are processed by card via Stripe in your selected currency. All transactions are encrypted. We reserve the right to cancel any order if payment cannot be verified.`,
+              body: `Prices are subject to change without notice. All payments are processed by card via Stripe and charged in euro (EUR); any amount shown in another currency is an estimate for convenience, and your bank's exchange rate applies. All transactions are encrypted. We reserve the right to cancel any order if payment cannot be verified.`,
             },
             {
               title: "4. Shipping & Delivery",
@@ -234,11 +260,27 @@ function TermsCheckbox({
 }) {
   return (
     <label className="flex items-start gap-3 cursor-pointer select-none group mt-5">
-      {/* Custom checkbox */}
+      {/* A real checkbox, visually hidden but focusable, so the control is
+          keyboard-operable and exposes its checked state to assistive tech.
+          It must also be the FIRST labelable descendant of the label: <button>
+          is labelable too, so with only the Terms button inside, the label
+          forwarded every click to it and popped the modal whenever someone
+          ticked the box. Clicking the Terms button itself still doesn't toggle
+          this — interactive content is exempt from label activation. */}
+      <input
+        type="checkbox"
+        checked={accepted}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only peer"
+      />
+      {/* Custom checkbox visual — driven by `accepted`, with no click handler of
+          its own: the wrapping label already toggles the input, and a second
+          handler here would toggle twice and cancel out. */}
       <span
-        onClick={() => onChange(!accepted)}
+        aria-hidden="true"
         className="mt-0.5 w-5 h-5 shrink-0 rounded border-2 flex items-center justify-center
-                   transition-all duration-200"
+                   transition-all duration-200
+                   peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-[#8B2035]"
         style={{
           borderColor: accepted ? "#8B2035" : "#D1C4B8",
           backgroundColor: accepted ? "#8B2035" : "white",
@@ -677,14 +719,13 @@ function PaymentLogos() {
 /* ─────────────────────────────────────────────────────────
    ORDER SUMMARY — receipt-style, printable
 ───────────────────────────────────────────────────────── */
-function OrderSummary({ items, pricing, orderRef, estimatedDays, customsApplies }: {
+function OrderSummary({ items, totals, orderRef, estimatedDays, customsApplies }: {
   items: ReturnType<typeof useCart>["items"];
-  pricing: CheckoutPricing;
+  totals: DisplayTotals;
   orderRef: string;
   estimatedDays: string;
   customsApplies: boolean;
 }) {
-  const { formatAmount } = useCurrency();
 
   return (
     <div className="space-y-3 font-system">
@@ -727,11 +768,11 @@ function OrderSummary({ items, pricing, orderRef, estimatedDays, customsApplies 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-deep-brown leading-snug truncate">{item.name}</p>
                   <p className="text-xs text-taupe-dark mt-0.5 tabular-nums">
-                    Qty {item.quantity} · {formatAmount(item.price)} each
+                    Qty {item.quantity} · {formatEUR(item.price)} each
                   </p>
                 </div>
                 <p className="text-sm font-semibold text-deep-brown tabular-nums shrink-0">
-                  {formatAmount(item.price * item.quantity)}
+                  {formatEUR(item.price * item.quantity)}
                 </p>
               </div>
             ))}
@@ -743,22 +784,28 @@ function OrderSummary({ items, pricing, orderRef, estimatedDays, customsApplies 
           <div className="space-y-2 mb-4">
             <div className="flex justify-between items-baseline">
               <span className="text-[10px] uppercase tracking-wide text-taupe-dark">Subtotal</span>
-              <span className="text-sm text-deep-brown tabular-nums">{pricing.formattedSubtotal}</span>
+              <span className="text-sm text-deep-brown tabular-nums">{totals.formattedSubtotal}</span>
             </div>
             <div className="flex justify-between items-baseline">
               <span className="text-[10px] uppercase tracking-wide text-taupe-dark">Shipping</span>
-              <span className="text-sm text-deep-brown tabular-nums">{pricing.formattedShipping}</span>
+              <span className="text-sm text-deep-brown tabular-nums">{totals.formattedShipping}</span>
             </div>
           </div>
 
           {/* Total — visually heaviest block, separated */}
           <div className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ backgroundColor: "#792F00" }}>
             <span className="text-xs font-semibold tracking-wide text-white uppercase">Total</span>
-            <span className="text-lg font-bold text-white tabular-nums">{pricing.formattedTotal}</span>
+            <span className="text-lg font-bold text-white tabular-nums">{totals.formattedTotal}</span>
           </div>
 
+          {totals.approxTotal && (
+            <p className="text-[11px] text-center mt-2 text-taupe-dark tabular-nums">
+              {totals.approxTotal} in your currency · you&apos;ll be charged in euro
+            </p>
+          )}
+
           <p className="text-[10px] text-center mt-3 text-taupe-dark">
-            {`Processed via Stripe · PCI-DSS Level 1 · ${pricing.currency}`}
+            Processed via Stripe · PCI-DSS Level 1 · EUR
           </p>
 
           <p className="text-[10px] text-center mt-1.5 text-taupe-dark">
@@ -887,7 +934,11 @@ function ShippingStep({
 
       <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50/70 rounded-xl border-0 sm:border sm:border-blue-100 text-xs text-blue-800 font-system">
         <div className="w-4 h-4 shrink-0 text-blue-500"><IcoTruck /></div>
-        {deliveryMethod === "pickup" ? "Local pickup" : "International shipping"} · Estimated: <strong>{estimatedDays}</strong>
+        {/* pickupEligible too: a customer who chose pickup and then changed the
+            address away from Dublin is priced as courier, so must not be told "pickup". */}
+        {pickupEligible && deliveryMethod === "pickup"
+          ? "Local pickup"
+          : ship.country === "IE" ? "Shipping within Ireland" : "International shipping"} · Estimated: <strong>{estimatedDays}</strong>
       </div>
       {customsApplies && (
         <div className="mt-2 flex items-start gap-2 p-3 bg-amber-50/70 rounded-xl border-0 sm:border sm:border-amber-100 text-xs text-amber-800 font-system">
@@ -910,14 +961,28 @@ function ShippingStep({
 }
 
 /* ═════════════════════════════════════════════════════════
-   STRIPE CARD FORM — mounted inside <Elements>, owns confirmPayment +
+   STRIPE CARD FORM — mounted inside <Elements>, owns the Pay sequence +
    the post-payment "wait for webhook to actually create the order" poll.
-   The webhook is the only thing that ever creates an order — this only
-   calls onSuccess once /api/payments/stripe/status confirms it happened.
+
+   Deferred intent flow: no PaymentIntent exists while the customer fills
+   in the form. Pressing Pay runs, in order:
+     1. elements.submit()  — validates the card fields
+     2. requestIntent()    — the server prices the order and returns the
+                             client secret of this attempt's ONE intent
+     3. stripe.confirmPayment({ elements, clientSecret })
+   so the amount charged is always the server's figure at the moment of
+   paying. The webhook is the only thing that ever creates an order — this
+   only calls onSuccess once /api/payments/stripe/status confirms it happened.
 ═════════════════════════════════════════════════════════ */
-function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccepted, onShowTerms, onSuccess, onRefunded }: {
+type IntentResult =
+  | { ok: true; clientSecret: string }
+  | { ok: false; error: string; code?: string; paymentIntentId?: string };
+
+function StripeCardForm({ amountCents, formattedTotal, orderRef, requestIntent, termsAccepted, setTermsAccepted, onShowTerms, onSuccess, onRefunded }: {
+  amountCents: number;
   formattedTotal: string;
   orderRef: string;
+  requestIntent: () => Promise<IntentResult>;
   termsAccepted: boolean;
   setTermsAccepted: (v: boolean) => void;
   onShowTerms: () => void;
@@ -929,6 +994,16 @@ function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccep
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [waitingForOrder, setWaitingForOrder] = useState(false);
+  // Synchronous double-tap guard. `submitting` is React state, so a second
+  // tap in the same frame still sees false; a ref is set immediately.
+  const inFlight = useRef(false);
+
+  // Display only — keeps the Payment Element's own amount in step with the
+  // page total (wallets and some card flows show it). The charged amount is
+  // decided by the server when Pay is pressed, not by this.
+  useEffect(() => {
+    elements?.update({ amount: amountCents });
+  }, [elements, amountCents]);
 
   async function pollForOrder(paymentIntentId: string) {
     setWaitingForOrder(true);
@@ -964,12 +1039,33 @@ function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccep
   }
 
   async function handleSubmit() {
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || inFlight.current) return;
+    inFlight.current = true;
     setError("");
     setSubmitting(true);
     try {
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setError(submitError.message ?? "Please check your card details and try again.");
+        return;
+      }
+
+      const intent = await requestIntent();
+      if (!intent.ok) {
+        // Paid already (e.g. the first of two taps went through) — don't
+        // charge again, just wait for that payment's order.
+        if (intent.code === "already_paid" && intent.paymentIntentId) {
+          await pollForOrder(intent.paymentIntentId);
+          return;
+        }
+        setError(intent.error);
+        return;
+      }
+
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
+        clientSecret: intent.clientSecret,
+        confirmParams: { return_url: `${window.location.origin}/checkout` },
         redirect: "if_required",
       });
 
@@ -986,6 +1082,7 @@ function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccep
     } catch {
       setError("Network error. Please check your connection and try again.");
     } finally {
+      inFlight.current = false;
       setSubmitting(false);
     }
   }
@@ -1029,22 +1126,34 @@ function StripeCardForm({ formattedTotal, orderRef, termsAccepted, setTermsAccep
    PAYMENT STEP  — Stripe card only
 ═════════════════════════════════════════════════════════ */
 function PaymentStep({
-  formattedTotal, orderRef,
+  amountCents, formattedTotal, orderRef,
   onBack,
-  clientSecret, intentError, onStripeSuccess, onStripeRefunded,
+  requestIntent, onStripeSuccess, onStripeRefunded,
   termsAccepted, setTermsAccepted, onShowTerms,
 }: {
+  amountCents: number;
   formattedTotal: string;
   orderRef: string;
   onBack: () => void;
-  clientSecret: string | null;
-  intentError: string | null;
+  requestIntent: () => Promise<IntentResult>;
   onStripeSuccess: (orderId: string, summary: OrderConfirmationSummary) => void;
   onStripeRefunded: (info: { reason: string; productName: string | null }) => void;
   termsAccepted: boolean;
   setTermsAccepted: (v: boolean) => void;
   onShowTerms: () => void;
 }) {
+  // Created once per mount. mode/currency/paymentMethodTypes must match what
+  // app/api/checkout/intent creates (payment, eur, card). The amount here is
+  // only the starting value; StripeCardForm keeps it current with
+  // elements.update(). No clientSecret — that only exists after Pay.
+  const [elementsOptions] = useState<StripeElementsOptionsMode>(() => ({
+    mode: "payment",
+    amount: amountCents,
+    currency: STRIPE_CHARGE_CURRENCY,
+    paymentMethodTypes: ["card"],
+    appearance: STRIPE_APPEARANCE,
+  }));
+
   return (
     <div className={SECTION_SHELL}>
       <h2 className="font-heading font-600 text-deep-brown text-xl mb-2">Payment</h2>
@@ -1073,31 +1182,19 @@ function PaymentStep({
           </div>
 
           <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl p-5 mb-5">
-            {intentError ? (
-              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-                {intentError}
-              </p>
-            ) : !clientSecret ? (
-              <div className="flex items-center gap-2 text-xs text-stone-500 py-6 justify-center">
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Preparing secure payment…
-              </div>
-            ) : (
-              <Elements stripe={getStripePromise()} options={{ clientSecret, appearance: STRIPE_APPEARANCE }}>
-                <StripeCardForm
-                  formattedTotal={formattedTotal}
-                  orderRef={orderRef}
-                  termsAccepted={termsAccepted}
-                  setTermsAccepted={setTermsAccepted}
-                  onShowTerms={onShowTerms}
-                  onSuccess={onStripeSuccess}
-                  onRefunded={onStripeRefunded}
-                />
-              </Elements>
-            )}
+            <Elements stripe={getStripePromise()} options={elementsOptions}>
+              <StripeCardForm
+                amountCents={amountCents}
+                formattedTotal={formattedTotal}
+                orderRef={orderRef}
+                requestIntent={requestIntent}
+                termsAccepted={termsAccepted}
+                setTermsAccepted={setTermsAccepted}
+                onShowTerms={onShowTerms}
+                onSuccess={onStripeSuccess}
+                onRefunded={onStripeRefunded}
+              />
+            </Elements>
           </div>
 
       <div className="hidden lg:flex mt-6">
@@ -1277,6 +1374,7 @@ function SoldOutRefundedScreen({ productName }: { productName: string | null }) 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const { currency, priceCheckout } = useCurrency();
+  const { user, loading: authLoading } = useAuth();
 
   const [step,          setStep]          = useState<Step>("shipping");
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -1299,7 +1397,10 @@ export default function CheckoutPage() {
   const [showAllShipErrors, setShowAllShipErrors] = useState(false);
   const [ship, setShip] = useState<ShipInfo>({
     firstName: "", lastName: "", email: "", phone: "",
-    address: "", city: "", postcode: "", country: "GB", state: "",
+    // Ireland by default — the shop ships from Dublin and most customers are
+    // Irish. Defaulting to GB quietly priced UK shipping for anyone who
+    // didn't touch the dropdown.
+    address: "", city: "", postcode: "", country: "IE", state: "",
   });
 
   // Free customer pickup — only ever offered for addresses that actually
@@ -1314,18 +1415,16 @@ export default function CheckoutPage() {
   const effectiveDeliveryMethod = pickupEligible ? deliveryMethod : "courier";
 
   // Shipping — lib/checkout/shipping.ts is the single source of truth,
-  // imported here for display AND by create-intent for the server-side
+  // imported here for display AND by app/api/checkout/intent for the server-side
   // charge (never a second, local implementation). Recomputed on every
   // render so changing the delivery country immediately updates the
   // displayed price — cheap, pure, no network call.
   //
-  // `total` (cart subtotal) is in EUR — the base currency every price is
-  // stored/entered in. `chargedTotal` is the properly-converted amount in
-  // the customer's selected currency — that's what's actually charged and
-  // displayed. create-intent independently recomputes subtotal + shipping
-  // server-side and never trusts a client-submitted total; its
-  // client_shipping_eur check rejects outright if its figure and the
-  // server's ever diverge.
+  // Every amount below is EUR — the currency every card payment is charged
+  // in. `total` (cart subtotal) is the cart's own EUR figure; the server
+  // re-prices everything when Pay is pressed and refuses (with the right
+  // figure) if this page's total is out of date. The customer's selected
+  // currency is only ever shown as an approximate "≈" line.
   const shippingItems: ShippingItemInput[] = items.map((item) => ({
     quantity: item.quantity,
     shippingWeightGrams: item.shippingWeightGrams,
@@ -1334,15 +1433,40 @@ export default function CheckoutPage() {
   const shippingQuote: { zone: ShippingZone; priceEUR: number; estimatedDays: string; customsApplies: boolean } =
     calculateShipping(shippingItems, ship.country);
   const shippingEUR = effectiveDeliveryMethod === "pickup" ? 0 : shippingQuote.priceEUR;
+  // Pickup quotes the same 7-14 window as every shipped order. It used to say
+  // "within 1-2 business days", which described the handoff once the piece
+  // existed and ignored the making — and the confirmation email, which has no
+  // knowledge of the pickup choice, quoted the shipping window regardless. The
+  // customer got two different answers for one order.
   const estimatedDaysDisplay = effectiveDeliveryMethod === "pickup"
-    ? "Ready for pickup within 1-2 business days"
+    ? "Ready for pickup in 7-14 business days"
     : shippingQuote.estimatedDays;
   // Pickup is a local handoff, not an international shipment — never show
   // the customs-duties notice for it even if the underlying zone would
   // otherwise have customsApplies true (it won't for domestic/IE, but this
   // keeps the display correct if that ever changes).
   const customsAppliesDisplay = effectiveDeliveryMethod === "pickup" ? false : shippingQuote.customsApplies;
-  const pricing        = priceCheckout(total, shippingEUR);
+
+  // The server's own quote, kept after it refused a Pay press because the
+  // page's total was out of date (e.g. a price changed since the item went
+  // into the cart). Applies only while the cart and address are exactly what
+  // was quoted; any change goes back to the local calculation.
+  const quoteKey = JSON.stringify({
+    items: items.map((i) => [i.id, i.source ?? "product", i.variant ?? "", i.quantity]),
+    country: ship.country, city: ship.city, postcode: ship.postcode,
+    method: effectiveDeliveryMethod,
+  });
+  const [serverQuote, setServerQuote] = useState<{ key: string; subtotalEUR: number; shippingEUR: number } | null>(null);
+  const quoted = serverQuote?.key === quoteKey ? serverQuote : null;
+  const amounts = orderAmounts(quoted?.subtotalEUR ?? total, quoted?.shippingEUR ?? shippingEUR);
+  const approx = currency === "EUR" ? null : priceCheckout(amounts.subtotalEUR, amounts.shippingEUR);
+  const display: DisplayTotals = {
+    formattedSubtotal: formatEUR(amounts.subtotalEUR),
+    formattedShipping: formatEUR(amounts.shippingEUR),
+    formattedTotal: formatEUR(amounts.totalEUR),
+    approxTotal: approx ? `≈ ${approx.formattedTotal}` : null,
+    isFreeShipping: amounts.shippingEUR === 0,
+  };
 
   const shipErrors = validateShip(ship);
   function shipFieldError(key: keyof ShipInfo) {
@@ -1359,60 +1483,51 @@ export default function CheckoutPage() {
     setStep("payment");
   }
 
-  // Stripe PaymentIntent — created once the customer reaches the payment
-  // step. The server re-prices from the cart here (never trusts client
-  // totals), so this is also the point where a stale/tampered cart would be
-  // caught, before any card details are even collected.
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [intentError,  setIntentError]  = useState<string | null>(null);
+  // One random id per checkout visit. Every Pay press in this visit sends
+  // it, and the server uses it to reuse the same PaymentIntent (updating its
+  // amount if needed) instead of creating another — so a decline-and-retry,
+  // a double tap, or going back to change the country never leaves a second
+  // payable intent behind. Replaced only when the server says the old
+  // attempt can't be used any more.
+  const [attemptId, setAttemptId] = useState(() => crypto.randomUUID());
 
-  useEffect(() => {
-    if (step !== "payment") return;
-    if (clientSecret || intentError) return; // already have one, or already failed — don't refetch on every render
+  async function requestIntent(): Promise<IntentResult> {
+    const res = await fetch("/api/checkout/intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        attempt_id: attemptId,
+        // What and where only — never a price. The server looks every
+        // price and weight up itself.
+        items: items.map((item) => ({
+          product_id: item.id,
+          product_name: item.name,
+          product_image: item.image,
+          quantity: item.quantity,
+          source: item.source ?? "product",
+          variant: item.variant,
+        })),
+        delivery_address: ship,
+        delivery_method: effectiveDeliveryMethod,
+        // What the Pay button showed. The server refuses if its own figure
+        // differs, so the customer is never charged an amount they weren't shown.
+        expected_total_cents: amounts.totalCents,
+      }),
+    });
+    const data = (await res.json().catch(() => null)) as IntentResponse | null;
 
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/payments/stripe/create-intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: items.map((item) => ({
-              product_id: item.id,
-              product_name: item.name,
-              product_image: item.image,
-              quantity: item.quantity,
-              unit_price: item.price,
-              source: item.source ?? "product",
-              variant: item.variant,
-            })),
-            delivery_address: ship,
-            currency,
-            // Checksum, not an input to the charge — the server recomputes
-            // shipping independently from its own weight lookup and rejects
-            // if this doesn't match. See create-intent's doc comment.
-            client_shipping_eur: shippingEUR,
-            // Server independently re-checks Dublin eligibility against
-            // delivery_address before ever honouring "pickup" — this is
-            // never trusted on its own to produce a €0 charge.
-            delivery_method: effectiveDeliveryMethod,
-          }),
-        });
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          setIntentError(data.error ?? "Could not start secure payment. Please try again.");
-          return;
-        }
-        setClientSecret(data.client_secret);
-      } catch {
-        if (!cancelled) setIntentError("Network error. Please check your connection and try again.");
-      }
-    })();
-
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+    if (res.ok && data?.client_secret) {
+      return { ok: true, clientSecret: data.client_secret };
+    }
+    const error = data?.error ?? "Could not start secure payment. Please try again.";
+    if (data?.code === "price_changed" && data.quote) {
+      setServerQuote({ key: quoteKey, subtotalEUR: data.quote.subtotal_eur, shippingEUR: data.quote.shipping_eur });
+    }
+    if (data?.code === "restart_attempt") {
+      setAttemptId(crypto.randomUUID());
+    }
+    return { ok: false, error, code: data?.code, paymentIntentId: data?.payment_intent_id };
+  }
 
   // The webhook is what actually creates the order — this only runs once
   // StripeCardForm's own polling has confirmed that's happened (via
@@ -1455,6 +1570,38 @@ export default function CheckoutPage() {
     );
   }
 
+  /* Signed-in customers only — guests are asked to sign in before they see
+     the form (app/api/checkout/intent refuses them regardless). The cart is
+     kept in localStorage, so it's still there when they come back. */
+  if (step === "shipping" || step === "payment") {
+    if (authLoading) {
+      return <div className="min-h-[70vh] bg-cream" aria-busy="true" />;
+    }
+    if (!user) {
+      return (
+        <div className="min-h-[70vh] bg-cream flex flex-col items-center justify-center px-6 text-center font-system">
+          <h1 className="font-heading text-2xl font-700 text-deep-brown mb-2">Sign in to check out</h1>
+          <p className="text-sm text-taupe-dark mb-6 max-w-xs">
+            You need an account to place an order. Your cart will be waiting when you&apos;re back.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link href="/auth/login?next=/checkout"
+                  className="inline-flex items-center justify-center px-8 py-3 rounded-none
+                             text-cream font-semibold text-sm hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: ACCENT }}>
+              Sign in
+            </Link>
+            <Link href="/auth/signup"
+                  className="inline-flex items-center justify-center px-8 py-3 rounded-none border-2
+                             border-stone-200 text-stone-600 font-semibold text-sm hover:border-stone-400 transition-colors">
+              Create an account
+            </Link>
+          </div>
+        </div>
+      );
+    }
+  }
+
   /* Confirmation — reads ONLY the DB-verified `confirmed` snapshot set by
      whichever success handler actually created the order, never a
      client-side recomputed value. All three success handlers set this
@@ -1494,7 +1641,7 @@ export default function CheckoutPage() {
             <h1 className="font-heading text-xl sm:text-2xl font-700 text-deep-brown">Secure Checkout</h1>
           </div>
           <p className="text-xs font-medium tracking-wide pl-6 sm:pl-0" style={{ color: ACCENT }}>
-            {`Secure card payment · Stripe · ${currency}`}
+            {"Secure card payment · Stripe · EUR"}
           </p>
         </div>
       </div>
@@ -1517,11 +1664,11 @@ export default function CheckoutPage() {
             )}
             {step === "payment" && (
               <PaymentStep
-                formattedTotal={pricing.formattedTotal}
+                amountCents={amounts.totalCents}
+                formattedTotal={display.formattedTotal}
                 orderRef={orderRef}
                 onBack={() => { setStep("shipping"); setTermsAccepted(false); }}
-                clientSecret={clientSecret}
-                intentError={intentError}
+                requestIntent={requestIntent}
                 onStripeSuccess={handleStripeSuccess}
                 onStripeRefunded={handleStripeRefunded}
                 termsAccepted={termsAccepted}
@@ -1538,7 +1685,7 @@ export default function CheckoutPage() {
 
           {/* Sidebar */}
           <div className="hidden lg:block w-72 shrink-0 sticky top-28">
-            <OrderSummary items={items} pricing={pricing} orderRef={orderRef}
+            <OrderSummary items={items} totals={display} orderRef={orderRef}
               estimatedDays={estimatedDaysDisplay} customsApplies={customsAppliesDisplay} />
           </div>
         </div>
@@ -1557,14 +1704,17 @@ export default function CheckoutPage() {
             Green and semibold so the fee is the line that gets noticed, and
             "Free" said outright when pickup or a zero quote applies. */}
         <div className="flex items-baseline justify-between gap-3 mb-1 text-[11px] tabular-nums">
-          <span className="text-taupe-dark">Subtotal {pricing.formattedSubtotal}</span>
+          <span className="text-taupe-dark">Subtotal {display.formattedSubtotal}</span>
           <span className="font-semibold text-emerald-600">
-            {shippingEUR === 0 ? "Shipping: Free" : `Shipping: ${pricing.formattedShipping}`}
+            {display.isFreeShipping ? "Shipping: Free" : `Shipping: ${display.formattedShipping}`}
           </span>
         </div>
         <div className="flex items-center justify-between mb-2.5 text-sm">
           <span className="text-taupe-dark text-xs">{step === "shipping" ? "Step 1 of 2" : "Step 2 of 2"}</span>
-          <span className="font-semibold text-deep-brown tabular-nums">{pricing.formattedTotal}</span>
+          <span className="font-semibold text-deep-brown tabular-nums">
+            {display.formattedTotal}
+            {display.approxTotal && <span className="ml-1.5 text-[11px] font-normal text-taupe-dark">{display.approxTotal}</span>}
+          </span>
         </div>
 
         {step === "shipping" && (
