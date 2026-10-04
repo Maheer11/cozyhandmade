@@ -51,7 +51,7 @@ describe.skipIf(!canRunCheckoutIntegration)("POST /api/checkout/intent — price
     const db = await adminDb();
     const { data: pending } = await db.from("pending_stripe_orders").select("total_amount, shipping_amount").eq("payment_intent_id", payment_intent_id).single();
     expect(Math.round(Number(pending?.total_amount) * 100)).toBe(intent.amount);
-  });
+  }, 60_000);
 
   it("refuses when the page's total is missing shipping, and creates no intent", async () => {
     const { POST } = await import("@/app/api/checkout/intent/route");
@@ -64,5 +64,5 @@ describe.skipIf(!canRunCheckoutIntegration)("POST /api/checkout/intent — price
     expect(body.code).toBe("price_changed");
     expect(body.quote.total_cents).toBe(Math.round((realPrice + irishShippingFor(1)) * 100));
     expect(body.client_secret).toBeUndefined();
-  });
+  }, 60_000);
 });

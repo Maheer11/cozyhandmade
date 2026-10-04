@@ -1,5 +1,8 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { vi, describe, it, expect, afterEach } from "vitest";
 import { hasLiveTestCredentials } from "../setup/testEnv";
+
+// Several real Stripe + Supabase round trips per test; 5s isn't enough.
+vi.setConfig({ testTimeout: 60_000 });
 
 // Covers the two fixes to app/api/payments/stripe/webhook/route.ts:
 // out-of-stock now refunds instead of leaving a TODO, and the
@@ -64,7 +67,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe webhook — out-of-stock refund
   async function signedPayloadFor(paymentIntent: { id: string }, eventId: string) {
     const { getStripe } = await import("@/lib/stripe/server");
     const { getStripeWebhookSecret } = await import("@/lib/stripe/env");
-    const payload = JSON.stringify({ id: eventId, type: "payment_intent.succeeded", data: { object: paymentIntent } });
+    const payload = JSON.stringify({ id: eventId, type: "payment_intent.succeeded", livemode: false, data: { object: paymentIntent } });
     const signature = getStripe().webhooks.generateTestHeaderString({ payload, secret: getStripeWebhookSecret() });
     return { payload, signature };
   }
@@ -154,7 +157,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe webhook — out-of-stock refund
     await db.from("stripe_webhook_events").insert({ event_id: eventId, status: "processing" });
 
     const payload = JSON.stringify({
-      id: eventId, type: "payment_intent.succeeded",
+      id: eventId, type: "payment_intent.succeeded", livemode: false,
       data: { object: { id: `pi_fake_${Date.now()}`, status: "succeeded", amount: 100, amount_received: 100, currency: "eur" } },
     });
     const signature = getStripe().webhooks.generateTestHeaderString({ payload, secret: getStripeWebhookSecret() });

@@ -64,5 +64,5 @@ describe.skipIf(!canRunCheckoutIntegration)("Stripe checkout — declined card, 
     expect(paid.status).toBe("succeeded");
     const { data: pending } = await db.from("pending_stripe_orders").select("total_amount").eq("payment_intent_id", paid.id).single();
     expect(paid.amount_received).toBe(Math.round(Number(pending?.total_amount) * 100));
-  });
+  }, 60_000);
 });

@@ -14,6 +14,21 @@ for (const key of ["STRIPE_SECRET_KEY", "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"] as
   }
 }
 
+// Same guard as playwright.config.ts: integration tests insert products,
+// orders and pending payments, so a Supabase URL that isn't the project
+// E2E_SUPABASE_TEST_REF names (e.g. production) stops the whole run.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+if (supabaseUrl && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  const expectedRef = process.env.E2E_SUPABASE_TEST_REF;
+  const actualRef = new URL(supabaseUrl).hostname.split(".")[0];
+  if (!expectedRef || actualRef !== expectedRef) {
+    throw new Error(
+      `NEXT_PUBLIC_SUPABASE_URL points at project "${actualRef}" but E2E_SUPABASE_TEST_REF is ` +
+        `"${expectedRef ?? "(not set)"}". Refusing to run tests against an unexpected database.`
+    );
+  }
+}
+
 // True once real test-mode Stripe + a real test Supabase project are wired
 // up. Integration tests that need live network calls skip (not fail) when
 // this is false, since those credentials are the test author's to provide.

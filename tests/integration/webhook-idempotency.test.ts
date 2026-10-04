@@ -1,5 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { hasLiveTestCredentials } from "../setup/testEnv";
+
+// Several real Stripe + Supabase round trips per test; 5s isn't enough.
+vi.setConfig({ testTimeout: 60_000 });
 
 // Requires a real Stripe TEST-mode account + a real (test-only!) Supabase
 // project with lib/supabase/schema.sql (incl. migration 004) applied — see
@@ -45,6 +48,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe webhook — duplicate delivery 
     const event = {
       id: `evt_test_${paymentIntentId}`,
       type: "payment_intent.succeeded",
+      livemode: false,
       data: { object: { ...paymentIntent, status: "succeeded", amount_received: paymentIntent.amount } },
     };
     const payload = JSON.stringify(event);

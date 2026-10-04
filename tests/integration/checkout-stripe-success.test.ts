@@ -114,5 +114,5 @@ describe.skipIf(!canRunCheckoutIntegration)("Stripe checkout — successful test
     expect(statusBody.charged_amount).toBe(24 + shippingEUR); // EUR charge, so charged_amount === total_amount_eur
     expect(statusBody.currency).toBe("EUR");
     expect(statusBody.payment_channel).toBe("stripe_card");
-  });
+  }, 60_000);
 });
