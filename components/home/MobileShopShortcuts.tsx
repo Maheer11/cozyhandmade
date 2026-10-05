@@ -1,32 +1,16 @@
 import Link from "next/link";
 import type { Category } from "@/lib/products";
+import MobileProductSearch, { type SearchItem } from "@/components/home/MobileProductSearch";
 
 /**
- * Phone-only shortcuts under the homepage headline: a search bar and a row of
- * category chips, so the first screen offers a one-tap way into every kind of
- * product instead of a paragraph to read.
- *
- * The search bar is a link, not an input: the shop page already has the real
- * search and focuses it when opened with ?focusSearch=1 (ProductsContent), so
- * there is one search implementation, not two.
+ * Phone-only shortcuts at the top of the homepage: a product search that
+ * shows results as you type (MobileProductSearch) and a row of category
+ * chips, so the first screen offers a one-tap way into every kind of product.
  */
-export default function MobileShopShortcuts({ categories }: { categories: Category[] }) {
+export default function MobileShopShortcuts({ categories, searchItems }: { categories: Category[]; searchItems: SearchItem[] }) {
   return (
     <div className="lg:hidden mt-5 flex flex-col gap-3">
-      <Link
-        href="/products?focusSearch=1"
-        className="focus-ring flex h-12 items-center gap-3 rounded-full border border-ui-border bg-ui-surface px-4
-                   font-body text-sm text-ui-muted shadow-[0_6px_18px_-12px_rgba(26,8,16,0.4)]
-                   transition-transform duration-150 active:scale-[0.98]"
-        style={{ touchAction: "manipulation" }}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 shrink-0 text-ui-accent"
-             fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-          <circle cx="11" cy="11" r="6.5" />
-          <path d="M20 20l-4.2-4.2" />
-        </svg>
-        Search blankets, bags, baby gifts…
-      </Link>
+      <MobileProductSearch items={searchItems} />
 
       {categories.length > 0 && (
         <nav aria-label="Shop by category">

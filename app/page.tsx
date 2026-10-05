@@ -11,6 +11,7 @@ import { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { getStockedCategories } from "@/lib/db-categories";
 import MobileShopShortcuts from "@/components/home/MobileShopShortcuts";
+import type { SearchItem } from "@/components/home/MobileProductSearch";
 import MobileCategoryTiles from "@/components/home/MobileCategoryTiles";
 import MobileInStockRail, { type RailProduct } from "@/components/home/MobileInStockRail";
 import { MobileTrustStrip, MobileCustomOrderCard } from "@/components/home/MobileExtras";
@@ -139,6 +140,18 @@ function toRailProduct(p: DbRailProduct): RailProduct {
     shippingWeightGrams: p.shipping_weight_grams,
     quickAdd: !hasOptions,
   };
+}
+
+/** The products columns the phone search needs. */
+interface DbSearchProduct {
+  id: string;
+  name: string;
+  image: string | null;
+  price: number;
+  original_price: number | null;
+  category: string;
+  tags: string[] | null;
+  stock_quantity: number;
 }
 
 interface DbReview {
@@ -283,6 +296,28 @@ export default async function HomePage() {
     .limit(12);
   const railProducts = ((dbRail ?? []) as DbRailProduct[]).map(toRailProduct);
 
+  // Phone search: the whole products catalogue (everything with a product
+  // page), in stock first. Small enough to send with the page and filter on
+  // the phone as the customer types.
+  const categoryNameById = new Map(categories.map((c) => [c.id, c.name]));
+  const { data: dbSearch } = await db
+    .from("products")
+    .select("id, name, image, price, original_price, category, tags, stock_quantity")
+    .order("name", { ascending: true });
+  const searchItems: SearchItem[] = ((dbSearch ?? []) as DbSearchProduct[])
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      image: p.image ?? "/images/placeholder.jpg",
+      price: p.price,
+      wasPrice: p.original_price,
+      category: p.category,
+      categoryName: categoryNameById.get(p.category) ?? p.category,
+      tags: p.tags ?? [],
+      soldOut: p.stock_quantity <= 0,
+    }))
+    .sort((a, b) => Number(a.soldOut) - Number(b.soldOut));
+
   // Sold-out pieces keep their place in the owner's order but move behind
   // everything buyable (the sort is stable), so the first row a visitor sees
   // is all things they can add to the cart. If nothing is toggled on for the
@@ -320,7 +355,7 @@ export default async function HomePage() {
               Handmade blankets, bags &amp; baby keepsakes
             </h1>
             {/* Phones: a search bar and category chips instead of the paragraph. */}
-            <MobileShopShortcuts categories={categories} />
+            <MobileShopShortcuts categories={categories} searchItems={searchItems} />
             <p className="hidden lg:block mt-5 max-w-md font-body text-base leading-relaxed text-ui-muted lg:text-lg">
               Helping people create, connect and find comfort, every piece
               handcrafted in Ireland from premium materials.

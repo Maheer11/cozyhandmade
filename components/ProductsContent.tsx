@@ -113,7 +113,8 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
   const searchInputRef = useRef<HTMLInputElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const [query,            setQuery]           = useState("");
+  // ?q= arrives from the homepage search ("See all results" / Enter).
+  const [query,            setQuery]           = useState(searchParams.get("q") ?? "");
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedPrice,    setSelectedPrice]    = useState<number | null>(null);
   const [sort,             setSort]             = useState("featured");
@@ -121,6 +122,8 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
 
   useEffect(() => {
     setSelectedCategory(searchParams.get("category") ?? "all");
+    const q = searchParams.get("q");
+    if (q !== null) setQuery(q);
   }, [searchParams]);
 
   // Bottom-nav "Search" tab lands here with ?focusSearch=1 — actually focus the input
