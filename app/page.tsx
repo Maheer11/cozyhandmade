@@ -9,6 +9,12 @@ import HomeFeaturedGrid from "@/components/HomeFeaturedGrid";
 import HeroProductCarousel from "@/components/HeroProductCarousel";
 import { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
+import { getStockedCategories } from "@/lib/db-categories";
+import MobileShopShortcuts from "@/components/home/MobileShopShortcuts";
+import MobileHeadline from "@/components/home/MobileHeadline";
+import MobileCategoryTiles from "@/components/home/MobileCategoryTiles";
+import MobileInStockRail, { type RailProduct } from "@/components/home/MobileInStockRail";
+import { MobileTrustStrip, MobileCustomOrderCard } from "@/components/home/MobileExtras";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
 import {
   FEATURED_PIECE_STOCK_SELECT,
@@ -52,9 +58,11 @@ function toCard(row: DbHeroFeaturedPiece): FeaturedPieceCardData {
   return { ...row, sold_out: isFeaturedPieceSoldOut(row) };
 }
 
-/** The hero photo frame: 4:5 on phones, 3:2 on tablets, a clamped height beside the copy from lg. */
+/** The hero photo frame: 5:4 on phones (short enough to leave the shop
+ *  shortcuts above it on the first screen), 3:2 on tablets, a clamped height
+ *  beside the copy from lg. */
 const HERO_FRAME =
-  "aspect-[4/5] sm:aspect-[3/2] lg:aspect-auto lg:h-[clamp(30rem,calc(100svh-14rem),40rem)]";
+  "aspect-[5/4] sm:aspect-[3/2] lg:aspect-auto lg:h-[clamp(30rem,calc(100svh-14rem),40rem)]";
 
 /** The products columns a card needs, before normalisation. */
 const PRODUCT_CARD_COLUMNS =
@@ -102,6 +110,35 @@ function toProductCard(p: DbHeroProduct): FeaturedPieceCardData {
     // /products listing does.
     price: p.original_price ?? p.price,
     discount_price: p.original_price ? p.price : null,
+  };
+}
+
+/** The products columns the phone "In stock now" row needs. */
+interface DbRailProduct {
+  id: string;
+  name: string;
+  image: string | null;
+  price: number;
+  original_price: number | null;
+  stock_quantity: number;
+  colors: string[] | null;
+  sizes: string[] | null;
+  variant_price: Record<string, number> | null;
+  shipping_weight_grams: number | null;
+}
+
+function toRailProduct(p: DbRailProduct): RailProduct {
+  const hasOptions =
+    (p.colors?.length ?? 0) > 0 || (p.sizes?.length ?? 0) > 0 || Object.keys(p.variant_price ?? {}).length > 0;
+  return {
+    id: p.id,
+    name: p.name,
+    image: p.image ?? "/images/placeholder.jpg",
+    price: p.price,
+    wasPrice: p.original_price,
+    stockQuantity: p.stock_quantity,
+    shippingWeightGrams: p.shipping_weight_grams,
+    quickAdd: !hasOptions,
   };
 }
 
@@ -237,6 +274,16 @@ export default async function HomePage() {
   // Featured Pieces first (by display_order), then products (by created_at).
   const heroItems = [...heroPieces, ...heroProducts];
 
+  // Phone homepage: categories that hold products, and what's buyable today.
+  const categories = await getStockedCategories(supabase);
+  const { data: dbRail } = await db
+    .from("products")
+    .select("id, name, image, price, original_price, stock_quantity, colors, sizes, variant_price, shipping_weight_grams")
+    .gt("stock_quantity", 0)
+    .order("created_at", { ascending: false })
+    .limit(12);
+  const railProducts = ((dbRail ?? []) as DbRailProduct[]).map(toRailProduct);
+
   // Sold-out pieces keep their place in the owner's order but move behind
   // everything buyable (the sort is stable), so the first row a visitor sees
   // is all things they can add to the cart. If nothing is toggled on for the
@@ -258,16 +305,23 @@ export default async function HomePage() {
           each glyph". One primary action (maroon), and a plain text link that scrolls to the grid.
       ══════════════════════════════════════════════ */}
       <section className="bg-ui-bg">
-        <div className="page-container grid gap-8 py-8 sm:py-12 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-12">
-          <div className="max-w-xl">
+        {/* grid-cols-1 (minmax(0,1fr)) and min-w-0: without them the phone
+            column grows to the full width of the swipeable chip row and pushes
+            the search bar, button and photo off the right edge. */}
+        <div className="page-container grid grid-cols-1 gap-8 py-8 sm:py-12 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-12">
+          <div className="min-w-0 max-w-xl">
             <p className="mb-4 font-body text-sm font-medium text-ui-accent">
               Handcrafted in Ireland
             </p>
-            <h1 className="font-heading font-medium text-ui-text leading-[1.05] text-balance
-                           text-[clamp(2.5rem,1.6rem+3.2vw,4.25rem)]">
+            {/* Phones: each product word is a tappable pill (MobileHeadline). */}
+            <MobileHeadline categories={categories} />
+            <h1 className="hidden lg:block font-heading font-medium text-ui-text text-balance
+                           lg:text-[clamp(2.5rem,1.6rem+3.2vw,4.25rem)] lg:leading-[1.05]">
               Handmade blankets, bags &amp; baby keepsakes
             </h1>
-            <p className="mt-5 max-w-md font-body text-base leading-relaxed text-ui-muted lg:text-lg">
+            {/* Phones: a search bar and category chips instead of the paragraph. */}
+            <MobileShopShortcuts categories={categories} />
+            <p className="hidden lg:block mt-5 max-w-md font-body text-base leading-relaxed text-ui-muted lg:text-lg">
               Helping people create, connect and find comfort, every piece
               handcrafted in Ireland from premium materials.
             </p>
@@ -275,18 +329,20 @@ export default async function HomePage() {
                 two fit on one line depended on which font had loaded, so the
                 link jumped to a second line when Jost arrived and pushed the
                 photo down (CLS 0.09 at 375px). */}
-            <div className="mt-8 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-8">
+            <div className="mt-4 flex flex-col items-stretch gap-5 lg:mt-8 lg:flex-row lg:items-center lg:gap-8">
               <Link
                 href="/products"
-                className="focus-ring inline-flex h-12 items-center justify-center rounded-button bg-ui-accent px-7
-                           font-body text-sm font-semibold text-white
-                           transition-colors duration-150 hover:bg-ui-accent-hover"
+                className="cta-sheen focus-ring inline-flex h-12 items-center justify-center rounded-full bg-ui-accent px-7
+                           font-body text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(139,32,53,0.8)]
+                           transition-[background-color,transform] duration-150 hover:bg-ui-accent-hover active:scale-[0.98]
+                           lg:rounded-button lg:shadow-none"
+                style={{ touchAction: "manipulation" }}
               >
                 Shop the Collection
               </Link>
               <a
                 href="#featured-pieces"
-                className="focus-ring rounded-button font-body text-sm font-medium text-ui-text
+                className="hidden lg:inline focus-ring rounded-button font-body text-sm font-medium text-ui-text
                            underline decoration-ui-border decoration-2 underline-offset-[6px]
                            transition-colors duration-150 hover:decoration-ui-accent"
               >
@@ -319,8 +375,9 @@ export default async function HomePage() {
           )}
         </div>
 
-        {/* Trust row — three plain statements, same content width as the hero. */}
-        <div className="page-container">
+        {/* Trust row — three plain statements, same content width as the hero.
+            Desktop only; phones get the compact MobileTrustStrip below. */}
+        <div className="page-container hidden lg:block">
           <ul className="grid gap-3 border-t border-ui-border py-5 sm:grid-cols-3 sm:gap-6">
             {trustPoints.map(({ label, icon }) => (
               <li key={label} className="flex items-center gap-3 font-body text-sm text-ui-text">
@@ -345,6 +402,14 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════
+          PHONES ONLY — one-tap ways in: categories, what's in stock, and the
+          three facts that matter. All lg:hidden, so desktop is unchanged.
+      ══════════════════════════════════════════════ */}
+      <MobileCategoryTiles categories={categories} />
+      <MobileInStockRail products={railProducts} />
+      <MobileTrustStrip />
+
+      {/* ══════════════════════════════════════════════
           FEATURED PIECES — the admin's show_on_homepage picks, sold out last
       ══════════════════════════════════════════════ */}
       <HomeFeaturedGrid items={homepageItems} />
@@ -353,7 +418,7 @@ export default async function HomePage() {
           TRUST STRIP
       ══════════════════════════════════════════════ */}
       <section
-        className="border-y border-taupe/15"
+        className="hidden lg:block border-y border-taupe/15"
         style={{ backgroundColor: "#F2E2CC" }}
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 lg:py-6">
@@ -386,7 +451,7 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           MARQUEE STRIP
       ══════════════════════════════════════════════ */}
-      <section className="bg-gold overflow-hidden py-3.5">
+      <section className="hidden lg:block bg-gold overflow-hidden py-3.5">
         <div className="flex whitespace-nowrap">
           <div className="flex gap-10 animate-marquee shrink-0">
             {marqueeDouble.map((item, i) => (
@@ -414,12 +479,14 @@ export default async function HomePage() {
       ══════════════════════════════════════════════ */}
       <SocialProofSection reviews={reviews} />
 
+      <MobileCustomOrderCard />
+
       {/* ══════════════════════════════════════════════
           NEWSLETTER — "Join the Circle"
       ══════════════════════════════════════════════ */}
       <section
         id="newsletter"
-        className="relative overflow-hidden py-14 lg:py-24 bg-cream-dark"
+        className="relative overflow-hidden py-6 lg:py-24 bg-cream-dark"
       >
         <ScrollReveal className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="lg:grid lg:grid-cols-[1fr_1.1fr] lg:gap-10 lg:items-center">
@@ -459,19 +526,19 @@ export default async function HomePage() {
             {/* Postcard/letter card — the photo collage carries the studio feel
                 on its own, so the card stays a clean white panel. */}
             <div className="relative bg-white rounded-3xl shadow-[0_20px_50px_-15px_rgba(26,8,16,0.25)] overflow-hidden lg:flex lg:flex-col lg:justify-center">
-              <div className="text-center lg:text-left px-6 sm:px-14 lg:px-14 py-10 sm:py-14">
+              <div className="text-center lg:text-left px-5 lg:px-14 py-7 lg:py-14">
                 {/* Wax-seal style mark */}
-                <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold/10 text-gold text-lg mb-5">
+                <span className="hidden lg:inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold/10 text-gold text-lg mb-5">
                   ✦
                 </span>
 
                 <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
                   Join the Circle
                 </p>
-                <h2 className="font-heading italic text-3xl sm:text-4xl font-400 mb-4 text-deep-brown">
+                <h2 className="font-heading italic text-2xl lg:text-4xl font-400 mb-4 text-deep-brown">
                   Letters from our Studio
                 </h2>
-                <p className="text-brown/70 text-base leading-relaxed mb-9 font-body max-w-md mx-auto lg:mx-0">
+                <p className="hidden lg:block text-brown/70 text-base leading-relaxed mb-9 font-body max-w-md mx-auto lg:mx-0">
                   New pieces, knitting stories, and seasonal inspiration,
                   delivered gently to your inbox.
                 </p>
