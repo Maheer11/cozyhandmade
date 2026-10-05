@@ -477,3 +477,44 @@ body {
   #order-receipt-wrapper { display: block !important; position: static !important; }
   #order-receipt-wrapper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ─── Mobile homepage ────────────────────────────── */
+/* Swipe rows: still scrollable by touch, trackpad and keyboard, just without
+   a scrollbar strip under every row on desktop-class browsers. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* Primary call to action: a soft light sweep every few seconds draws the eye
+   without anything on the page moving on its own. Off for reduced motion. */
+@keyframes cta-sheen {
+  0%, 70% { transform: translateX(-120%) skewX(-20deg); }
+  100%    { transform: translateX(220%)  skewX(-20deg); }
+}
+.cta-sheen { position: relative; overflow: hidden; isolation: isolate; }
+.cta-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: cta-sheen 4.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-sheen::after { animation: none; display: none; }
+}
+/* Phones and tablets only: the desktop hero keeps its plain button. */
+@media (min-width: 64rem) {
+  .cta-sheen::after { display: none; }
+}
+
+/* Added-to-cart: the badge grows once when the count changes. */
+@keyframes cart-bump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.animate-cart-bump { animation: cart-bump 350ms ease-out; }

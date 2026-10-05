@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { whatsappLink } from "@/lib/social-links";
+import { useCart } from "@/components/CartContext";
 
 /**
  * Pages with their own full-width sticky bars, where the bottom nav steps
@@ -18,6 +19,7 @@ export function isBottomNavHidden(pathname: string): boolean {
 export default function BottomNav() {
   const pathname  = usePathname();
   const { user }  = useAuth();
+  const { itemCount, openCart } = useCart();
 
   if (isBottomNavHidden(pathname)) return null;
 
@@ -30,6 +32,9 @@ export default function BottomNav() {
     active: boolean;
     /** Opens outside the site (WhatsApp) — a plain <a> in a new tab. */
     external?: boolean;
+    /** A button, not a link (the cart opens a drawer, not a page). */
+    onClick?: () => void;
+    badge?: number;
     icon: (on: boolean) => React.ReactNode;
   }[] = [
     {
@@ -64,13 +69,16 @@ export default function BottomNav() {
       ),
     },
     {
-      href: accountHref,
-      label: user ? "Account" : "Sign In",
-      active: accountActive,
-      icon: (on: boolean) => (
-        <svg className={`w-6 h-6 ${on ? "stroke-gold" : "stroke-taupe-dark"} fill-none`}
-             viewBox="0 0 24 24" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+      // The cart, within thumb reach. Opens the same drawer as the header
+      // cart icon; the badge shows how many pieces are in it.
+      href: "#cart",
+      label: "Cart",
+      active: false,
+      onClick: openCart,
+      badge: itemCount,
+      icon: () => (
+        <svg className="w-6 h-6 stroke-taupe-dark fill-none" viewBox="0 0 24 24" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z" />
         </svg>
       ),
     },
@@ -85,6 +93,17 @@ export default function BottomNav() {
       icon: () => (
         <svg className="w-6 h-6 stroke-taupe-dark fill-none" viewBox="0 0 24 24" strokeWidth={1.8}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" />
+        </svg>
+      ),
+    },
+    {
+      href: accountHref,
+      label: user ? "Account" : "Sign In",
+      active: accountActive,
+      icon: (on: boolean) => (
+        <svg className={`w-6 h-6 ${on ? "stroke-gold" : "stroke-taupe-dark"} fill-none`}
+             viewBox="0 0 24 24" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
         </svg>
       ),
     },
@@ -110,18 +129,42 @@ export default function BottomNav() {
       aria-label="Primary"
     >
       <div className="flex items-stretch">
-        {tabs.map(({ href, label, active, external, icon }) => {
+        {tabs.map(({ href, label, active, external, onClick, badge, icon }) => {
           const className = `focus-ring flex-1 flex flex-col items-center justify-center gap-0.5 py-2
                              active:scale-95 transition-all duration-150
                              ${active ? "text-gold" : "text-taupe-dark"}`;
           const content = (
             <>
-              {icon(active)}
+              <span className="relative">
+                {icon(active)}
+                {badge !== undefined && badge > 0 && (
+                  // key restarts the bump each time the count changes.
+                  <span key={badge}
+                        className="animate-cart-bump absolute -right-2.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center
+                                   rounded-full bg-ui-accent px-1 text-[10px] font-bold leading-none text-white">
+                    {badge > 9 ? "9+" : badge}
+                  </span>
+                )}
+              </span>
               <span className="text-[10px] font-semibold tracking-wide whitespace-nowrap">
                 {label}
               </span>
             </>
           );
+          if (onClick) {
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={onClick}
+                style={{ touchAction: "manipulation" }}
+                className={className}
+                aria-label={badge ? `${label}, ${badge} ${badge === 1 ? "item" : "items"}` : label}
+              >
+                {content}
+              </button>
+            );
+          }
           return external ? (
             <a
               key={label}
