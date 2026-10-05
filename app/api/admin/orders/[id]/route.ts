@@ -5,24 +5,21 @@ import { sendOrderStatusEmail } from "@/lib/email";
 import { isAdminEmail } from "@/lib/auth/isAdmin";
 import {
   addBusinessDays,
-  IE_DELIVERY_BUSINESS_DAYS,
-  INTL_DELIVERY_BUSINESS_DAYS_MIN,
-  INTL_DELIVERY_BUSINESS_DAYS_MAX,
+  DELIVERY_BUSINESS_DAYS_MIN,
+  DELIVERY_BUSINESS_DAYS_MAX,
 } from "@/lib/config";
 
 function formatDate(d: Date) {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
-// Irish orders get a single "by <date>" ceiling; every other destination gets
-// a 7–14 day range — see lib/config.ts.
-function estimatedDeliveryLabel(isIreland: boolean): string {
+// Every destination gets the same 7–14 day range, Ireland included — see
+// lib/config.ts. The parameter is kept so callers still read as
+// destination-aware if the windows ever diverge again.
+function estimatedDeliveryLabel(_isIreland: boolean): string {
   const now = new Date();
-  if (isIreland) {
-    return `by ${formatDate(addBusinessDays(now, IE_DELIVERY_BUSINESS_DAYS))}`;
-  }
-  const earliest = addBusinessDays(now, INTL_DELIVERY_BUSINESS_DAYS_MIN);
-  const latest = addBusinessDays(now, INTL_DELIVERY_BUSINESS_DAYS_MAX);
+  const earliest = addBusinessDays(now, DELIVERY_BUSINESS_DAYS_MIN);
+  const latest = addBusinessDays(now, DELIVERY_BUSINESS_DAYS_MAX);
   return `${formatDate(earliest)} – ${formatDate(latest)}`;
 }
 
