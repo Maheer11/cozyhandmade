@@ -3,15 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/supabase/auth-context";
+import { whatsappLink } from "@/lib/social-links";
+
+/**
+ * Pages with their own full-width sticky bars, where the bottom nav steps
+ * aside. Exported because FloatingWhatsApp needs the same answer: the chat
+ * lives in this bar as a tab wherever the bar shows, and falls back to the
+ * floating bubble wherever it doesn't.
+ */
+export function isBottomNavHidden(pathname: string): boolean {
+  return /^\/products\/[^/]+$/.test(pathname) || pathname.startsWith("/checkout");
+}
 
 export default function BottomNav() {
   const pathname  = usePathname();
   const { user }  = useAuth();
 
-  // These pages have their own full-width sticky bars — hide the bottom nav
-  const isProductDetail = /^\/products\/[^/]+$/.test(pathname);
-  const isCheckout = pathname.startsWith("/checkout");
-  if (isProductDetail || isCheckout) return null;
+  if (isBottomNavHidden(pathname)) return null;
 
   const accountHref  = user ? "/account" : "/auth/login";
   const accountActive = pathname.startsWith("/account") || pathname.startsWith("/auth");
@@ -20,6 +28,8 @@ export default function BottomNav() {
     href: string;
     label: string;
     active: boolean;
+    /** Opens outside the site (WhatsApp) — a plain <a> in a new tab. */
+    external?: boolean;
     icon: (on: boolean) => React.ReactNode;
   }[] = [
     {
@@ -64,6 +74,20 @@ export default function BottomNav() {
         </svg>
       ),
     },
+    {
+      // WhatsApp chat, docked here rather than floating: a floating bubble
+      // over a two-column product grid always ends up covering a name or a
+      // link as the page scrolls. As a tab it can never sit on content.
+      href: whatsappLink("Hi! I'd love to ask about a piece from Cozi Handmade ✦"),
+      label: "Chat",
+      active: false,
+      external: true,
+      icon: () => (
+        <svg className="w-6 h-6 stroke-taupe-dark fill-none" viewBox="0 0 24 24" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -76,7 +100,7 @@ export default function BottomNav() {
        Every tab carries its label now. Labels were previously shown on the
        active tab only, because three icon+label pairs made the *pill* wider
        than a 375px screen; stacked icon-over-label at full width they fit
-       comfortably, and three evenly spread columns read as a deliberate tab
+       comfortably, and evenly spread columns read as a deliberate tab
        bar rather than a row with gaps in it. */
     <nav
       className="lg:hidden fixed bottom-0 left-0 right-0 z-40
@@ -86,23 +110,43 @@ export default function BottomNav() {
       aria-label="Primary"
     >
       <div className="flex items-stretch">
-        {tabs.map(({ href, label, active, icon }) => (
-          <Link
-            key={label}
-            href={href}
-            style={{ touchAction: "manipulation" }}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2
-                       active:scale-95 transition-all duration-150
-                       ${active ? "text-gold" : "text-taupe-dark"}`}
-            aria-label={label}
-            aria-current={active ? "page" : undefined}
-          >
-            {icon(active)}
-            <span className="text-[10px] font-semibold tracking-wide whitespace-nowrap">
-              {label}
-            </span>
-          </Link>
-        ))}
+        {tabs.map(({ href, label, active, external, icon }) => {
+          const className = `focus-ring flex-1 flex flex-col items-center justify-center gap-0.5 py-2
+                             active:scale-95 transition-all duration-150
+                             ${active ? "text-gold" : "text-taupe-dark"}`;
+          const content = (
+            <>
+              {icon(active)}
+              <span className="text-[10px] font-semibold tracking-wide whitespace-nowrap">
+                {label}
+              </span>
+            </>
+          );
+          return external ? (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ touchAction: "manipulation" }}
+              className={className}
+              aria-label="Chat with us on WhatsApp"
+            >
+              {content}
+            </a>
+          ) : (
+            <Link
+              key={label}
+              href={href}
+              style={{ touchAction: "manipulation" }}
+              className={className}
+              aria-label={label}
+              aria-current={active ? "page" : undefined}
+            >
+              {content}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

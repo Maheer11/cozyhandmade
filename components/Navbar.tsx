@@ -150,7 +150,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
           lg:opacity-100 lg:translate-y-0 lg:pointer-events-auto`}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
-        <div className="flex items-center justify-between h-20 px-4 sm:px-6 lg:px-10 max-w-7xl mx-auto">
+        <div className="page-container flex items-center justify-between h-20">
 
           {/* ── Mobile: hamburger ──
               Wrapped in a flex-1 zone (mirrored by the right-side icon zone
@@ -162,7 +162,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
           <div className="flex-1 flex lg:hidden">
             <button
               onClick={() => setMenuOpen(true)}
-              className="w-11 h-11 -ml-2 flex items-center justify-center
+              className="focus-ring w-11 h-11 -ml-2 flex items-center justify-center
                          text-brown active:bg-cream-dark rounded-xl transition-colors duration-150"
               aria-label="Open menu"
               aria-expanded={menuOpen}
@@ -174,17 +174,19 @@ export default function Navbar({ categories }: { categories: { id: string; name:
           </div>
 
           {/* ── Logo ── */}
-          <Link href="/" className="flex items-center group shrink-0">
+          <Link href="/" aria-label="Cozi Handmade home" className="focus-ring flex items-center group shrink-0 rounded-button">
             {/* Slightly smaller on mobile, full size from sm up. */}
-            <CoziLogo className="w-36 h-11 sm:w-44 sm:h-14 transition-opacity duration-200 group-hover:opacity-75" />
+            <CoziLogo className="h-11 w-auto sm:h-14 transition-opacity duration-200 group-hover:opacity-75" />
           </Link>
 
           {/* ── Desktop nav links ── */}
-          {/* Pill nav — the hovered item lifts onto a soft capsule and the
-              current page keeps a filled one, so the bar always shows where
-              you are. Replaces the hover underline. */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navLinks.map(({ href, label }) => {
+          {/* Underline, not a filled pill: the current page is marked with a
+              2px maroon rule under the label, which states "you are here"
+              without competing with the primary button for weight. Home is
+              left out on desktop because the logo beside it is the home link;
+              the mobile drawer keeps it, where the logo habit is weaker. */}
+          <nav className="hidden lg:flex items-center gap-8">
+            {navLinks.filter(({ href }) => href !== "/").map(({ href, label }) => {
               // Compare paths only: "/#newsletter" and "/" share a pathname, so the
               // hash has to be stripped before deciding what's current.
               const linkPath = href.split("#")[0] || "/";
@@ -199,12 +201,14 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                   key={label}
                   href={href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`relative px-4 py-2 rounded-full text-[15px] tracking-wide
-                              transition-colors duration-200
+                  className={`focus-ring relative py-2 text-[15px] font-medium font-body
+                              transition-colors duration-150
+                              after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5
+                              after:bg-ui-accent after:transition-opacity after:duration-150
                               ${
                                 isActive
-                                  ? "bg-gold/10 text-gold font-semibold"
-                                  : "font-medium text-brown hover:bg-brown/6 hover:text-gold"
+                                  ? "text-ui-accent after:opacity-100"
+                                  : "text-ui-text hover:text-ui-accent after:opacity-0"
                               }`}
                 >
                   {label}
@@ -213,7 +217,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
             })}
           </nav>
 
-          {/* ── Right: Currency + Shop Now + Cart ──
+          {/* ── Right: Currency + Account + Cart ──
               flex-1 + justify-end mirrors the hamburger zone above so the
               logo lands centered between two equal-width flex zones — see
               the note above the hamburger for why that matters. Reverts to
@@ -223,22 +227,6 @@ export default function Navbar({ categories }: { categories: { id: string; name:
             <div className="hidden lg:block">
               <CurrencyPicker />
             </div>
-            {/* Shop Now — icon only, no background, visible on mobile and desktop */}
-            <Link
-              href="/products"
-              className="inline-flex items-center px-2 py-2.5
-                         hover:opacity-75 active:opacity-75 transition-opacity duration-200"
-              aria-label="Shop Now"
-            >
-              {/* iOS-style filled bag glyph (SF Symbols "bag.fill") with an "S" mark */}
-              <span className="relative w-9 h-9 shrink-0 inline-flex items-center justify-center">
-                <svg className="w-9 h-9 absolute inset-0" viewBox="0 0 24 24" fill="#8B2035" aria-hidden="true">
-                  <path d="M7.5 5.25a4.5 4.5 0 119 0V6h1.628a2.25 2.25 0 012.244 2.077l.807 10.5A2.25 2.25 0 0118.933 21H5.067a2.25 2.25 0 01-2.246-2.423l.807-10.5A2.25 2.25 0 015.872 6H7.5v-.75zM9 6h6v-.75a3 3 0 10-6 0V6zm-.75 3.75a.75.75 0 011.5 0 2.25 2.25 0 004.5 0 .75.75 0 011.5 0 3.75 3.75 0 01-7.5 0z" />
-                </svg>
-                <span className="relative text-white text-xs font-bold mt-1.5">S</span>
-              </span>
-            </Link>
-
             {/* User account button — DESKTOP ONLY.
                 On mobile the bottom nav owns the account slot (its last tab is
                 Account / Sign In), and the drawer carries My Account, My
@@ -252,7 +240,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                 <>
                   <button
                     onClick={() => setUserMenuOpen((o) => !o)}
-                    className="w-12 h-12 flex items-center justify-center
+                    className="focus-ring w-12 h-12 flex items-center justify-center
                                text-brown active:bg-cream-dark lg:hover:text-gold rounded-xl
                                transition-colors duration-150"
                     aria-label="Account menu"
@@ -306,7 +294,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               ) : (
                 <Link
                   href="/auth/login"
-                  className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 rounded-none
+                  className="focus-ring hidden lg:inline-flex items-center gap-1.5 px-4 py-2 rounded-none
                              border border-brown/30 text-sm font-medium text-brown font-body
                              hover:border-brown/70 transition-colors duration-200"
                 >
@@ -332,7 +320,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
             <button
               onClick={openCart}
               style={{ touchAction: "manipulation" }}
-              className="relative w-12 h-12 flex items-center justify-center
+              className="focus-ring relative w-12 h-12 flex items-center justify-center
                          text-brown rounded-xl bg-cream-dark/50 lg:bg-transparent
                          active:bg-cream-dark active:scale-90 lg:hover:text-gold
                          lg:active:scale-100 transition-all duration-100"
@@ -345,7 +333,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
               </svg>
               {itemCount > 0 && (
-                <span className="animate-badge-pop absolute -top-0.5 -right-0.5 w-5 h-5 bg-gold text-cream
+                <span className="animate-badge-pop absolute top-0.5 right-0.5 min-w-5 h-5 px-1 bg-ui-accent text-white
                                  text-[10px] font-bold rounded-full flex items-center justify-center">
                   {itemCount > 9 ? "9+" : itemCount}
                 </span>
@@ -367,8 +355,13 @@ export default function Navbar({ categories }: { categories: { id: string; name:
       <div
         className={`fixed top-0 left-0 bottom-0 z-50 w-[82vw] max-w-sm
                     bg-cream-dark flex flex-col shadow-2xl
-                    transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]
-                    ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
+                    transition-[transform,visibility] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]
+                    ${menuOpen ? "translate-x-0 visible" : "-translate-x-full invisible"}`}
+        // Closed, the drawer is parked off-screen: invisible stops its shadow
+        // bleeding into the page edge (visibility transitions with the slide,
+        // so the close animation still plays) and inert takes its links out of
+        // the tab order.
+        inert={!menuOpen}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
         role="dialog"
         aria-modal="true"
@@ -410,7 +403,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               </span>
               <span className="flex-1">
                 <span className="block text-sm font-semibold">Create a Custom Order</span>
-                <span className="block text-[11px] text-deep-brown/70">Tell us exactly what you'd like made</span>
+                <span className="block text-[11px] text-deep-brown/70">Tell us exactly what you&apos;d like made</span>
               </span>
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

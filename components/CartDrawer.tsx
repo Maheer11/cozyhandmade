@@ -145,8 +145,11 @@ export default function CartDrawer() {
       <div
         className={`fixed top-0 right-0 bottom-0 z-[60] w-full sm:w-[420px] sm:max-w-[90vw]
                     bg-cream flex flex-col shadow-2xl
-                    transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-                    ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+                    transition-[transform,visibility] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+                    ${isOpen ? "translate-x-0 visible" : "translate-x-full invisible"}`}
+        // Hidden and inert while closed so its shadow doesn't bleed into the
+        // page edge and its controls leave the tab order; see Navbar's drawer.
+        inert={!isOpen}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
         role="dialog"
         aria-modal="true"

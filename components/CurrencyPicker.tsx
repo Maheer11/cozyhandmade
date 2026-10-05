@@ -30,7 +30,7 @@ export default function CurrencyPicker({ dropUp = false }: { dropUp?: boolean })
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 px-2.5 h-11 rounded-md text-xs font-body
+        className="focus-ring flex items-center gap-1.5 px-2.5 h-11 rounded-md text-xs font-body
                    transition-colors duration-150 hover:bg-black/5 active:bg-black/10 active:scale-95"
         style={{ touchAction: "manipulation", color: "#5C3D2A" }}
         aria-label="Change currency"
