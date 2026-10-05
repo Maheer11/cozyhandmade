@@ -11,6 +11,7 @@ import { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { getStockedCategories } from "@/lib/db-categories";
 import MobileShopShortcuts from "@/components/home/MobileShopShortcuts";
+import MobileHeadline from "@/components/home/MobileHeadline";
 import MobileCategoryTiles from "@/components/home/MobileCategoryTiles";
 import MobileInStockRail, { type RailProduct } from "@/components/home/MobileInStockRail";
 import { MobileTrustStrip, MobileCustomOrderCard } from "@/components/home/MobileExtras";
@@ -312,8 +313,9 @@ export default async function HomePage() {
             <p className="mb-4 font-body text-sm font-medium text-ui-accent">
               Handcrafted in Ireland
             </p>
-            <h1 className="font-heading font-medium text-ui-text text-balance
-                           text-[2.125rem] leading-[1.08]
+            {/* Phones: each product word is a tappable pill (MobileHeadline). */}
+            <MobileHeadline categories={categories} />
+            <h1 className="hidden lg:block font-heading font-medium text-ui-text text-balance
                            lg:text-[clamp(2.5rem,1.6rem+3.2vw,4.25rem)] lg:leading-[1.05]">
               Handmade blankets, bags &amp; baby keepsakes
             </h1>
