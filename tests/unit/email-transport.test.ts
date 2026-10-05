@@ -104,7 +104,7 @@ describe("templates", () => {
       chargedAmount: 73,
       chargedCurrency: "EUR",
       deliveryAddress: { firstName: "Maja", country: "IE" },
-      estimatedDays: "within 7 business days",
+      estimatedDays: "7-14 business days",
       placedAt: new Date("2026-08-03T12:00:00Z"),
     });
 
@@ -148,7 +148,7 @@ describe("templates", () => {
       total: 73,
       currency: "EUR",
       deliveryAddress: { firstName: "Maja" },
-      estimatedDays: "within 7 business days",
+      estimatedDays: "7-14 business days",
       placedAt: new Date("2026-08-03T12:00:00Z"),
     };
 
@@ -236,7 +236,7 @@ describe("admin alert with several recipients", () => {
       total: 73,
       currency: "EUR",
       deliveryAddress: { firstName: "Maja", lastName: "Byrne" },
-      estimatedDays: "within 7 business days",
+      estimatedDays: "7-14 business days",
       placedAt: new Date("2026-08-03T12:00:00Z"),
     });
 
