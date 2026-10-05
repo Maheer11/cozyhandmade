@@ -1,5 +1,5 @@
 // Single source of truth for weight-based shipping cost. Imported by BOTH
-// the checkout UI (display) and app/api/payments/stripe/create-intent
+// the checkout UI (display) and app/api/checkout/intent
 // (charging) — see that route's comment for why a second implementation
 // must never be created. Ships from Ireland; cost scales by weight, not
 // item count; no free-shipping threshold.
@@ -91,12 +91,15 @@ const NIGERIA_COUNTRIES = new Set(["NG"]);
 // Post rate to quote — see lookupBandPrice's doc comment for how that's
 // handled (split into multiple parcels using these same real prices).
 //
-// estimatedDays: Ireland (the fulfilment country) quotes "within 7 business
-// days"; EVERY other zone quotes the same "7-14 business days" range. These
-// are deliberately uniform across international zones rather than tuned per
-// zone — An Post publishes rates per zone, not transit SLAs, so a per-zone
-// spread would be invented precision. Revisit only with real carrier transit
-// data, not by interpolating from the price table.
+// estimatedDays: EVERY zone quotes the same "7-14 business days" range,
+// Ireland included. Deliberately uniform rather than tuned per zone — An Post
+// publishes rates per zone, not transit SLAs, so a per-zone spread would be
+// invented precision, and pieces are made by hand, so the making is the long
+// pole rather than the carrier. Ireland used to quote a shorter "within 7
+// business days" ceiling, which meant the confirmation page and the order
+// email quoted different windows for the same order. One string, one window,
+// everywhere. Revisit only with real carrier transit data, not by
+// interpolating from the price table.
 const ZONE_RATES: Record<ShippingZone, ZoneRates> = {
   domestic: {
     bands: [
@@ -108,7 +111,7 @@ const ZONE_RATES: Record<ShippingZone, ZoneRates> = {
       { maxGrams: 15000, priceEUR: 19 },
       { maxGrams: 20000, priceEUR: 20 },
     ],
-    estimatedDays: "within 7 business days",
+    estimatedDays: "7-14 business days",
     customsApplies: false,
   },
   // UK bands intentionally don't match domestic's shape — each zone's band
@@ -221,7 +224,7 @@ export interface DeliveryAddressLike {
 // app): country must be Ireland, AND either the city field mentions Dublin
 // or the postcode's Eircode routing key is one of Dublin's. This same
 // function runs both client-side (to decide whether to show the pickup
-// option at all) and server-side (create-intent/orders re-run it against
+// option at all) and server-side (app/api/checkout/intent re-runs it against
 // the submitted address before ever honouring a €0 shipping charge — the
 // client's claim of having chosen "pickup" is never trusted on its own).
 export function isDublinPickupEligible(address: DeliveryAddressLike): boolean {

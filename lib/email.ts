@@ -129,7 +129,7 @@ function businessBlock(): string {
  * Unconditional by design. Every email this appears in is triggered by the
  * Stripe checkout, and everything sold through that checkout is standard
  * catalogue stock — bespoke commissions go through the /custom-order
- * enquiry form, which never reaches the cart or create-intent and so never
+ * enquiry form, which never reaches the cart or the checkout intent route and so never
  * produces this email. There is therefore no item type to branch on.
  *
  * Three details here are load-bearing and should not be trimmed as

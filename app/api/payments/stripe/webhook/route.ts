@@ -13,24 +13,30 @@ import {
   type OrderEmailItem,
 } from "@/lib/email";
 import { calculateShipping } from "@/lib/checkout/shipping";
+import { checkChargeMatchesPending } from "@/lib/checkout/amounts";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { VerifiedItem } from "@/lib/checkout/repriceItems";
 
-// Max allowed drift between the staged total (converted to the PaymentIntent's
-// currency, in minor units) and what Stripe actually confirmed was charged.
-// The two should match exactly (create-intent sets the amount deterministically
-// from the same total), so this only exists as a rounding-safety margin.
-const AMOUNT_TOLERANCE_MINOR_UNITS = 2;
+// lib/supabase/types.ts has no Relationships/Functions maps, so the
+// generated-typed client resolves every query to `never`. The untyped client
+// is used instead, and the one row this route reads is cast to
+// PendingStripeOrder below.
+type AdminClient = SupabaseClient;
 
-// lib/supabase/types.ts has no Functions map, so .rpc() calls are untyped
-// through the generated Database type — every admin-client route in this
-// repo (orders/route.ts, invoice route, admin routes) already casts to
-// `any` for the same reason rather than typing each call site by hand.
-// Matching that existing convention here rather than introducing a
-// one-off inconsistency; adding a proper Functions map is a real
-// improvement but a separate, larger change than this task asked for.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AdminClient = any;
+interface PendingStripeOrder {
+  payment_intent_id: string;
+  user_id: string | null;
+  // Written by app/api/checkout/intent from repriceItems().
+  items: VerifiedItem[];
+  delivery_address: Record<string, string> | null;
+  total_amount: number;
+  subtotal_amount: number | null;
+  shipping_amount: number | null;
+  currency: string;
+  resolved_at: string | null;
+}
 
 // Deletes the stripe_webhook_events row for this event before returning a
 // non-200 response, so that Stripe's automatic retry of the SAME event.id
@@ -95,7 +101,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   }
 
-  const db: AdminClient = createAdminClient();
+  const db = createAdminClient() as unknown as AdminClient;
 
   // Idempotency: insert event.id BEFORE any order-creating work. Stripe
   // guarantees at-least-once delivery, not exactly-once — a duplicate
@@ -173,18 +179,17 @@ export async function POST(request: Request) {
 
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
-  // Look up the staged cart/delivery data. A missing row means either this
-  // PaymentIntent was already fully processed by an earlier, different
-  // event.id for it (rare, but the transactions.stripe_session_id UNIQUE
-  // constraint inside checkout_verified_order() is the final backstop
-  // against that ever double-creating an order), or it was never staged.
-  // Either way there is nothing more to do — acknowledge without creating
-  // an order.
-  const { data: pending, error: pendingError } = await db
+  // Look up what the intent route staged for this payment. Rows are kept
+  // after an order is created (resolved_at is set instead), so a missing row
+  // means this intent was never staged by the checkout: money taken with
+  // nothing to fulfil. No order can be built without the staged cart, so log
+  // it loudly for a manual refund and acknowledge.
+  const { data: pendingData, error: pendingError } = await db
     .from("pending_stripe_orders")
     .select("*")
     .eq("payment_intent_id", paymentIntent.id)
     .maybeSingle();
+  const pending = pendingData as PendingStripeOrder | null;
 
   if (pendingError) {
     console.error("Stripe webhook: failed to look up pending_stripe_orders", pendingError);
@@ -192,29 +197,43 @@ export async function POST(request: Request) {
   }
 
   if (!pending) {
+    console.error(
+      `Stripe webhook: PAID WITH NO STAGED ORDER, refund needed — intent ${paymentIntent.id}, ` +
+      `received ${paymentIntent.amount_received} ${paymentIntent.currency.toUpperCase()}`
+    );
     // Terminal — nothing will ever happen for this event.id from here.
     await markDone(db, event.id);
     return NextResponse.json({ received: true, note: "No staged order for this PaymentIntent" });
   }
 
-  // Confirm Stripe actually captured the full amount our own create-intent
-  // route set (deterministically, from the server-verified total at intent
-  // creation time). `amount` is Stripe's own record of what we asked to
-  // charge — comparing amount_received against it (rather than re-deriving
-  // a price from a fresh exchange-rate fetch here) avoids a false-positive
-  // mismatch from ordinary FX-rate drift between intent creation and now,
-  // while still catching partial captures or any post-creation tampering.
-  const amountDiff = Math.abs(paymentIntent.amount_received - paymentIntent.amount);
-  if (
-    paymentIntent.status !== "succeeded" ||
-    paymentIntent.currency.toUpperCase() !== pending.currency ||
-    amountDiff > AMOUNT_TOLERANCE_MINOR_UNITS
-  ) {
+  // Already resolved by an earlier, different event for this same intent —
+  // the order (or refund) exists. Nothing to do. The UNIQUE
+  // transactions.stripe_session_id inside checkout_verified_order() remains
+  // the final backstop if two deliveries get past this at the same moment.
+  if (pending.resolved_at) {
+    await markDone(db, event.id);
+    return NextResponse.json({ received: true, note: "already processed" });
+  }
+
+  // The charge must be EXACTLY what the intent route staged: same cents,
+  // same currency. Compared against the pending row, not against the
+  // intent's own `amount` — an intent always agrees with itself, which is
+  // how a stale intent was accepted before. A mismatch creates NO order and
+  // is NOT retried (retrying can't change what was charged): the event is
+  // marked done, the pending row is left unresolved, and the log line below
+  // has both amounts so the payment can be refunded by hand.
+  const chargeCheck = checkChargeMatchesPending(paymentIntent, pending);
+  if (paymentIntent.status !== "succeeded" || !chargeCheck.ok) {
     console.error(
-      `Stripe webhook: amount/status mismatch for intent ${paymentIntent.id} — ` +
-      `status=${paymentIntent.status}, amount=${paymentIntent.amount}, received=${paymentIntent.amount_received}`
+      `Stripe webhook: CHARGE MISMATCH, no order created, refund needed — intent ${paymentIntent.id}, ` +
+      `status=${paymentIntent.status}, ` +
+      (chargeCheck.ok
+        ? "amounts match"
+        : `expected ${chargeCheck.expectedCents} ${chargeCheck.expectedCurrency} (pending total_amount=${pending.total_amount}), ` +
+          `received ${chargeCheck.receivedCents} ${chargeCheck.receivedCurrency}`)
     );
-    return failAndAllowRetry(db, event.id, { error: "Charge could not be verified" }, 400);
+    await markDone(db, event.id);
+    return NextResponse.json({ received: true, note: "Charge did not match the staged order; no order created" });
   }
 
   const { data: orderId, error: rpcError } = await db.rpc("checkout_verified_order", {
@@ -226,6 +245,7 @@ export async function POST(request: Request) {
     p_payment_channel: "stripe_card",
     p_items: pending.items,
     p_charged_amount: paymentIntent.amount_received / 100,
+    p_shipping_amount: pending.shipping_amount ?? 0,
   });
 
   if (rpcError) {
@@ -345,14 +365,10 @@ export async function POST(request: Request) {
     return failAndAllowRetry(db, event.id, { error: "Order creation failed" }, 500);
   }
 
-  // Order created — the staging row has done its job. Respond fast; there's
-  // no queue in this app, but everything from here is one already-fast
-  // Postgres update plus the delete above, not a slow external call, so
-  // doing it inline keeps the code simple without risking Stripe's response
-  // timeout.
-  // Everything the confirmation email needs is already in memory on
-  // `pending` — captured here because the staging row is deleted on the very
-  // next line and the email work happens after that.
+  // Order created. Respond fast; there's no queue in this app, but
+  // everything from here is already-fast Postgres updates, not a slow
+  // external call, so doing it inline keeps the code simple without risking
+  // Stripe's response timeout.
   const deliveryAddress = (pending.delivery_address ?? {}) as DeliveryAddress;
   const orderItems = (pending.items ?? []) as OrderEmailItem[];
   // ORDER_NOTIFICATION_EMAILS is a comma-separated list and is deliberately
@@ -373,7 +389,18 @@ export async function POST(request: Request) {
   ).estimatedDays;
   const placedAt = new Date();
 
-  await db.from("pending_stripe_orders").delete().eq("payment_intent_id", paymentIntent.id);
+  // Kept, not deleted: the row is the record of what was staged for this
+  // payment, and resolved_at is how a later delivery for the same intent
+  // knows there's nothing left to do.
+  const { error: resolveError } = await db
+    .from("pending_stripe_orders")
+    .update({ resolved_at: new Date().toISOString() })
+    .eq("payment_intent_id", paymentIntent.id);
+  if (resolveError) {
+    // Not fatal: the order exists, and a redelivery is still stopped by the
+    // dedupe ledger and by the transactions.stripe_session_id unique key.
+    console.error(`Stripe webhook: order ${orderId} created but resolved_at not set for ${paymentIntent.id}`, resolveError);
+  }
 
   if (pending.user_id) {
     await updateSpendTier(db, pending.user_id, pending.total_amount);

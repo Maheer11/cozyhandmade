@@ -1,5 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { hasLiveTestCredentials } from "../setup/testEnv";
+
+// Several real Stripe + Supabase round trips per test; 5s isn't enough.
+vi.setConfig({ testTimeout: 60_000 });
 
 // End-to-end cover for the emails the webhook sends. Requires the same live
 // Stripe TEST-mode + test Supabase project as the other integration tests,
@@ -41,6 +44,8 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe webhook — order and refund em
       amount: 500, currency: "eur", payment_method_types: ["card"], confirm: false,
     });
     cleanupPaymentIntentIds.push(paymentIntent.id);
+    // A real charge, so the out-of-stock path has something to refund.
+    await getStripe().paymentIntents.confirm(paymentIntent.id, { payment_method: "pm_card_visa" });
 
     await db.from("pending_stripe_orders").insert({
       payment_intent_id: paymentIntent.id,
@@ -64,6 +69,7 @@ describe.skipIf(!hasLiveTestCredentials)("Stripe webhook — order and refund em
     const payload = JSON.stringify({
       id: eventId,
       type: "payment_intent.succeeded",
+      livemode: false,
       data: { object: { ...paymentIntent, status: "succeeded", amount_received: paymentIntent.amount } },
     });
     const signature = getStripe().webhooks.generateTestHeaderString({

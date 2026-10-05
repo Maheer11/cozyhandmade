@@ -31,7 +31,10 @@ function LoginForm() {
       return;
     }
 
-    router.push("/account");
+    // Return to where sign-in was asked for (e.g. checkout). Same-site paths
+    // only: "/x" yes, "//evil.com" or "https://..." no.
+    const next = searchParams.get("next");
+    router.push(next && next.startsWith("/") && !next.startsWith("//") ? next : "/account");
     router.refresh();
   }
 

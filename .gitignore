@@ -49,3 +49,7 @@ next-env.d.ts
 
 # Optional: specific env patterns
 *.env
+
+# Playwright output (snapshots can contain form values, including the test password)
+/test-results/
+/playwright-report/

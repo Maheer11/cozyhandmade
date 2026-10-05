@@ -1,6 +1,6 @@
 // Server-side re-pricing shared by every payment path that needs to trust
 // nothing from the client about what an order actually costs (originally
-// written for the Paystack verify route; Stripe's create-intent route uses
+// written for the Paystack verify route; Stripe's checkout intent route uses
 // it too). Client-submitted `unit_price`/totals are never trusted — only
 // `product_id`/`variant`/`quantity` selections are, and even those are
 // validated against the real catalogue here.

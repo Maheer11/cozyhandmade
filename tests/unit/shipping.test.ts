@@ -110,7 +110,7 @@ describe("calculateShipping", () => {
 
   it("resolves the correct zone/customs/estimatedDays for each documented zone", () => {
     expect(calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "IE")).toMatchObject({
-      zone: "domestic", customsApplies: false, estimatedDays: "within 7 business days",
+      zone: "domestic", customsApplies: false, estimatedDays: "7-14 business days",
     });
     expect(calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "GB")).toMatchObject({
       zone: "uk", customsApplies: true, estimatedDays: "7-14 business days",
@@ -129,19 +129,17 @@ describe("calculateShipping", () => {
     });
   });
 
-  // Ireland is the ONLY zone allowed to quote a shorter estimate than the
-  // international range — a regression that let any other zone drift down to
-  // domestic's figure would under-promise transit the business can't control.
-  it("quotes the domestic estimate for Ireland alone — every other zone gets the international range", () => {
-    const intl = ["GB", "FR", "US", "CA", "NG", "AU", "ZZ"];
-    for (const country of intl) {
+  // Every zone quotes the same window, Ireland included. Ireland used to be
+  // allowed a shorter figure, which put the confirmation page and the order
+  // email on different clocks for the same Irish order. This pins the single
+  // window so no zone can drift back to a bespoke estimate.
+  it("quotes the same 7-14 day window for every zone, Ireland included", () => {
+    const countries = ["IE", "GB", "FR", "US", "CA", "NG", "AU", "ZZ"];
+    for (const country of countries) {
       expect(
         calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], country).estimatedDays,
       ).toBe("7-14 business days");
     }
-    expect(
-      calculateShipping([{ quantity: 1, shippingWeightGrams: 100 }], "IE").estimatedDays,
-    ).toBe("within 7 business days");
   });
 
   it("rounds the returned price to the nearest cent", () => {

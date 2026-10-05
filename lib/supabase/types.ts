@@ -112,6 +112,10 @@ export interface Database {
           user_id: string | null;
           status: OrderStatus;
           total_amount: number;
+          // total_amount = subtotal_amount + shipping_amount (EUR). 0 / 0 on
+          // orders placed before migration 016.
+          subtotal_amount: number;
+          shipping_amount: number;
           delivery_address: Json | null;
           notes: string | null;
           shipped_at: string | null;
@@ -124,6 +128,8 @@ export interface Database {
           user_id?: string | null;
           status?: OrderStatus;
           total_amount: number;
+          subtotal_amount?: number;
+          shipping_amount?: number;
           delivery_address?: Json | null;
           notes?: string | null;
           shipped_at?: string | null;
@@ -208,12 +214,13 @@ export interface Database {
           shipping_amount: number | null;
           currency: string;
           created_at: string;
-          // Set when this row was resolved via the out-of-stock refund path
-          // instead of a normal created order — kept (never deleted) so the
-          // items jsonb remains the historical record of what was in the
-          // cart. NULL means either still genuinely pending or resolved via
-          // a normal order (those rows are deleted, not marked).
+          // Set by the webhook once this payment is resolved — order created
+          // or refunded out of stock. Rows are kept, never deleted. NULL means
+          // not paid yet, or paid with an amount that didn't match (logged
+          // for a manual refund; no order created).
           resolved_at: string | null;
+          // One per checkout visit — see app/api/checkout/intent.
+          checkout_attempt_id: string | null;
         };
         Insert: {
           payment_intent_id: string;
@@ -226,8 +233,16 @@ export interface Database {
           currency: string;
           created_at?: string;
           resolved_at?: string | null;
+          checkout_attempt_id?: string | null;
         };
         Update: {
+          user_id?: string | null;
+          items?: Json;
+          delivery_address?: Json;
+          total_amount?: number;
+          subtotal_amount?: number | null;
+          shipping_amount?: number | null;
+          currency?: string;
           resolved_at?: string | null;
         };
       };
