@@ -11,7 +11,6 @@ import { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { getStockedCategories } from "@/lib/db-categories";
 import MobileShopShortcuts from "@/components/home/MobileShopShortcuts";
-import MobileHeadline from "@/components/home/MobileHeadline";
 import MobileCategoryTiles from "@/components/home/MobileCategoryTiles";
 import MobileInStockRail, { type RailProduct } from "@/components/home/MobileInStockRail";
 import { MobileTrustStrip, MobileCustomOrderCard } from "@/components/home/MobileExtras";
@@ -313,9 +312,10 @@ export default async function HomePage() {
             <p className="mb-4 font-body text-sm font-medium text-ui-accent">
               Handcrafted in Ireland
             </p>
-            {/* Phones: each product word is a tappable pill (MobileHeadline). */}
-            <MobileHeadline categories={categories} />
-            <h1 className="hidden lg:block font-heading font-medium text-ui-text text-balance
+            {/* Phones show no headline (owner's call): the search bar and category
+                chips come straight after "Handcrafted in Ireland". The h1 stays
+                for screen readers and search engines (sr-only), shown from lg. */}
+            <h1 className="sr-only lg:not-sr-only font-heading font-medium text-ui-text text-balance
                            lg:text-[clamp(2.5rem,1.6rem+3.2vw,4.25rem)] lg:leading-[1.05]">
               Handmade blankets, bags &amp; baby keepsakes
             </h1>
