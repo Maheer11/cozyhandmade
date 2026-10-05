@@ -104,7 +104,9 @@ const BUSINESS = {
   addressLines: ["5B Belmayne Avenue, Parkside", "Dublin 13, D13 E6TW, Ireland"],
   registrationNumber: "790221",
   contactEmail: "mahmudmaryam70@gmail.com",
-  phone: "+353 89 200 2517",
+  // No phone number: the owner chose not to show one to customers. The
+  // contact email above is the required means of contact, and WhatsApp
+  // (lib/social-links.ts) is offered on the site.
 } as const;
 
 // Replies go to the address the owner actually reads, not the technical
@@ -118,7 +120,6 @@ function businessBlock(): string {
     `  Company registration number: ${BUSINESS.registrationNumber}`,
     "",
     `  ${BUSINESS.contactEmail}`,
-    `  ${BUSINESS.phone}`,
   ].join("\n");
 }
 
