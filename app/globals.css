@@ -510,11 +510,3 @@ body {
 @media (min-width: 64rem) {
   .cta-sheen::after { display: none; }
 }
-
-/* Added-to-cart: the badge grows once when the count changes. */
-@keyframes cart-bump {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.35); }
-  100% { transform: scale(1); }
-}
-.animate-cart-bump { animation: cart-bump 350ms ease-out; }

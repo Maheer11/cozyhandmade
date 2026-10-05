@@ -22,7 +22,7 @@ export default function MobileHeadline({ categories }: { categories: Category[] 
   const babyHref = find((t) => t.includes("baby"));
 
   return (
-    <h1 className="lg:hidden font-heading font-medium text-ui-text text-[2rem] leading-[1.35] text-balance">
+    <h1 className="lg:hidden font-heading font-medium text-ui-text text-[1.625rem] leading-[1.35] text-balance">
       {/* No comma after the first pill: its padding left the comma floating
           on its own ("blankets → ,"), and the pills already separate the words. */}
       Handmade <HeadlineWord href={blanketsHref}>blankets</HeadlineWord>{" "}
