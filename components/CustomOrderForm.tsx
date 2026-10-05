@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { whatsappLink } from "@/lib/social-links";
 
@@ -12,6 +12,9 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
   const [budget, setBudget] = useState("");
 
   const categoryName = categories.find((c) => c.id === category)?.name ?? category;
+  // The last request emailed, so a double tap (or tapping again after coming
+  // back from WhatsApp without changing anything) doesn't send a second copy.
+  const lastSent = useRef<string | null>(null);
 
   const canSubmit = name.trim() && contact.trim() && description.trim();
 
@@ -84,7 +87,7 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
 
         <div>
           <label className="block text-xs font-semibold text-deep-brown uppercase tracking-wide mb-2">
-            Describe what you'd like
+            Describe what you&apos;d like
           </label>
           <textarea
             value={description}
@@ -119,7 +122,24 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
           target="_blank"
           rel="noopener noreferrer"
           aria-disabled={!canSubmit}
-          onClick={(e) => { if (!canSubmit) e.preventDefault(); }}
+          onClick={(e) => {
+            if (!canSubmit) {
+              e.preventDefault();
+              return;
+            }
+            // Email the shop a copy while WhatsApp opens (the link's own
+            // default action). keepalive lets the request finish even as the
+            // page hands over to WhatsApp; a failure here never blocks it.
+            const payload = JSON.stringify({ name, contact, category: categoryName, description, budget });
+            if (lastSent.current === payload) return;
+            lastSent.current = payload;
+            fetch("/api/custom-order-request", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: payload,
+              keepalive: true,
+            }).catch(() => {});
+          }}
           className={`flex items-center justify-center gap-2 w-full h-14 rounded-none
                       font-semibold text-sm tracking-wide transition-all duration-150
                       ${canSubmit
@@ -134,7 +154,7 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
           Send via WhatsApp
         </a>
         <p className="text-xs text-taupe-dark text-center leading-relaxed">
-          This opens WhatsApp with your details pre-filled. Nothing is sent until you hit send there.
+          This opens WhatsApp with your details filled in, and emails a copy of your request to our team.
         </p>
 
         <Link

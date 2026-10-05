@@ -436,3 +436,57 @@ export async function sendAdminNewOrderEmail(params: AdminNewOrderParams): Promi
     text,
   });
 }
+
+/* ─────────────────────────────────────────────────────────
+   CUSTOM ORDER REQUEST — to the shop, from /custom-order
+───────────────────────────────────────────────────────── */
+export interface CustomOrderRequestParams {
+  to: string[];
+  name: string;
+  contact: string;
+  category: string;
+  description: string;
+  budget?: string;
+  receivedAt: Date;
+}
+
+/**
+ * A copy of a custom order request, sent to the shop when the customer taps
+ * "Send via WhatsApp". WhatsApp only receives the message if the customer
+ * presses send there; this email arrives either way, so no request is lost.
+ * Replying goes to the customer when their contact is an email address.
+ */
+export async function sendCustomOrderRequestEmail(params: CustomOrderRequestParams): Promise<SendResult> {
+  if (params.to.length === 0) {
+    console.warn("No ORDER_NOTIFICATION_EMAILS / ADMIN_EMAIL configured — custom order request email not sent");
+    return { sent: false, error: "No recipients configured" };
+  }
+  const contactIsEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(params.contact);
+  const text = [
+    "New custom order request.",
+    "",
+    `  Name       ${params.name}`,
+    `  Contact    ${params.contact}`,
+    `  Category   ${params.category}`,
+    params.budget ? `  Budget     ${params.budget}` : null,
+    `  Received   ${params.receivedAt.toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Dublin" })}`,
+    "",
+    "WHAT THEY'D LIKE MADE",
+    "",
+    ...params.description.split("\n").map((line) => `  ${line}`),
+    "",
+    "WhatsApp was opened for them with this request filled in. If no message",
+    contactIsEmail
+      ? "arrives there, reply to this email to reach them."
+      : "arrives there, contact them on the number above.",
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+
+  return sendEmail({
+    to: params.to,
+    subject: `Custom order request · ${params.name}`,
+    text,
+    ...(contactIsEmail ? { replyTo: params.contact } : {}),
+  });
+}
