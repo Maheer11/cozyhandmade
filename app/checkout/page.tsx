@@ -1629,8 +1629,14 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-cream font-system">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-sm">
+      {/* Header. Sticks BELOW the site navbar, never on top of it: the navbar
+          is also sticky at the top (z-40) and holds the currency picker, whose
+          dropdown can't rise above the navbar's own layer, so a bar at the same
+          spot and layer covered it. Desktop: the navbar is always shown and is
+          5rem tall, so this sits right under it. Mobile: the navbar hides on
+          scroll-down, so this takes the top, and z-30 lets the navbar slide
+          back over it on scroll-up with its dropdown usable. */}
+      <div className="sticky top-[env(safe-area-inset-top,0px)] lg:top-[calc(5rem_+_env(safe-area-inset-top,0px))] z-30 bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"
