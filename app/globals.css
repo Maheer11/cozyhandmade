@@ -25,6 +25,27 @@
   --color-gold-light: #C06878;   /* light mauve-burgundy                 */
   --color-gold-dark:  #6B1828;   /* deep burgundy                        */
 
+  /* ── Semantic UI tokens ──
+     Named for their role, not their hue: the legacy names above drifted
+     (`gold` is burgundy, `cream` is white), so new work should reach for these.
+     Contrast on ui-bg: text 17.2:1, muted 6.4:1, accent 7.9:1; white on
+     accent 8.9:1. The gold (#C9A227) is deliberately absent at 2.2:1. */
+  --color-ui-bg:           #FBF0E4;   /* warm cream page ground            */
+  --color-ui-surface:      #FFFFFF;   /* cards, image wells                */
+  --color-ui-text:         #1A0810;   /* headings, names, prices           */
+  --color-ui-muted:        #6B5058;   /* supporting copy                   */
+  --color-ui-accent:       #8B2035;   /* maroon — primary action, active   */
+  --color-ui-accent-hover: #6B1828;
+  --color-ui-border:       #EAD9C6;   /* hairlines (decorative, non-text)  */
+
+  /* 1376px: the first width where page-container's side gutter reaches 96px
+     (1280px content + 48px padding + 48px margin), wide enough for the full
+     floating chat bubble. See FloatingWhatsApp. */
+  --breakpoint-wide: 86rem;
+
+  --radius-card:   0.5rem;  /* 8px — every product card and image well */
+  --radius-button: 0.25rem; /* 4px — every button                      */
+
   --font-heading: var(--font-playfair), "Playfair Display", Georgia, serif;
   --font-body: var(--font-inter), Inter, system-ui, sans-serif;
   /* San Francisco on Apple devices, falls back to the closest system font elsewhere */
@@ -33,6 +54,27 @@
      iOS/macOS. Cormorant Garamond (--font-heading) stays for display
      headings; this is deliberately a separate token, not a replacement. */
   --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* One content width for header, hero and grid, so their left edges line up:
+   1280px max, 24px gutters on mobile, 48px from lg. */
+@utility page-container {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  @variant lg {
+    padding-inline: 3rem;
+  }
+}
+
+/* The one keyboard focus style for storefront links and buttons. Visible on
+   cream, white and photos alike; mouse clicks don't trigger it. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-ui-accent);
+    outline-offset: 3px;
+  }
 }
 
 html {
@@ -153,6 +195,29 @@ body {
 .animate-pulse-soft { animation: pulse-soft 2.5s ease-in-out infinite; }
 .animate-spin-slow  { animation: spin-slow 12s linear infinite; }
 .animate-marquee    { animation: marquee 25s linear infinite; }
+
+/* Homepage hero product card: fades up 8px once, 300ms after the photo has
+   loaded (HeroProductCarousel adds the class once the first image loads). Moves with
+   `transform`, leaving the `translate` property free for the hover lift. */
+@keyframes heroLabelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-hero-label { animation: heroLabelIn 400ms ease-out 300ms both; }
+/* Hero slideshow progress: the active segment fills over the slide's
+   duration (set inline), and its animationend advances to the next product. */
+@keyframes heroProgress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.animate-hero-progress { animation: heroProgress linear both; }
+/* The global reduced-motion rule only shortens durations, so the 300ms delay
+   would still hide the card; drop the animation outright instead. The
+   slideshow doesn't autoplay under reduced motion, so the progress fill is
+   never rendered there. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-label { animation: none; }
+}
 
 /* Staggered animation delays */
 .delay-100 { animation-delay: 0.1s; }

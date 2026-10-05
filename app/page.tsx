@@ -3,12 +3,11 @@ import Image from "next/image";
 import NewsletterForm from "@/components/NewsletterForm";
 import ScrollReveal from "@/components/ScrollReveal";
 import SocialProofSection, { type Review } from "@/components/SocialProofSection";
-import HeroTiles from "@/components/HeroTiles";
-import HeroSlider from "@/components/HeroSlider";
-import heroTextBg from "@/public/images/newhome1.jpg";
+import heroImage from "@/public/images/newhome1.jpg";
 import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
-import ShopCollectionCard from "@/components/ShopCollectionCard";
-import FeaturedPiecesSection, { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
+import HomeFeaturedGrid from "@/components/HomeFeaturedGrid";
+import HeroProductCarousel from "@/components/HeroProductCarousel";
+import { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
 import {
@@ -18,40 +17,24 @@ import {
 } from "@/lib/featured-piece-stock";
 
 /**
- * The mobile hero headline, set as chips.
- *
- * The three fills are deliberately off-palette — sage, powder blue and lilac
- * appear nowhere else on the site, which is what stops the row reading as
- * another burgundy-and-gold block and gives the headline its own register. The
- * burgundy stays where it carries meaning: every label is `text-brown`, so the
- * chips still belong to the brand even while the fills don't. Icon strokes take
- * the saturated version of each fill, keeping each chip to two related tones.
- *
- * Defined here rather than as theme tokens on purpose — these are one-off
- * decorative fills for this headline, not colours anything else should reach
- * for.
+ * The hero's trust row. Icons are drawn inline (24px grid, 1.5 stroke) rather
+ * than pulled from an icon package, matching the rest of the codebase.
  */
-const heroChips = [
+const trustPoints = [
   {
-    label: "Handmade,",
-    fill: "#E8F1E9",
-    ink: "#5B8266",
+    label: "Made by hand in Ireland",
     // A running stitch — the wave is the thread, the gap is the needle's pass.
-    icon: "M3 14c2.5-5 5 5 7.5 0S15 9 17.5 14",
+    icon: "M3 14c2.5-5 5 5 7.5 0S15 9 17.5 14M19.5 14h1.5",
   },
   {
-    label: "Cozy,",
-    fill: "#E5EDF7",
-    ink: "#4E7396",
-    // Heart (Heroicons v2, 24-outline).
-    icon: "M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z",
-  },
-  {
-    label: "Thoughtful pieces",
-    fill: "#EDE6F6",
-    ink: "#6B4E9B",
-    // Sparkles — the same mark the footer's build credit uses.
+    label: "Each piece is one of a kind",
+    // Sparkles (Heroicons v2, 24-outline).
     icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z",
+  },
+  {
+    label: "Gift wrap available",
+    // A wrapped box: lid, body, and the ribbon's bow and drop.
+    icon: "M3.75 8.25h16.5v3H3.75zM5.25 11.25v8.25h13.5v-8.25M12 8.25v11.25M12 8.25C10.5 5.25 7.5 4.5 7.5 6.375S10.5 8.25 12 8.25zM12 8.25c1.5-3 4.5-3.75 4.5-1.875S13.5 8.25 12 8.25z",
   },
 ];
 
@@ -69,6 +52,14 @@ function toCard(row: DbHeroFeaturedPiece): FeaturedPieceCardData {
   return { ...row, sold_out: isFeaturedPieceSoldOut(row) };
 }
 
+/** The hero photo frame: 4:5 on phones, 3:2 on tablets, a clamped height beside the copy from lg. */
+const HERO_FRAME =
+  "aspect-[4/5] sm:aspect-[3/2] lg:aspect-auto lg:h-[clamp(30rem,calc(100svh-14rem),40rem)]";
+
+/** The products columns a card needs, before normalisation. */
+const PRODUCT_CARD_COLUMNS =
+  "id, name, image, images, price, original_price, stock_quantity, in_stock, is_handmade, created_at";
+
 /** The products columns the hero needs, before normalisation. */
 interface DbHeroProduct {
   id: string;
@@ -81,6 +72,37 @@ interface DbHeroProduct {
   in_stock: boolean;
   is_handmade: boolean;
   created_at: string;
+}
+
+/**
+ * A products row in the FeaturedPieceCardData shape, tagged with `source`
+ * (same naming as cart items — see CartContext / lib/checkout/repriceItems.ts)
+ * because product and featured-piece ids live under different detail routes.
+ */
+function toProductCard(p: DbHeroProduct): FeaturedPieceCardData {
+  return {
+    source: "product" as const,
+    id: p.id,
+    name: p.name,
+    product_image: p.image ?? "/images/placeholder.jpg",
+    // Products have no dedicated lifestyle shot; their second gallery image is
+    // the closest equivalent. Null when there is only one image.
+    lifestyle_image: p.images?.[1] ?? null,
+    // featured_pieces carries an explicit sold_out flag; products derive it
+    // from stock. in_stock is a generated column (stock_quantity > 0) — the
+    // second check is belt-and-braces for rows read before that ever existed.
+    sold_out: !p.in_stock || p.stock_quantity <= 0,
+    is_handmade: p.is_handmade,
+    // Price shapes are inverted between the two tables. featured_pieces stores
+    // `price` = list and `discount_price` = what you pay; products store
+    // `price` = what you pay and `original_price` = the struck-through was-
+    // price (see ProductCard). Mapping products into the featured_pieces shape
+    // means original_price becomes `price` and the real price becomes
+    // `discount_price`, so the grid strikes through the same number the
+    // /products listing does.
+    price: p.original_price ?? p.price,
+    discount_price: p.original_price ? p.price : null,
+  };
 }
 
 interface DbReview {
@@ -148,14 +170,15 @@ export default async function HomePage() {
     .order("display_order", { ascending: true })
     .limit(10);
 
-  // ── Homepage hero — admin-curated across BOTH catalogues ──
-  // The hero used to be "the first few Featured Pieces by display_order",
-  // capped in the component. It is now whatever the owner ticks
+  // ── Homepage featured grid — admin-curated across BOTH catalogues ──
+  // (Still named "hero" here: these are the show_on_homepage picks that used
+  // to fill the hero collage and now fill the grid under it.) It is whatever
+  // the owner ticks
   // `show_on_homepage` on, in /admin/products or /admin/featured-pieces, with
   // no cap at either end — the count is theirs to choose. Two queries because
   // the tables are genuinely separate (own ids, own price/stock columns, own
-  // detail routes); they get normalised into one shape below so HeroTiles
-  // doesn't have to know there were ever two of them.
+  // detail routes); they get normalised into one shape below so
+  // HomeFeaturedGrid doesn't have to know there were ever two of them.
   const { data: dbHeroPieces } = await db
     .from("featured_pieces")
     .select(FEATURED_PIECE_CARD_COLUMNS)
@@ -164,7 +187,7 @@ export default async function HomePage() {
 
   const { data: dbHeroProducts } = await db
     .from("products")
-    .select("id, name, image, images, price, original_price, stock_quantity, in_stock, is_handmade, created_at")
+    .select(PRODUCT_CARD_COLUMNS)
     // created_at, not name or price: it's the one field guaranteed present and
     // never edited, so the order a product holds in the hero doesn't shift
     // under the owner when they rename or reprice it. Ascending, so newly
@@ -194,330 +217,137 @@ export default async function HomePage() {
   // Both tables normalised onto FeaturedPieceCardData + a `source`
   // discriminator (same naming as cart items — see CartContext /
   // lib/checkout/repriceItems.ts), because the two ids live under different
-  // detail routes and the hero renders them side by side.
+  // detail routes and the grid renders them side by side.
   const heroPieces: FeaturedPieceCardData[] = ((dbHeroPieces ?? []) as DbHeroFeaturedPiece[]).map(
     (p) => ({ ...toCard(p), source: "featured_piece" as const })
   );
 
-  const heroProducts: FeaturedPieceCardData[] = ((dbHeroProducts ?? []) as DbHeroProduct[]).map((p) => ({
-    source: "product" as const,
-    id: p.id,
-    name: p.name,
-    product_image: p.image ?? "/images/placeholder.jpg",
-    // Products have no dedicated lifestyle shot; their second gallery image is
-    // the closest equivalent and drives the same hover reveal. Null when there
-    // is only one image, which the card already handles.
-    lifestyle_image: p.images?.[1] ?? null,
-    // featured_pieces carries an explicit sold_out flag; products derive it
-    // from stock. in_stock is a generated column (stock_quantity > 0) — the
-    // second check is belt-and-braces for rows read before that ever existed.
-    sold_out: !p.in_stock || p.stock_quantity <= 0,
-    is_handmade: p.is_handmade,
-    // Price shapes are inverted between the two tables. featured_pieces stores
-    // `price` = list and `discount_price` = what you pay; products store
-    // `price` = what you pay and `original_price` = the struck-through was-
-    // price (see ProductCard). Mapping products into the featured_pieces shape
-    // means original_price becomes `price` and the real price becomes
-    // `discount_price`, so the hero strikes through the same number the
-    // /products listing does.
-    price: p.original_price ?? p.price,
-    discount_price: p.original_price ? p.price : null,
-  }));
+  const heroProducts: FeaturedPieceCardData[] = ((dbHeroProducts ?? []) as DbHeroProduct[]).map(toProductCard);
 
-  // Featured Pieces first, then products. The first item overall becomes the
-  // desktop spotlight, so this makes a curated Featured Piece the headline
-  // whenever one is toggled on — matching what the hero has always led with.
+  // The hero photo cycles through every product in the collections that can
+  // be bought right now, newest first, the same order /products lists them.
+  // Sold-out pieces are left out so the hero never advertises one.
+  const { data: dbShowcase } = await db
+    .from("products")
+    .select(PRODUCT_CARD_COLUMNS)
+    .gt("stock_quantity", 0)
+    .order("created_at", { ascending: false });
+  const showcaseProducts = ((dbShowcase ?? []) as DbHeroProduct[]).map(toProductCard);
+
+  // Featured Pieces first (by display_order), then products (by created_at).
   const heroItems = [...heroPieces, ...heroProducts];
 
-  // If nothing at all is toggled on, the hero would render nothing, so the
-  // original single-photo hero is the fallback.
-  const hasHeroItems = heroItems.length > 0;
-  const heroVisual = hasHeroItems ? <HeroTiles items={heroItems} /> : <HeroSlider />;
+  // Sold-out pieces keep their place in the owner's order but move behind
+  // everything buyable (the sort is stable), so the first row a visitor sees
+  // is all things they can add to the cart. If nothing is toggled on for the
+  // homepage, fall back to the Featured Pieces list rather than an empty grid.
+  // The hero's product stays in the grid too: the owner prefers the full row
+  // of picks to one fewer card with a gap at the end.
+  const homepageItems = (heroItems.length > 0 ? heroItems : featuredPieceItems)
+    .slice()
+    .sort((a, b) => Number(a.sold_out) - Number(b.sold_out));
 
   return (
     <>
       {/* ══════════════════════════════════════════════
-          HERO
+          HERO — one message, one photo
+
+          Two columns from lg, stacked (text first) below it. The copy sits on
+          the plain cream ground, never on the photo, so contrast is a single
+          measurable number rather than "whatever patch of image is behind
+          each glyph". One primary action (maroon), and a plain text link that scrolls to the grid.
       ══════════════════════════════════════════════ */}
-      <section className="relative">
-        {/* ── Mobile: slider on top, text below ── */}
-        <div className="lg:hidden flex flex-col">
-          {/* The rail sizes itself from its cards; only the single-photo
-              fallback needs a fixed height to have anything to fill. */}
-          <div className={`relative ${hasHeroItems ? "" : "h-[60vh]"}`}>
-            {heroVisual}
-          </div>
-
-          {/* Text panel — milk background */}
-          {/* py-6 not py-10: with products stacked first, every pixel above the
-              headline pushes it under the fixed bottom nav. */}
-          <div className="relative flex flex-col justify-center px-6 py-6 overflow-hidden bg-cream-dark">
-            <div className="relative z-10">
-              <p className="text-gold text-[10px] uppercase tracking-[0.28em] font-body font-semibold mb-3">
-                ✦ Handcrafted in Ireland
-              </p>
-              {/* Set as chips rather than two flat lines of caps: three words
-                  laid on the panel as type read as a paragraph you skim past,
-                  and each one carries a separate idea worth landing on its
-                  own. The pills give the block rhythm and a shape to look at
-                  while keeping it a single <h1> — the accessible name is still
-                  the whole sentence, and caps come from CSS, so the document
-                  outline keeps normal casing.
-
-                  Wrapping, not a forced 2-line break: at 375px the first two
-                  chips share a line and "thoughtful pieces" takes the second,
-                  but the row re-flows on its own at any width instead of
-                  clipping.
-
-                  Fills and icon colours come from `heroChips` above — see there
-                  for why they sit off-palette. Solid fills rather than the old
-                  shimmer sweep: that ran on an infinite loop, which is what a
-                  skeleton placeholder looks like.
-
-                  font-extrabold, not font-800: the numeric font-* utilities
-                  used elsewhere in this codebase don't generate under this
-                  Tailwind setup and silently resolve to 400. */}
-              <h1 className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 mb-4 animate-fade-up
-                             font-ios font-extrabold text-[0.9rem] sm:text-[1.1rem] uppercase
-                             tracking-[0.02em] leading-none">
-                {heroChips.map(({ label, fill, ink, icon }) => (
-                  <span
-                    key={label}
-                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-brown"
-                    style={{ backgroundColor: fill }}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                      focusable="false"
-                      fill="none"
-                      stroke={ink}
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-3.5 h-3.5 shrink-0"
-                    >
-                      <path d={icon} />
-                    </svg>
-                    {label}
-                  </span>
-                ))}
-              </h1>
-              {/* Short gold rule under the headline — the caps setting lost the
-                  italic's natural taper, and this gives the block a defined
-                  bottom edge before the body copy starts. */}
-              <span aria-hidden="true" className="block w-12 h-0.5 bg-gold/70 mb-4" />
-              <p className="text-deep-brown/70 text-sm font-medium leading-relaxed mb-7">
-                Born from my own journey back to creativity, slowmade pieces
-                that bring warmth, beauty and a little more intention to
-                everyday life.
-              </p>
-
-              <div className="flex flex-col gap-3">
-                <ShopCollectionCard />
-                {/* Secondary points at Featured Pieces — the story section it used to
-                    link to no longer exists */}
-                <Link
-                  href="/featured-pieces"
-                  className="group flex items-center justify-center gap-1.5 h-11
-                             text-deep-brown/70 font-medium text-sm
-                             hover:text-gold active:text-gold transition-colors duration-200"
-                  style={{ touchAction: "manipulation" }}
-                >
-                  See what&apos;s new
-                  <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-                </Link>
-              </div>
-
-              <p className="text-deep-brown/35 text-[10px] tracking-wide font-body mt-6">
-                ✦ Each piece unique &nbsp;·&nbsp; ✦ Gift wrapped &nbsp;·&nbsp; ✦ Ships from Dublin
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Desktop: asymmetric split — text left (42%) / slider right (58%) ── */}
-        {/* 88vh, not 100vh — letting the category grid peek above the fold is
-            what tells you the hero is the top of a page rather than a splash
-            screen standing on its own. */}
-        {/* The text column widens at each step because its left padding grows
-            with the viewport (container alignment). At a flat 42fr the content
-            box actually got NARROWER as the screen got wider — 426px at 1280
-            but 390px at 1920 — which is what forced the headline to wrap. */}
-        <div className="hidden lg:grid lg:grid-cols-[42fr_58fr] xl:grid-cols-[48fr_52fr] 2xl:grid-cols-[55fr_45fr] min-h-[88vh]">
-          {/* Left — brand story */}
-          {/* py-3 matches the p-3 margin the image grid uses around its own
-              cards (right column below), so the two panels sit inset from
-              the column edges by the same amount — this is what makes the
-              frosted card's top/bottom line up with the spotlight photo's.
-
-              Horizontal padding is symmetric (px-12/xl:px-16) rather than the
-              site-container-aligned calc this used to have. That calc pinned
-              the card's LEFT edge to match "Find your piece" below, but grows
-              with viewport width while the right edge stayed fixed — at
-              1920px it put 352px of bare photo on the left and 64px on the
-              right, which is what read as the card being shoved to one side.
-              Centering the card in its own photo panel takes priority over
-              matching the page grid below; if that downstream alignment
-              matters again later, the two goals need a different approach
-              since they can't both hold at every viewport width. */}
-          {/* p-3 uniformly — matching the image grid's own p-3 wrapper exactly
-              (right column below), on all four sides, not just top/bottom.
-              px-8/2xl:px-12 left a visible bare strip of photo at the outer
-              viewport edge and a wider gutter before the image grid than the
-              image grid uses around its own cards, which read as the two
-              halves of the hero following different rules. Dropping to p-3
-              is safe for the nowrap-headline fit at 1280px too — smaller
-              padding only ever gives the card MORE available width, never
-              less, so it can't reintroduce that overflow. */}
-          <div
-            className="relative flex flex-col justify-center p-3 overflow-hidden"
-          >
-            {/* Background photo — this was the hero's original single image,
-                before the column split into text + Featured Pieces grid. Object-cover
-                fills the whole column; the text now sits on a frosted dark
-                card instead of the flat milk panel, so the copy needed to
-                flip from dark-on-light to light-on-dark below. */}
-            <Image
-              src={heroTextBg}
-              alt=""
-              aria-hidden
-              fill
-              sizes="45vw"
-              placeholder="blur"
-              className="object-cover"
-            />
-
-            {/* Scrim confined to where the copy actually sits, not the whole
-                photo — a flat full-panel tint was tried before and pulled for
-                dulling the shot; text-shadow alone wasn't enough contrast
-                against this photo's bright wall behind the headline. Radial
-                gradient centered on the text block, fading to fully
-                transparent well before the panel edges, so the rest of the
-                photo stays untouched. */}
-            <div
-              aria-hidden
-              className="absolute inset-0 z-1"
-              style={{
-                background:
-                  "radial-gradient(ellipse 70% 60% at 30% 50%, rgba(26,8,16,0.55) 0%, rgba(26,8,16,0.28) 45%, rgba(26,8,16,0) 75%)",
-              }}
-            />
-
-            {/* h-full instead of my-auto — the card below now stretches to
-                match the image grid's height, so this wrapper needs to span
-                the full padded box rather than shrink-wrap a centered block. */}
-            {/* mx-auto: past ~1750px the symmetric padding leaves more room
-                than max-w-2xl uses, so without this the card would hug the
-                left padding edge instead of centering in the extra space. */}
-            <div className="relative z-10 h-full max-w-2xl mx-auto flex flex-col justify-center">
-              {/* No card fill anymore — text sits directly on the photo. A
-                  flat-colour scrim is what made the earlier WCAG ratios
-                  possible to compute at all (a single background colour to
-                  measure against); text-shadow doesn't reduce to one clean
-                  number the same way, since "the background" is now whatever
-                  patch of photo happens to sit behind each glyph. Two stacked
-                  shadows: a tight dark one right at the glyph edge for the
-                  photo's lighter patches, a softer wider one for separation
-                  from mid-tone areas. Verified by looking at the rendered
-                  result against this specific photo's brightest and darkest
-                  regions, not by a formal ratio — worth re-checking by eye if
-                  this background photo ever changes. */}
-              <div
-                className="h-full flex flex-col justify-center
-                           px-8 py-10 xl:px-10 xl:py-12"
+      <section className="bg-ui-bg">
+        <div className="page-container grid gap-8 py-8 sm:py-12 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-12">
+          <div className="max-w-xl">
+            <p className="mb-4 font-body text-sm font-medium text-ui-accent">
+              Handcrafted in Ireland
+            </p>
+            <h1 className="font-heading font-medium text-ui-text leading-[1.05] text-balance
+                           text-[clamp(2.5rem,1.6rem+3.2vw,4.25rem)]">
+              Handmade blankets, bags &amp; baby keepsakes
+            </h1>
+            <p className="mt-5 max-w-md font-body text-base leading-relaxed text-ui-muted lg:text-lg">
+              Helping people create, connect and find comfort, every piece
+              handcrafted in Ireland from premium materials.
+            </p>
+            {/* Stacked on phones on purpose, not left to flex-wrap: whether the
+                two fit on one line depended on which font had loaded, so the
+                link jumped to a second line when Jost arrived and pushed the
+                photo down (CLS 0.09 at 375px). */}
+            <div className="mt-8 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-8">
+              <Link
+                href="/products"
+                className="focus-ring inline-flex h-12 items-center justify-center rounded-button bg-ui-accent px-7
+                           font-body text-sm font-semibold text-white
+                           transition-colors duration-150 hover:bg-ui-accent-hover"
               >
-                <p
-                  className="text-terracotta text-xs uppercase tracking-[0.28em] font-body font-semibold mb-5"
-                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
-                >
-                  ✦ Handcrafted in Ireland
-                </p>
-                {/* Block spans force the 2-line break. nowrap only from xl up:
-                    at 1024–1279 (lg, before the grid widens this column to
-                    48%) the panel is too narrow for either line at this font
-                    size — forcing nowrap there clipped "blankets," and
-                    "keepsakes" mid-word against the column edge. Below xl the
-                    lines are free to wrap again if they need to; from xl up,
-                    where the measured card width comfortably fits both lines
-                    on one line each, nowrap keeps the intended 2-line shape.
-                    Italic rule: exactly one emphasis word ("keepsakes"),
-                    never a whole clause. No entrance cascade here either —
-                    see the mobile block above for why. */}
-                <h1 className="font-heading text-5xl xl:text-[3.25rem] 2xl:text-6xl font-300 leading-[1.1] mb-6">
-                  <span
-                    className="block xl:whitespace-nowrap text-cream"
-                    style={{ textShadow: "0 2px 6px rgba(0,0,0,0.9), 0 4px 22px rgba(0,0,0,0.65)" }}
-                  >
-                    Handmade blankets,
-                  </span>
-                  <span
-                    className="block xl:whitespace-nowrap text-terracotta font-500"
-                    style={{ textShadow: "0 2px 6px rgba(0,0,0,0.9), 0 4px 22px rgba(0,0,0,0.65)" }}
-                  >
-                    bags &amp; baby <em className="italic">keepsakes</em>
-                  </span>
-                </h1>
-                <p
-                  className="text-cream/80 text-base xl:text-lg font-medium leading-relaxed mb-9"
-                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
-                >
-                  Helping people create, connect and find comfort, every piece
-                  handcrafted in Ireland from premium materials.
-                </p>
-
-                <div className="flex gap-4 mb-10">
-                  <Link
-                    href="/products"
-                    className="group inline-flex items-center justify-center px-8 py-4 rounded-none
-                               bg-gold text-cream font-semibold text-sm tracking-wide
-                               shadow-[0_14px_34px_-14px_rgba(139,32,53,0.8)]
-                               hover:bg-gold-dark hover:-translate-y-0.5
-                               active:translate-y-0
-                               transition-all duration-300"
-                  >
-                    {/* No icon: the bag glyph duplicated the navbar cart icon
-                        directly above it. The arrow on the secondary CTA is now
-                        the only icon here, so the two CTAs read distinctly. */}
-                    Shop the Collection
-                  </Link>
-                  {/* Text link, not a second outline button — the hero needs one
-                      unambiguous primary action. Points at Featured Pieces since the
-                      story section it used to target is gone. */}
-                  <Link
-                    href="/featured-pieces"
-                    className="group inline-flex items-center gap-1.5 px-2 py-4
-                               text-cream/75 font-medium text-sm tracking-wide
-                               hover:text-terracotta transition-colors duration-300"
-                    style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
-                  >
-                    See what&apos;s new
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-                  </Link>
-                </div>
-
-                <p
-                  className="text-cream/75 text-xs tracking-wide font-body"
-                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 2px 14px rgba(0,0,0,0.65)" }}
-                >
-                  ✦ Get Premium Quality &nbsp;·&nbsp; ✦ Each piece unique
-                  &nbsp;·&nbsp; ✦ Gift wrap available
-                </p>
-              </div>
+                Shop the Collection
+              </Link>
+              <a
+                href="#featured-pieces"
+                className="focus-ring rounded-button font-body text-sm font-medium text-ui-text
+                           underline decoration-ui-border decoration-2 underline-offset-[6px]
+                           transition-colors duration-150 hover:decoration-ui-accent"
+              >
+                See featured pieces
+              </a>
             </div>
           </div>
 
-          {/* Right — image slider */}
-          <div className="relative">
-            {heroVisual}
-          </div>
+          {/* The frame's size comes from CSS alone (aspect ratio, or a clamped
+              height from lg), so nothing shifts when the photo or its name card
+              arrives. The photo cycles through the collections, always linking
+              to the product on screen; if nothing is in stock, the original
+              basket photo stands in, unlinked, rather than a link to nowhere. */}
+          {showcaseProducts.length > 0 ? (
+            <HeroProductCarousel items={showcaseProducts} frameClassName={HERO_FRAME} />
+          ) : (
+            <div className={`relative overflow-hidden rounded-card bg-ui-surface ${HERO_FRAME}`}>
+              <Image
+                src={heroImage}
+                alt="Three handmade crochet baskets stacked on a table, each with a leather Handmade tag"
+                fill
+                loading="eager"
+                fetchPriority="high"
+                placeholder="blur"
+                sizes="(min-width: 1280px) 560px, (min-width: 1024px) 44vw, 100vw"
+                className="object-cover"
+                style={{ objectPosition: "58% 65%" }}
+              />
+            </div>
+          )}
         </div>
 
+        {/* Trust row — three plain statements, same content width as the hero. */}
+        <div className="page-container">
+          <ul className="grid gap-3 border-t border-ui-border py-5 sm:grid-cols-3 sm:gap-6">
+            {trustPoints.map(({ label, icon }) => (
+              <li key={label} className="flex items-center gap-3 font-body text-sm text-ui-text">
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5 shrink-0 text-ui-accent"
+                >
+                  <path d={icon} />
+                </svg>
+                {label}
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
-      {/* Melts the hero's milk panel into the section below — without it the
-          hero ends on a hard horizontal seam and reads as its own screen. */}
-      <div className="h-14 lg:h-20 bg-gradient-to-b from-cream-dark to-cream-darker" aria-hidden />
+      {/* ══════════════════════════════════════════════
+          FEATURED PIECES — the admin's show_on_homepage picks, sold out last
+      ══════════════════════════════════════════════ */}
+      <HomeFeaturedGrid items={homepageItems} />
 
       {/* ══════════════════════════════════════════════
           TRUST STRIP
@@ -571,18 +401,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ══════════════════════════════════════════════
-          FEATURED PIECES — admin-managed via /admin/featured-pieces
-
-          Desktop only. On mobile the hero already renders this exact rail,
-          with the same card component and the full item list — showing it
-          twice meant two identical swipe rows in one scroll. Desktop keeps
-          both because there the hero is the bento collage, not a rail.
-      ══════════════════════════════════════════════ */}
-      <div className="hidden lg:block">
-        <FeaturedPiecesSection items={featuredPieceItems} />
-      </div>
 
       {/* ══════════════════════════════════════════════
           OUR BELOVED PIECES — Apple-style Showcase

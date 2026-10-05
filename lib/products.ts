@@ -12,7 +12,7 @@ export interface Product {
   inStock: boolean;
   /** Sort weight on the /products listing — NOT homepage curation. */
   featured: boolean;
-  /** Admin-toggled: this piece appears in the homepage hero (HeroTiles). */
+  /** Admin-toggled: this piece appears in the homepage featured grid (HomeFeaturedGrid). */
   showOnHomepage: boolean;
   isHandmade: boolean;
   stockQuantity: number;
