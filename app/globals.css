@@ -518,17 +518,3 @@ body {
   100% { transform: scale(1); }
 }
 .animate-cart-bump { animation: cart-bump 350ms ease-out; }
-
-/* Phone headline: a highlighter stroke sweeps in under each product word,
-   once, left to right (delay set inline per word). */
-@keyframes headline-sweep {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-.headline-sweep {
-  transform-origin: left center;
-  animation: headline-sweep 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .headline-sweep { animation: none; }
-}

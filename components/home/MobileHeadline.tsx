@@ -3,9 +3,9 @@ import type { Category } from "@/lib/products";
 
 /**
  * The phone homepage headline, "Handmade blankets, bags & baby keepsakes",
- * where each product word is its own call to action: a soft maroon pill with
- * an arrow, opening that category. A highlighter underline sweeps in under
- * each word once, one after another (off for reduced motion).
+ * where each product word is its own call to action: set in the headline's
+ * own upright serif, in maroon, inside a thin outlined pill with a small
+ * arrow, opening that category.
  *
  * Desktop keeps the plain headline in app/page.tsx; this one is lg:hidden.
  */
@@ -25,32 +25,24 @@ export default function MobileHeadline({ categories }: { categories: Category[] 
     <h1 className="lg:hidden font-heading font-medium text-ui-text text-[2rem] leading-[1.35] text-balance">
       {/* No comma after the first pill: its padding left the comma floating
           on its own ("blankets → ,"), and the pills already separate the words. */}
-      Handmade <HeadlineWord href={blanketsHref} delayMs={250}>blankets</HeadlineWord>{" "}
-      <HeadlineWord href={bagsHref} delayMs={550}>bags</HeadlineWord> &amp;{" "}
-      <HeadlineWord href={babyHref} delayMs={850}>baby keepsakes</HeadlineWord>
+      Handmade <HeadlineWord href={blanketsHref}>blankets</HeadlineWord>{" "}
+      <HeadlineWord href={bagsHref}>bags</HeadlineWord> &amp;{" "}
+      <HeadlineWord href={babyHref}>baby keepsakes</HeadlineWord>
     </h1>
   );
 }
 
-function HeadlineWord({ href, delayMs, children }: { href: string; delayMs: number; children: string }) {
+function HeadlineWord({ href, children }: { href: string; children: string }) {
   return (
     <Link
       href={href}
-      // isolate: the underline's -z-10 then sits above this pill's tint and
-      // below its text, instead of behind the whole page.
-      className="focus-ring isolate inline-flex items-baseline gap-1 whitespace-nowrap rounded-full bg-ui-accent/[0.08]
-                 px-2.5 italic text-ui-accent transition-transform duration-150 active:scale-95"
+      className="focus-ring my-1 inline-flex items-baseline gap-1 whitespace-nowrap rounded-full border-[1.5px] border-ui-accent/50
+                 px-3 text-ui-accent transition-[transform,background-color] duration-150
+                 active:scale-95 active:bg-ui-accent/[0.06]"
       style={{ touchAction: "manipulation" }}
     >
-      <span className="relative">
-        {children}
-        <span
-          aria-hidden="true"
-          className="headline-sweep absolute inset-x-0 bottom-[0.12em] -z-10 h-[0.32em] rounded-full bg-gold-light/45"
-          style={{ animationDelay: `${delayMs}ms` }}
-        />
-      </span>
-      <span aria-hidden="true" className="not-italic text-[0.55em] font-body font-semibold">→</span>
+      {children}
+      <span aria-hidden="true" className="font-body text-[0.5em]">→</span>
     </Link>
   );
 }
