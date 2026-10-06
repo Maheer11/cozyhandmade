@@ -106,11 +106,21 @@ describe("POST /api/checkout/intent", () => {
   });
   afterEach(() => errorSpy.mockRestore());
 
-  it("guests can't pay: 401 and no intent", async () => {
+  it("guests can pay: one intent, staged with no user", async () => {
     currentUser = null;
     const res = await pay(IRELAND, 9200);
-    expect(res.status).toBe(401);
-    expect(fakeStripe.createCalls).toBe(0);
+    expect(res.status).toBe(200);
+    expectOneIntentMatchingRow();
+    expect(pendingRows()[0]).toMatchObject({ total_amount: 92, user_id: null, checkout_attempt_id: ATTEMPT });
+  });
+
+  it("a guest's attempt id can't be continued from an account", async () => {
+    currentUser = null;
+    await pay(IRELAND, 9200);
+    currentUser = { id: "user-1" };
+    const res = await pay(IRELAND, 9200);
+    expect(res.status).toBe(403);
+    expect(fakeStripe.createCalls).toBe(1);
   });
 
   it("Pay creates one intent for items + Irish shipping, staged with the breakdown", async () => {

@@ -1,8 +1,8 @@
 // Shared by the integration tests that drive app/api/checkout/intent against
 // real Stripe TEST mode + the test Supabase project.
 //
-// The route requires a signed-in customer, and orders.user_id references
-// profiles, so these tests need a real account in the TEST project: put its
+// These tests pay as a signed-in customer (guests can pay too), and
+// orders.user_id references profiles, so they need a real account in the TEST project: put its
 // auth user id in .env.test as TEST_CHECKOUT_USER_ID. Each test file mocks
 // "@/lib/supabase/server" to return that user (there's no browser cookie
 // here to sign in with).
