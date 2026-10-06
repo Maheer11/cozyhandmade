@@ -113,6 +113,8 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
       <form
         ref={formRef}
         role="search"
+        // Scrolls itself to the top on focus (handleFocus), so KeyboardAware leaves it be.
+        data-keyboard-scroll="self"
         onSubmit={(e) => {
           e.preventDefault();
           if (query.trim()) router.push(shopHref);

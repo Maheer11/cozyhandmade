@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import MobileFooterCredit from "@/components/MobileFooterCredit";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import CartDrawer from "@/components/CartDrawer";
+import KeyboardAware from "@/components/KeyboardAware";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-playfair", // keep same CSS var name so @theme still works
@@ -37,6 +38,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // Android: the on-screen keyboard shrinks the page instead of sliding over
+  // it, so the browser can scroll any field above the keyboard. iOS ignores
+  // this; components/KeyboardAware handles both.
+  interactiveWidget: "resizes-content",
 };
 
 export default async function RootLayout({
@@ -78,6 +83,9 @@ export default async function RootLayout({
 
           {/* Slide-in cart drawer — every page */}
           <CartDrawer />
+
+          {/* Keeps the field being typed in above the phone keyboard */}
+          <KeyboardAware />
         </CartProvider>
         </CurrencyProvider>
         </AuthProvider>
