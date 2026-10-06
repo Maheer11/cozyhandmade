@@ -108,6 +108,8 @@ export default function BottomNav() {
                  shadow-[0_-6px_20px_-12px_rgba(26,8,16,0.35)]"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Primary"
+      // Hidden while the phone keyboard is open (globals.css, KeyboardAware).
+      data-bottom-nav
     >
       <div className="flex items-stretch">
         {tabs.map(({ href, label, active, external, icon }) => {

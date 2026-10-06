@@ -103,6 +103,27 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Phones and tablets: form fields at 16px. iOS Safari zooms the whole page
+   when a field under 16px gets focus, which left the page zoomed in and half
+   covered by the keyboard. Unlayered, so it wins over text-sm/text-xs
+   utilities on the fields; desktop keeps their smaller sizes. */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* While the phone keyboard is open (components/KeyboardAware), the bottom tab
+   bar steps aside instead of riding up on the keyboard over the field. */
+html[data-keyboard-open] [data-bottom-nav] {
+  display: none;
+}
+html[data-keyboard-open] body {
+  padding-bottom: var(--keyboard-inset, 0px);
+}
+
 /* Remove iOS tap highlight on all interactive elements */
 * {
   -webkit-tap-highlight-color: transparent;
