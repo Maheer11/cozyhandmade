@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { whatsappLink } from "@/lib/social-links";
@@ -21,6 +21,10 @@ export interface SearchItem {
 }
 
 const MAX_RESULTS = 6;
+// Space kept clear between the results and the top of the on-screen keyboard.
+const KEYBOARD_GAP_PX = 12;
+// Never shrink the results below about two rows, even on a tiny screen.
+const MIN_PANEL_PX = 140;
 
 /**
  * Phone homepage search: results appear under the bar as the customer types,
@@ -48,9 +52,66 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
 
   const shopHref = `/products?q=${encodeURIComponent(query.trim())}`;
 
+  // ── Keep results above the on-screen keyboard ──────────────────────────
+  // The keyboard covers roughly the bottom half of a phone screen, and this
+  // bar sits a third of the way down the page, so results used to land
+  // behind it. On focus the page scrolls the bar to the top of the screen,
+  // and the results panel is capped to the space between the bar and the
+  // keyboard (visualViewport is the part of the page the keyboard leaves
+  // visible), scrolling inside itself when there are more results.
+  const formRef = useRef<HTMLFormElement>(null);
+  const [panelMaxPx, setPanelMaxPx] = useState<number | null>(null);
+  const [focused, setFocused] = useState(false);
+
+  const fitPanelToKeyboard = useCallback(() => {
+    const form = formRef.current;
+    const viewport = window.visualViewport;
+    if (!form || !viewport) return;
+    let visibleBottom = viewport.offsetTop + viewport.height;
+    // On phones where the keyboard shrinks the page (most Android browsers)
+    // the fixed bottom tab bar sits just above the keyboard, so stop above it.
+    const tabBar = document.querySelector('nav[aria-label="Primary"]');
+    const tabBarTop = tabBar?.getBoundingClientRect().top;
+    if (tabBarTop !== undefined && tabBarTop > 0 && tabBarTop < visibleBottom) visibleBottom = tabBarTop;
+    const space = visibleBottom - form.getBoundingClientRect().bottom - KEYBOARD_GAP_PX - 8;
+    setPanelMaxPx(Math.max(MIN_PANEL_PX, Math.floor(space)));
+  }, []);
+
+  useEffect(() => {
+    if (!focused) return;
+    const viewport = window.visualViewport;
+    // The keyboard opens over ~300ms and the page scroll below runs alongside
+    // it, so measure again whenever the visible area changes.
+    viewport?.addEventListener("resize", fitPanelToKeyboard);
+    viewport?.addEventListener("scroll", fitPanelToKeyboard);
+    window.addEventListener("scroll", fitPanelToKeyboard, { passive: true });
+    return () => {
+      viewport?.removeEventListener("resize", fitPanelToKeyboard);
+      viewport?.removeEventListener("scroll", fitPanelToKeyboard);
+      window.removeEventListener("scroll", fitPanelToKeyboard);
+    };
+  }, [focused, fitPanelToKeyboard]);
+
+  function handleFocus() {
+    setFocused(true);
+    // Wait for the keyboard to start opening (the browser does its own
+    // scroll-into-view first), then bring the bar to the top of the screen.
+    window.setTimeout(() => {
+      const form = formRef.current;
+      if (!form) return;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({
+        top: window.scrollY + form.getBoundingClientRect().top - KEYBOARD_GAP_PX,
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
+      fitPanelToKeyboard();
+    }, 250);
+  }
+
   return (
     <div>
       <form
+        ref={formRef}
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
@@ -73,6 +134,8 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Escape") setQuery(""); }}
+          onFocus={handleFocus}
+          onBlur={() => setFocused(false)}
           placeholder="Search blankets, bags, baby gifts…"
           // 16px: iOS zooms the page when focusing any smaller input.
           className="min-w-0 flex-1 bg-transparent font-body text-base text-ui-text placeholder:text-ui-muted
@@ -96,8 +159,10 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
 
       {q && (
         <div aria-live="polite"
-             className="mt-2 overflow-hidden rounded-2xl border border-ui-border bg-ui-surface
-                        shadow-[0_14px_30px_-18px_rgba(26,8,16,0.45)]">
+             // overscroll-contain: scrolling the list doesn't scroll the page behind it.
+             className="mt-2 overflow-y-auto overscroll-contain rounded-2xl border border-ui-border bg-ui-surface
+                        shadow-[0_14px_30px_-18px_rgba(26,8,16,0.45)]"
+             style={panelMaxPx ? { maxHeight: panelMaxPx } : undefined}>
           {matches.length === 0 ? (
             <div className="px-4 py-4 font-body text-sm text-ui-muted">
               <p>No pieces match &ldquo;{deferredQuery.trim()}&rdquo;.</p>
