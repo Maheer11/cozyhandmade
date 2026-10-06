@@ -111,13 +111,12 @@ function publicQuote(quote: CheckoutQuote) {
 
 export async function POST(request: Request) {
   try {
-    // Signed-in customers only. The checkout page sends guests to sign in
-    // before they ever reach Pay; this is the enforcement.
+    // Signing in is optional. A signed-in customer's order is linked to
+    // their account; a guest's order has no user_id and is reached through
+    // the email on the delivery address.
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Please sign in to pay.", code: "auth_required" }, { status: 401 });
-    }
+    const userId = user?.id ?? null;
 
     let raw: unknown;
     try {
@@ -169,7 +168,7 @@ export async function POST(request: Request) {
     // inside the address so a free Dublin pickup is visible on the order
     // and can't be mistaken for missing shipping.
     const staged = {
-      user_id: user.id,
+      user_id: userId,
       items: quote.verifiedItems,
       delivery_address: { ...body.delivery_address, delivery_method: quote.deliveryMethod },
       subtotal_amount: quote.subtotalEUR,
@@ -189,7 +188,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Could not start payment, please try again" }, { status: 500 });
     }
     const existing = existingData as PendingAttemptRow | null;
-    if (existing && existing.user_id !== user.id) {
+    // An attempt belongs to whoever started it: a guest attempt can't be
+    // continued from an account, or one account's from another.
+    if (existing && existing.user_id !== userId) {
       return NextResponse.json({ error: "Invalid checkout attempt", code: "restart_attempt" }, { status: 403 });
     }
 
@@ -218,7 +219,11 @@ export async function POST(request: Request) {
             currency: STRIPE_CHARGE_CURRENCY,
             // Must match paymentMethodTypes in the page's <Elements> options.
             payment_method_types: ["card"],
-            metadata: { source: "cozi-handmade-checkout", checkout_attempt_id: body.attempt_id, user_id: user.id },
+            metadata: {
+              source: "cozi-handmade-checkout",
+              checkout_attempt_id: body.attempt_id,
+              ...(userId ? { user_id: userId } : {}),
+            },
             // Stripe's own receipt, as a backstop independent of our email
             // infrastructure. Stripe only sends these in live mode.
             ...(receiptEmail ? { receipt_email: receiptEmail } : {}),

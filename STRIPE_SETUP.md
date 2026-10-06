@@ -16,7 +16,7 @@ the server "payment succeeded" and gets trusted. Instead:
 
 1. The browser collects card details with Stripe's `PaymentElement` in
    deferred mode (no PaymentIntent exists yet; card data never touches our
-   servers). Only signed-in customers can reach this step.
+   servers). Signing in is optional; guest orders have no `user_id`.
 2. When the customer presses Pay, the browser calls
    `POST /api/checkout/intent`. The server re-prices the cart and shipping
    from the database and the delivery address — it never trusts a

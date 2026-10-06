@@ -510,3 +510,19 @@ body {
 @media (min-width: 64rem) {
   .cta-sheen::after { display: none; }
 }
+
+/* "Letters from our Studio" collage (desktop): hovering it plays a quick
+   zoom-and-brighten flash, twice, on each photo in turn (delays set inline).
+   Each photo zooms inside its own frame, so the collage layout never moves.
+   Restarts only when the pointer leaves and comes back. */
+@keyframes studio-flash {
+  0%   { transform: scale(1);    filter: brightness(1); }
+  45%  { transform: scale(1.09); filter: brightness(1.2); }
+  100% { transform: scale(1);    filter: brightness(1); }
+}
+.studio-collage:hover .studio-collage-photo {
+  animation: studio-flash 380ms ease-in-out 2 both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-collage:hover .studio-collage-photo { animation: none; }
+}

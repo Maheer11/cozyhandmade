@@ -528,14 +528,18 @@ export default async function HomePage() {
             {/* Scattered postcard collage — desktop only. Three photos at
                 staggered rotations/sizes instead of one flat static box,
                 like photos pinned to a corkboard. */}
-            <div className="hidden lg:block relative h-[420px]">
+            {/* Hovering the collage plays a quick zoom-and-brighten "flash",
+                twice, across the three photos in turn (studio-collage in
+                globals.css). */}
+            <div className="studio-collage hidden lg:block relative h-[420px]">
               <div className="absolute left-2 top-2 w-[62%] h-[70%] rotate-[-6deg] rounded-2xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(26,8,16,0.35)] border-4 border-white z-10">
                 <Image
                   src="/images/blanket-room2.jpg"
                   alt="A handmade Cozi piece styled in a cozy room"
                   fill
                   sizes="30vw"
-                  className="object-cover"
+                  className="studio-collage-photo object-cover"
+                  style={{ animationDelay: "0ms" }}
                 />
               </div>
               <div className="absolute right-4 top-0 w-[46%] h-[52%] rotate-[5deg] rounded-2xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(26,8,16,0.3)] border-4 border-white z-20">
@@ -544,7 +548,8 @@ export default async function HomePage() {
                   alt="Cozi handmade detail"
                   fill
                   sizes="20vw"
-                  className="object-cover"
+                  className="studio-collage-photo object-cover"
+                  style={{ animationDelay: "120ms" }}
                 />
               </div>
               <div className="absolute right-10 bottom-2 w-[42%] h-[42%] rotate-[-3deg] rounded-2xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(26,8,16,0.3)] border-4 border-white z-30">
@@ -553,7 +558,8 @@ export default async function HomePage() {
                   alt="A cozy handmade baby blanket"
                   fill
                   sizes="20vw"
-                  className="object-cover"
+                  className="studio-collage-photo object-cover"
+                  style={{ animationDelay: "240ms" }}
                 />
               </div>
             </div>

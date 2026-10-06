@@ -1570,38 +1570,6 @@ export default function CheckoutPage() {
     );
   }
 
-  /* Signed-in customers only — guests are asked to sign in before they see
-     the form (app/api/checkout/intent refuses them regardless). The cart is
-     kept in localStorage, so it's still there when they come back. */
-  if (step === "shipping" || step === "payment") {
-    if (authLoading) {
-      return <div className="min-h-[70vh] bg-cream" aria-busy="true" />;
-    }
-    if (!user) {
-      return (
-        <div className="min-h-[70vh] bg-cream flex flex-col items-center justify-center px-6 text-center font-system">
-          <h1 className="font-heading text-2xl font-700 text-deep-brown mb-2">Sign in to check out</h1>
-          <p className="text-sm text-taupe-dark mb-6 max-w-xs">
-            You need an account to place an order. Your cart will be waiting when you&apos;re back.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/auth/login?next=/checkout"
-                  className="inline-flex items-center justify-center px-8 py-3 rounded-none
-                             text-cream font-semibold text-sm hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: ACCENT }}>
-              Sign in
-            </Link>
-            <Link href="/auth/signup"
-                  className="inline-flex items-center justify-center px-8 py-3 rounded-none border-2
-                             border-stone-200 text-stone-600 font-semibold text-sm hover:border-stone-400 transition-colors">
-              Create an account
-            </Link>
-          </div>
-        </div>
-      );
-    }
-  }
-
   /* Confirmation — reads ONLY the DB-verified `confirmed` snapshot set by
      whichever success handler actually created the order, never a
      client-side recomputed value. All three success handlers set this
@@ -1658,6 +1626,19 @@ export default function CheckoutPage() {
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Form */}
           <div className="flex-1 min-w-0 space-y-4">
+            {/* Signing in is optional: guests check out with just their
+                email. The cart lives in localStorage, so it survives the
+                trip to the login page and back. */}
+            {step === "shipping" && !authLoading && !user && (
+              <p className="text-sm text-taupe-dark">
+                Have an account?{" "}
+                <Link href="/auth/login?next=/checkout" className="font-semibold underline underline-offset-2"
+                      style={{ color: ACCENT }}>
+                  Sign in
+                </Link>{" "}
+                to keep this order in your account, or continue as a guest.
+              </p>
+            )}
             {step === "shipping" && (
               <ShippingStep ship={ship} setShip={setShip}
                 fieldError={shipFieldError} onFieldBlur={handleShipFieldBlur}

@@ -73,11 +73,12 @@ test("cart -> checkout -> Stripe test card -> real confirmed order", async ({ pa
   // Stripe-chargeable currency instead of silently testing the wrong path.
   await expect(page.getByRole("banner").getByLabel("Change currency")).toContainText("EUR");
 
-  // Checkout requires an account. A guest sees the sign-in prompt, and the
-  // login page sends them straight back to /checkout via ?next=. The cart
-  // lives in localStorage, so it survives the round trip.
+  // Signing in is optional: a guest sees the shipping form straight away,
+  // with a "Sign in" link above it. This test signs in through that link,
+  // and the login page sends them straight back to /checkout via ?next=.
+  // The cart lives in localStorage, so it survives the round trip.
   await page.goto("/checkout");
-  await expect(page.getByRole("heading", { name: /sign in to check out/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /shipping information/i })).toBeVisible();
   // The prompt's own link (the navbar has a generic "Sign In" too).
   await page.locator("a[href='/auth/login?next=/checkout']").click();
   await expect(page).toHaveURL(/\/auth\/login\?next=/);
