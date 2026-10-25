@@ -10,15 +10,24 @@ export default function ProductCard({ product }: { product: Product }) {
   const { addItem, openCart } = useCart();
   const { formatAmount, isLoading } = useCurrency();
 
-  // Determine display price: if sizes have per-size prices, show the lowest as "From X"
-  const variantPrices = Object.values(product.variantPrice);
-  const hasVariantPricing = variantPrices.length > 0;
-  const lowestPrice = hasVariantPricing ? Math.min(...variantPrices) : product.price;
-  const pricesVary  = hasVariantPricing && variantPrices.some((p) => p !== lowestPrice);
+  // The price shown is the one the product page opens on: the first size's
+  // own price when it has one, else the listed price. (It used to show the
+  // lowest size price, so a piece read €45 here and €55 on its page.)
+  const defaultSize = product.sizes[0];
+  const displayPrice =
+    defaultSize !== undefined && product.variantPrice[defaultSize] !== undefined
+      ? product.variantPrice[defaultSize]
+      : product.price;
+
+  // A piece with a size or colour to choose can't be added from the card: the
+  // cart line would have no selection, and its price and stock depend on it.
+  // Its button goes to the product page instead.
+  const hasChoices = product.sizes.length > 0 || product.colors.length > 0;
 
   const handleAdd = (e: React.MouseEvent) => {
+    if (hasChoices) return; // let the link open the product page
     e.preventDefault();
-    addItem({ id: product.id, name: product.name, price: lowestPrice, image: product.image, source: "product", shippingWeightGrams: product.shippingWeightGrams });
+    addItem({ id: product.id, name: product.name, price: product.price, image: product.image, source: "product", maxQuantity: product.stockQuantity, shippingWeightGrams: product.shippingWeightGrams });
     openCart();
   };
 
@@ -72,11 +81,8 @@ export default function ProductCard({ product }: { product: Product }) {
             <span className="h-5 w-20 bg-taupe/20 rounded animate-pulse" />
           ) : (
             <>
-              {pricesVary && (
-                <span className="text-xs text-taupe-dark font-normal">From</span>
-              )}
-              <span className="font-ios text-sm font-600 text-brown">{formatAmount(lowestPrice)}</span>
-              {product.originalPrice && !pricesVary && (
+              <span className="font-ios text-sm font-600 text-brown">{formatAmount(displayPrice)}</span>
+              {product.originalPrice && displayPrice === product.price && (
                 <span className="text-xs text-taupe-dark line-through">{formatAmount(product.originalPrice)}</span>
               )}
             </>
@@ -96,7 +102,7 @@ export default function ProductCard({ product }: { product: Product }) {
                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           style={{ touchAction: "manipulation" }}
         >
-          {product.inStock ? "Add to Cart" : "Out of Stock"}
+          {!product.inStock ? "Out of Stock" : hasChoices ? "Choose options" : "Add to Cart"}
         </button>
       </div>
     </Link>

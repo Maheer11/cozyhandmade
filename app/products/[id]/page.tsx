@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { mapProduct, type DbProduct } from "@/lib/db-products";
+import { getPulledProductIds, mapProduct, withPulledFromSale, type DbProduct } from "@/lib/db-products";
 import ProductDetail from "@/components/ProductDetail";
 
 export default async function ProductDetailPage({
@@ -22,7 +22,8 @@ export default async function ProductDetailPage({
 
   if (!dbProduct) notFound();
 
-  const product = mapProduct(dbProduct);
+  const pulled = await getPulledProductIds(db);
+  const product = withPulledFromSale(mapProduct(dbProduct), pulled);
 
   const { data: dbRelated } = await db
     .from("products")
@@ -31,7 +32,7 @@ export default async function ProductDetailPage({
     .neq("id", id)
     .limit(4);
 
-  const related = ((dbRelated ?? []) as DbProduct[]).map(mapProduct);
+  const related = ((dbRelated ?? []) as DbProduct[]).map((p) => withPulledFromSale(mapProduct(p), pulled));
 
   return <ProductDetail product={product} related={related} />;
 }

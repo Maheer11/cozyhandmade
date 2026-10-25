@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { mapProduct, type DbProduct } from "@/lib/db-products";
+import { getPulledProductIds, mapProduct, withPulledFromSale, type DbProduct } from "@/lib/db-products";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
 import { mapCategoriesWithFallback, type DbCategory } from "@/lib/db-categories";
 import ProductsContent from "@/components/ProductsContent";
@@ -38,7 +38,8 @@ export default async function ProductsPage() {
     .select("*")
     .order("display_order", { ascending: true });
 
-  const regularProducts = ((data ?? []) as DbProduct[]).map(mapProduct);
+  const pulled = await getPulledProductIds(db);
+  const regularProducts = ((data ?? []) as DbProduct[]).map((p) => withPulledFromSale(mapProduct(p), pulled));
   const customProducts = ((customData ?? []) as DbCustomProduct[]).map(mapCustomProduct);
   const reviews: Review[] = (dbReviews ?? []).map((r: DbReview) => ({
     screenshot: r.screenshot,
