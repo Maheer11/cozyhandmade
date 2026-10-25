@@ -6,6 +6,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { whatsappLink } from "@/lib/social-links";
+import { matchRank } from "@/lib/product-search";
 
 export interface SearchItem {
   id: string;
@@ -39,15 +40,20 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
   const deferredQuery = useDeferredValue(query);
   const q = deferredQuery.trim().toLowerCase();
 
+  // Word-prefix matching (lib/product-search.ts): "b" finds names, categories
+  // and tags with a word starting with b, not every piece with a b somewhere
+  // inside it. Name matches come first; the sort is stable, so in-stock pieces
+  // (already ordered first) stay ahead within each group.
   const matches = useMemo(() => {
     if (!q) return [];
-    return items.filter(
-      (item) =>
-        item.name.toLowerCase().includes(q) ||
-        item.categoryName.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q) ||
-        item.tags.some((tag) => tag.toLowerCase().includes(q)),
-    );
+    return items
+      .map((item) => ({
+        item,
+        rank: matchRank(q, { name: item.name, other: [item.categoryName, item.category, ...item.tags] }),
+      }))
+      .filter((m): m is { item: SearchItem; rank: number } => m.rank !== null)
+      .sort((a, b) => a.rank - b.rank)
+      .map((m) => m.item);
   }, [items, q]);
 
   const shopHref = `/products?q=${encodeURIComponent(query.trim())}`;

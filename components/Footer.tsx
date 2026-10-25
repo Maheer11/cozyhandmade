@@ -13,8 +13,6 @@ const shopLinks = [
 
 const helpLinks = [
   { href: "/faq", label: "FAQs" },
-  { href: "/contact", label: "Contact Us" },
-
 ];
 
 const aboutLinks = [

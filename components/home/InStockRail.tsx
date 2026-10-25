@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { useCart } from "@/components/CartContext";
+import QuickAddButton from "@/components/home/QuickAddButton";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 
 export interface RailProduct {
@@ -25,39 +24,20 @@ export interface RailProduct {
 }
 
 /**
- * Phone-only "In stock now" row: swipe sideways through what can be bought
- * today, and add a simple item to the cart without leaving the homepage.
+ * "In stock now" row: swipe sideways on phones (four across from lg) through
+ * what can be bought today, and add a simple item to the bag without leaving
+ * the homepage. Stock comes from the admin-managed products table.
  */
-export default function MobileInStockRail({ products }: { products: RailProduct[] }) {
-  const { addItem } = useCart();
+export default function InStockRail({ products }: { products: RailProduct[] }) {
   const { formatAmount } = useCurrency();
-  const [addedId, setAddedId] = useState<string | null>(null);
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => { if (resetTimer.current) clearTimeout(resetTimer.current); }, []);
 
   if (products.length === 0) return null;
 
-  function handleAdd(product: RailProduct) {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      source: "product",
-      maxQuantity: product.stockQuantity,
-      shippingWeightGrams: product.shippingWeightGrams,
-    });
-    setAddedId(product.id);
-    if (resetTimer.current) clearTimeout(resetTimer.current);
-    resetTimer.current = setTimeout(() => setAddedId(null), 1600);
-  }
-
   return (
-    <section aria-labelledby="mobile-instock-heading" className="lg:hidden bg-ui-bg">
-      <div className="page-container pt-8 pb-2">
+    <section aria-labelledby="instock-heading" className="bg-ui-bg">
+      <div className="page-container pt-10 pb-2 lg:pt-20">
         <div className="mb-4 flex items-baseline justify-between">
-          <h2 id="mobile-instock-heading" className="font-heading text-2xl font-medium text-ui-text">
+          <h2 id="instock-heading" className="font-heading text-2xl font-medium text-ui-text lg:text-[2.5rem] lg:leading-tight">
             In stock now
           </h2>
           <Link href="/products" className="focus-ring rounded-button font-body text-sm font-medium text-ui-accent">
@@ -65,11 +45,10 @@ export default function MobileInStockRail({ products }: { products: RailProduct[
           </Link>
         </div>
 
-        <ul className="no-scrollbar -mx-6 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto px-6 pb-2">
+        <ul className="no-scrollbar -mx-6 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto px-6 pb-2 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:px-0">
           {products.map((product) => {
-            const added = addedId === product.id;
             return (
-              <li key={product.id} className="w-[44vw] max-w-[220px] shrink-0 snap-start">
+              <li key={product.id} className="w-[44vw] max-w-[220px] shrink-0 snap-start lg:w-auto lg:max-w-none lg:nth-[n+5]:hidden">
                 <div className="overflow-hidden rounded-card border border-ui-border bg-ui-surface">
                   <Link
                     href={`/products/${product.id}`}
@@ -77,7 +56,7 @@ export default function MobileInStockRail({ products }: { products: RailProduct[
                     style={{ touchAction: "manipulation" }}
                   >
                     <div className="relative aspect-[4/5] bg-cream-dark">
-                      <Image src={product.image} alt={product.name} fill sizes="(max-width: 1023px) 44vw, 1px"
+                      <Image src={product.image} alt={product.name} fill sizes="(max-width: 1023px) 44vw, 23vw"
                              className="object-cover" />
                       {product.stockQuantity <= 2 && (
                         <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5
@@ -100,17 +79,17 @@ export default function MobileInStockRail({ products }: { products: RailProduct[
                   </Link>
                   <div className="p-3 pt-2">
                     {product.quickAdd ? (
-                      <button
-                        type="button"
-                        onClick={() => handleAdd(product)}
-                        aria-live="polite"
-                        className={`focus-ring flex h-10 w-full items-center justify-center gap-1.5 rounded-full
-                                    font-body text-sm font-semibold transition-all duration-150 active:scale-95
-                                    ${added ? "bg-emerald-600 text-white" : "bg-ui-accent text-white"}`}
-                        style={{ touchAction: "manipulation" }}
-                      >
-                        {added ? "Added ✓" : <><span aria-hidden="true">+</span> Add to cart</>}
-                      </button>
+                      <QuickAddButton
+                        item={{
+                          id: product.id,
+                          name: product.name,
+                          price: product.price,
+                          image: product.image,
+                          source: "product",
+                          maxQuantity: product.stockQuantity,
+                          shippingWeightGrams: product.shippingWeightGrams,
+                        }}
+                      />
                     ) : (
                       <Link
                         href={`/products/${product.id}`}

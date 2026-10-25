@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
+import type { CartItem } from "@/components/CartContext";
 
 export interface FeaturedPieceCardData {
   id: string;
@@ -25,6 +26,12 @@ export interface FeaturedPieceCardData {
   price: number;
   discount_price: number | null;
   shipping_weight_grams?: number | null;
+  /**
+   * What "Add to bag" puts in the cart, set by the homepage only when the
+   * piece is in stock AND has no size or colour to choose. null/absent means
+   * the card links to the piece's page instead.
+   */
+  quickAdd?: Omit<CartItem, "quantity"> | null;
 }
 
 /**
