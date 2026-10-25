@@ -10,6 +10,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 import SocialProofSection, { type Review } from "@/components/SocialProofSection";
 import CategorySlider from "@/components/CategorySlider";
 import type { Product, Category } from "@/lib/products";
+import { matchRank } from "@/lib/product-search";
 
 /** Navbar is `sticky top-0` with an h-20 bar, so it overlays the first 80px. */
 const NAVBAR_HEIGHT = 80;
@@ -142,12 +143,12 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
   const filtered = useMemo(() => {
     let list = [...products];
     if (deferredQuery.trim()) {
-      const q = deferredQuery.toLowerCase();
+      // Word-prefix match, shared with the homepage search (lib/product-search.ts).
+      const q = deferredQuery;
+      const categoryName = new Map(categories.map((c) => [c.id, c.name]));
       list = list.filter(
         (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.tags.some((t) => t.toLowerCase().includes(q)) ||
-          p.category.toLowerCase().includes(q)
+          matchRank(q, { name: p.name, other: [p.category, categoryName.get(p.category) ?? "", ...p.tags] }) !== null
       );
     }
     if (selectedCategory !== "all") {
@@ -161,7 +162,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
     else if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
     else list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return list;
-  }, [deferredQuery, selectedCategory, selectedPrice, sort, products]);
+  }, [deferredQuery, selectedCategory, selectedPrice, sort, products, categories]);
 
   // Tapping a Curated Categories card filters in place and glides down to the
   // grid, rather than reloading the page at the top and leaving the customer to

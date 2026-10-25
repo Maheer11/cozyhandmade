@@ -12,12 +12,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getStockedCategories } from "@/lib/db-categories";
 import MobileShopShortcuts from "@/components/home/MobileShopShortcuts";
 import type { SearchItem } from "@/components/home/MobileProductSearch";
-import MobileCategoryTiles from "@/components/home/MobileCategoryTiles";
-import MobileInStockRail, { type RailProduct } from "@/components/home/MobileInStockRail";
+import CategoryTiles from "@/components/home/CategoryTiles";
+import InStockRail, { type RailProduct } from "@/components/home/InStockRail";
 import { MobileTrustStrip, MobileCustomOrderCard } from "@/components/home/MobileExtras";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
 import {
   FEATURED_PIECE_STOCK_SELECT,
+  featuredPieceMaxQuantity,
   isFeaturedPieceSoldOut,
   type FeaturedPieceStockSource,
 } from "@/lib/featured-piece-stock";
@@ -29,33 +30,80 @@ import {
 const trustPoints = [
   {
     label: "Made by hand in Ireland",
+    sub: "Stitched one at a time",
     // A running stitch — the wave is the thread, the gap is the needle's pass.
     icon: "M3 14c2.5-5 5 5 7.5 0S15 9 17.5 14M19.5 14h1.5",
   },
   {
     label: "Each piece is one of a kind",
+    sub: "Creative patterns, never mass-made",
     // Sparkles (Heroicons v2, 24-outline).
     icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z",
   },
   {
+    label: "Premium materials",
+    sub: "Chosen for comfort that lasts",
+    // Three stacked threads.
+    icon: "M4 7c4-3 12-3 16 0M4 12c4-3 12-3 16 0M4 17c4-3 12-3 16 0",
+  },
+  {
     label: "Gift wrap available",
+    sub: "Ready to give",
     // A wrapped box: lid, body, and the ribbon's bow and drop.
     icon: "M3.75 8.25h16.5v3H3.75zM5.25 11.25v8.25h13.5v-8.25M12 8.25v11.25M12 8.25C10.5 5.25 7.5 4.5 7.5 6.375S10.5 8.25 12 8.25zM12 8.25c1.5-3 4.5-3.75 4.5-1.875S13.5 8.25 12 8.25z",
   },
 ];
 
+/** What a card needs to decide whether "Add to bag" is possible. */
+interface DbChoices {
+  colors?: string[] | null;
+  sizes?: string[] | null;
+  variant_price?: Record<string, number> | null;
+}
+
+/**
+ * True when the customer has a size, colour or tier to pick. Those items can't
+ * be added from a card (the cart line would have no selection, and the price
+ * and stock depend on it), so their cards link to the page instead.
+ */
+function hasChoices(row: DbChoices): boolean {
+  return (
+    (row.colors?.length ?? 0) > 0 ||
+    (row.sizes?.length ?? 0) > 0 ||
+    Object.keys(row.variant_price ?? {}).length > 0
+  );
+}
+
 /** A featured_pieces row for a card, plus the linked product's stock. */
-type DbHeroFeaturedPiece = FeaturedPieceCardData & FeaturedPieceStockSource;
+type DbHeroFeaturedPiece = FeaturedPieceCardData & FeaturedPieceStockSource & DbChoices;
 
 // Featured Pieces no longer carry their own stock (migration 013): they take
 // it from the product they link to, and `sold_out` on the row survives only as
 // a manual override on top of that. Both halves have to be resolved before the
 // card is rendered, or the storefront advertises pieces it cannot sell.
 const FEATURED_PIECE_CARD_COLUMNS =
-  `id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price, ${FEATURED_PIECE_STOCK_SELECT}`;
+  `id, name, product_image, lifestyle_image, sold_out, is_handmade, price, discount_price, colors, sizes, variant_price, shipping_weight_grams, ${FEATURED_PIECE_STOCK_SELECT}`;
 
 function toCard(row: DbHeroFeaturedPiece): FeaturedPieceCardData {
-  return { ...row, sold_out: isFeaturedPieceSoldOut(row) };
+  const soldOut = isFeaturedPieceSoldOut(row);
+  const maxQuantity = featuredPieceMaxQuantity(row);
+  return {
+    ...row,
+    sold_out: soldOut,
+    // Same price rule as the piece's page and checkout: discount_price wins.
+    quickAdd:
+      !soldOut && maxQuantity > 0 && !hasChoices(row)
+        ? {
+            id: row.id,
+            name: row.name,
+            price: row.discount_price ?? row.price,
+            image: row.product_image,
+            source: "featured_piece",
+            maxQuantity,
+            shippingWeightGrams: row.shipping_weight_grams ?? null,
+          }
+        : null,
+  };
 }
 
 /** The hero photo frame: 5:4 on phones (short enough to leave the shop
@@ -66,10 +114,11 @@ const HERO_FRAME =
 
 /** The products columns a card needs, before normalisation. */
 const PRODUCT_CARD_COLUMNS =
-  "id, name, image, images, price, original_price, stock_quantity, in_stock, is_handmade, created_at";
+  "id, name, image, images, price, original_price, stock_quantity, in_stock, is_handmade, created_at, colors, sizes, variant_price, shipping_weight_grams";
 
 /** The products columns the hero needs, before normalisation. */
-interface DbHeroProduct {
+interface DbHeroProduct extends DbChoices {
+  shipping_weight_grams?: number | null;
   id: string;
   name: string;
   image: string | null;
@@ -88,6 +137,7 @@ interface DbHeroProduct {
  * because product and featured-piece ids live under different detail routes.
  */
 function toProductCard(p: DbHeroProduct): FeaturedPieceCardData {
+  const soldOut = !p.in_stock || p.stock_quantity <= 0;
   return {
     source: "product" as const,
     id: p.id,
@@ -99,7 +149,7 @@ function toProductCard(p: DbHeroProduct): FeaturedPieceCardData {
     // featured_pieces carries an explicit sold_out flag; products derive it
     // from stock. in_stock is a generated column (stock_quantity > 0) — the
     // second check is belt-and-braces for rows read before that ever existed.
-    sold_out: !p.in_stock || p.stock_quantity <= 0,
+    sold_out: soldOut,
     is_handmade: p.is_handmade,
     // Price shapes are inverted between the two tables. featured_pieces stores
     // `price` = list and `discount_price` = what you pay; products store
@@ -110,6 +160,20 @@ function toProductCard(p: DbHeroProduct): FeaturedPieceCardData {
     // /products listing does.
     price: p.original_price ?? p.price,
     discount_price: p.original_price ? p.price : null,
+    // Add to bag only when it is in stock with nothing to choose; the cap is
+    // the real stock_quantity from the admin dashboard.
+    quickAdd:
+      !soldOut && !hasChoices(p)
+        ? {
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            image: p.image ?? "/images/placeholder.jpg",
+            source: "product",
+            maxQuantity: p.stock_quantity,
+            shippingWeightGrams: p.shipping_weight_grams ?? null,
+          }
+        : null,
   };
 }
 
@@ -273,6 +337,17 @@ export default async function HomePage() {
 
   const heroProducts: FeaturedPieceCardData[] = ((dbHeroProducts ?? []) as DbHeroProduct[]).map(toProductCard);
 
+  // A product whose Featured Piece the owner has marked sold out in the admin
+  // dashboard is off sale, whatever its own stock number says, so it must not
+  // headline the hero or the "In stock now" row.
+  const { data: dbPulled } = await db
+    .from("featured_pieces")
+    .select("product_id")
+    .eq("sold_out", true);
+  const pulledProductIds = new Set(
+    ((dbPulled ?? []) as { product_id: string | null }[]).flatMap((r) => (r.product_id ? [r.product_id] : [])),
+  );
+
   // The hero photo cycles through every product in the collections that can
   // be bought right now, newest first, the same order /products lists them.
   // Sold-out pieces are left out so the hero never advertises one.
@@ -281,7 +356,9 @@ export default async function HomePage() {
     .select(PRODUCT_CARD_COLUMNS)
     .gt("stock_quantity", 0)
     .order("created_at", { ascending: false });
-  const showcaseProducts = ((dbShowcase ?? []) as DbHeroProduct[]).map(toProductCard);
+  const showcaseProducts = ((dbShowcase ?? []) as DbHeroProduct[])
+    .filter((p) => !pulledProductIds.has(p.id))
+    .map(toProductCard);
 
   // Featured Pieces first (by display_order), then products (by created_at).
   const heroItems = [...heroPieces, ...heroProducts];
@@ -294,7 +371,9 @@ export default async function HomePage() {
     .gt("stock_quantity", 0)
     .order("created_at", { ascending: false })
     .limit(12);
-  const railProducts = ((dbRail ?? []) as DbRailProduct[]).map(toRailProduct);
+  const railProducts = ((dbRail ?? []) as DbRailProduct[])
+    .filter((p) => !pulledProductIds.has(p.id))
+    .map(toRailProduct);
 
   // Phone search: the whole products catalogue (everything with a product
   // page), in stock first. Small enough to send with the page and filter on
@@ -331,12 +410,26 @@ export default async function HomePage() {
   return (
     <>
       {/* ══════════════════════════════════════════════
+          ANNOUNCEMENT BAR — the three promises, above the header's content.
+          Hidden on phones, which get the same facts as pills under the hero.
+      ══════════════════════════════════════════════ */}
+      <div className="hidden sm:block bg-deep-brown text-white">
+        <ul className="page-container flex flex-wrap justify-center gap-x-8 gap-y-1 py-2.5 font-body text-[13px] tracking-wide">
+          {trustPoints.filter((t) => t.label !== "Premium materials").map(({ label }) => (
+            <li key={label}>{label}</li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ══════════════════════════════════════════════
           HERO — one message, one photo
 
           Two columns from lg, stacked (text first) below it. The copy sits on
           the plain cream ground, never on the photo, so contrast is a single
           measurable number rather than "whatever patch of image is behind
           each glyph". One primary action (maroon), and a plain text link that scrolls to the grid.
+          The photo is the in-stock showcase carousel (products with stock > 0
+          in the admin dashboard), with its name-and-price card over the photo.
       ══════════════════════════════════════════════ */}
       <section className="bg-ui-bg">
         {/* grid-cols-1 (minmax(0,1fr)) and min-w-0: without them the phone
@@ -409,13 +502,17 @@ export default async function HomePage() {
             </div>
           )}
         </div>
+      </section>
 
-        {/* Trust row — three plain statements, same content width as the hero.
-            Desktop only; phones get the compact MobileTrustStrip below. */}
-        <div className="page-container hidden lg:block">
-          <ul className="grid gap-3 border-t border-ui-border py-5 sm:grid-cols-3 sm:gap-6">
-            {trustPoints.map(({ label, icon }) => (
-              <li key={label} className="flex items-center gap-3 font-body text-sm text-ui-text">
+      {/* ══════════════════════════════════════════════
+          TRUST STRIP — four statements from lg; phones and tablets get the
+          pill row (which adds free Dublin pickup and secure checkout).
+      ══════════════════════════════════════════════ */}
+      <section aria-label="Why Cozi Handmade" className="hidden lg:block bg-ui-bg">
+        <div className="page-container">
+          <ul className="grid grid-cols-4 divide-x divide-ui-border border-y border-ui-border">
+            {trustPoints.map(({ label, sub, icon }) => (
+              <li key={label} className="flex items-center gap-3.5 px-6 py-7 first:pl-0 last:pr-0">
                 <svg
                   viewBox="0 0 24 24"
                   aria-hidden="true"
@@ -425,82 +522,31 @@ export default async function HomePage() {
                   strokeWidth={1.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="h-5 w-5 shrink-0 text-ui-accent"
+                  className="h-6 w-6 shrink-0 text-ui-accent"
                 >
                   <path d={icon} />
                 </svg>
-                {label}
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-body text-[15px] font-semibold text-ui-text">{label}</span>
+                  <span className="font-body text-sm text-ui-muted">{sub}</span>
+                </span>
               </li>
             ))}
           </ul>
         </div>
       </section>
-
-      {/* ══════════════════════════════════════════════
-          PHONES ONLY — one-tap ways in: categories, what's in stock, and the
-          three facts that matter. All lg:hidden, so desktop is unchanged.
-      ══════════════════════════════════════════════ */}
-      <MobileCategoryTiles categories={categories} />
-      <MobileInStockRail products={railProducts} />
       <MobileTrustStrip />
+
+      {/* SHOP BY CATEGORY — real categories that hold products */}
+      <CategoryTiles categories={categories} />
+
+      {/* IN STOCK NOW — buyable today, straight from the admin's stock numbers */}
+      <InStockRail products={railProducts} />
 
       {/* ══════════════════════════════════════════════
           FEATURED PIECES — the admin's show_on_homepage picks, sold out last
       ══════════════════════════════════════════════ */}
       <HomeFeaturedGrid items={homepageItems} />
-
-      {/* ══════════════════════════════════════════════
-          TRUST STRIP
-      ══════════════════════════════════════════════ */}
-      <section
-        className="hidden lg:block border-y border-taupe/15"
-        style={{ backgroundColor: "#F2E2CC" }}
-      >
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 lg:py-6">
-          <div className="grid grid-cols-2 gap-y-5 gap-x-4 lg:grid-cols-4 lg:gap-y-0 lg:divide-x lg:divide-taupe/20">
-            {trustItems.map(({ title, subtitle }) => (
-              <div
-                key={title}
-                className="flex items-center gap-3 lg:justify-center lg:px-6"
-              >
-                <span
-                  className="text-gold font-heading text-lg shrink-0"
-                  aria-hidden="true"
-                >
-                  ✦
-                </span>
-                <div>
-                  <p className="text-xs font-semibold text-deep-brown font-body tracking-wide">
-                    {title}
-                  </p>
-                  <p className="text-[11px] text-taupe-dark mt-0.5 font-body">
-                    {subtitle}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════
-          MARQUEE STRIP
-      ══════════════════════════════════════════════ */}
-      <section className="hidden lg:block bg-gold overflow-hidden py-3.5">
-        <div className="flex whitespace-nowrap">
-          <div className="flex gap-10 animate-marquee shrink-0">
-            {marqueeDouble.map((item, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-2 text-cream text-sm font-body font-semibold tracking-widest px-4"
-              >
-                <span aria-hidden="true">{item.icon === "star" ? "✦" : "◆"}</span>
-                {item.text}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ══════════════════════════════════════════════
           OUR BELOVED PIECES — Apple-style Showcase
@@ -510,7 +556,45 @@ export default async function HomePage() {
       )}
 
       {/* ══════════════════════════════════════════════
-          TESTIMONIALS — Social Proof
+          OUR STORY — the company's four promises, beside a studio photo
+      ══════════════════════════════════════════════ */}
+      <div className="bg-ui-bg pt-16 lg:pt-24">
+      <section aria-labelledby="story-heading" className="bg-cream-darker">
+        <div className="page-container grid grid-cols-1 items-center gap-8 py-12 lg:grid-cols-2 lg:gap-16 lg:py-24">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-card bg-ui-surface lg:aspect-auto lg:h-[32rem]">
+            <Image
+              src="/images/our-story.jpg"
+              alt="Hands at work on a handmade Cozi piece"
+              fill
+              sizes="(min-width: 1024px) 44vw, 100vw"
+              className="object-cover"
+            />
+          </div>
+          <div className="min-w-0">
+            <p className="font-body text-[13px] font-semibold uppercase tracking-[0.14em] text-ui-accent">
+              {trustItems[0].title}
+            </p>
+            <h2
+              id="story-heading"
+              className="mt-3 font-heading font-medium text-ui-text text-balance text-[clamp(2rem,1.5rem+2vw,2.875rem)] leading-[1.1]"
+            >
+              {trustItems[0].subtitle}
+            </h2>
+            <ul className="mt-8 border-b border-ui-border">
+              {trustItems.slice(1).map(({ title, subtitle }) => (
+                <li key={title} className="border-t border-ui-border py-5">
+                  <h3 className="font-heading text-[1.375rem] font-medium text-ui-text">{title}</h3>
+                  <p className="mt-1 font-body text-[15px] text-ui-muted">{subtitle}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+      </div>
+
+      {/* ══════════════════════════════════════════════
+          REVIEWS — real customer screenshots
       ══════════════════════════════════════════════ */}
       <SocialProofSection reviews={reviews} />
 
@@ -593,6 +677,25 @@ export default async function HomePage() {
             </div>
           </div>
         </ScrollReveal>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          MARQUEE STRIP — just above the footer (desktop)
+      ══════════════════════════════════════════════ */}
+      <section className="hidden lg:block bg-gold overflow-hidden py-3.5">
+        <div className="flex whitespace-nowrap">
+          <div className="flex gap-10 animate-marquee shrink-0">
+            {marqueeDouble.map((item, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-2 text-cream text-sm font-body font-semibold tracking-widest px-4"
+              >
+                <span aria-hidden="true">{item.icon === "star" ? "✦" : "◆"}</span>
+                {item.text}
+              </span>
+            ))}
+          </div>
+        </div>
       </section>
     </>
   );

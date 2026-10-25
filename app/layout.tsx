@@ -32,6 +32,9 @@ export const metadata: Metadata = {
   title: "Cozi Handmade | Handcrafted Woolwork & Knits",
   description:
     "Beautifully handcrafted duvets, baby clothing, handbags, purses, scarves and blankets, every stitch made with love by skilled women artisans.",
+  icons: {
+    icon: { url: "/cozihandmade-favicon.svg", type: "image/svg+xml" },
+  },
 };
 
 export const viewport: Viewport = {

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { itemHref, type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
+import QuickAddButton from "@/components/home/QuickAddButton";
 
 /**
  * The homepage "Featured pieces" grid — the admin-curated `show_on_homepage`
@@ -48,8 +49,8 @@ export default function HomeFeaturedGrid({ items }: { items: FeaturedPieceCardDa
           {items.map((item) => {
             const payPrice = item.discount_price ?? item.price;
             return (
-              <li key={`${item.source ?? "featured_piece"}-${item.id}`}>
-                <Link href={itemHref(item)} className="focus-ring group block rounded-card">
+              <li key={`${item.source ?? "featured_piece"}-${item.id}`} className="flex flex-col">
+                <Link href={itemHref(item)} className="focus-ring group block flex-1 rounded-card">
                   <div className="relative aspect-[4/5] overflow-hidden rounded-card bg-ui-surface">
                     <Image
                       src={item.product_image}
@@ -83,6 +84,33 @@ export default function HomeFeaturedGrid({ items }: { items: FeaturedPieceCardDa
                     </p>
                   </div>
                 </Link>
+                {/* Sold-out state and stock come from the admin dashboard
+                    (products.stock_quantity, featured_pieces.sold_out). A card
+                    only offers "Add to bag" when it is in stock with nothing to
+                    choose; otherwise it goes to the piece's page. */}
+                <div className="pt-3">
+                  {item.sold_out ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex h-10 w-full items-center justify-center rounded-full border border-ui-border
+                                 font-body text-sm font-semibold text-ui-muted disabled:cursor-not-allowed"
+                    >
+                      Sold out
+                    </button>
+                  ) : item.quickAdd ? (
+                    <QuickAddButton item={item.quickAdd} />
+                  ) : (
+                    <Link
+                      href={itemHref(item)}
+                      className="focus-ring flex h-10 w-full items-center justify-center rounded-full border border-ui-accent
+                                 font-body text-sm font-semibold text-ui-accent transition-colors duration-150
+                                 hover:bg-ui-accent hover:text-white"
+                    >
+                      Choose options
+                    </Link>
+                  )}
+                </div>
               </li>
             );
           })}
