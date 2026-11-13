@@ -1,6 +1,6 @@
 // Official Instagram glyph — path data from Simple Icons (simpleicons.org),
 // used unmodified per their brand guidelines. Colour is controlled by the
-// caller via `currentColor` (e.g. text-stone-400 hover:text-[#E4405F]);
+// caller via `currentColor` (e.g. text-stone hover:text-[#E4405F]);
 // never recolour, distort, or rotate the mark itself.
 export default function InstagramIcon({ className }: { className?: string }) {
   return (

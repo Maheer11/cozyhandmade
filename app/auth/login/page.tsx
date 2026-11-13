@@ -44,34 +44,34 @@ function LoginForm() {
 
         {/* Logo mark */}
         <div className="text-center mb-8">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-taupe-dark font-body mb-2">
+          <p className="type-eyebrow text-stone font-body mb-2">
             Cozi Handmade
           </p>
-          <h1 className="font-heading italic text-4xl font-400 text-deep-brown leading-tight">
+          <h1 className="type-h1 text-brown leading-tight">
             Welcome back
           </h1>
-          <p className="text-sm text-taupe-dark mt-2 font-body">
+          <p className="text-sm text-stone mt-2 font-body">
             Sign in to view your orders and profile
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-cream-darker p-7">
+        <div className="bg-white rounded-card shadow-sm border border-peach p-7">
 
           {message && (
-            <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs text-emerald-700 font-body">
+            <div className="mb-5 p-3 bg-peach border border-line rounded-tile text-xs text-brown font-body">
               {message}
             </div>
           )}
 
           {error && (
-            <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-700 font-body">
+            <div className="mb-5 p-3 bg-white border-2 border-error rounded-tile text-xs text-error font-body">
               {error}
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-body">
+              <label htmlFor="email" className="block type-small font-semibold text-brown mb-2">
                 Email Address
               </label>
               <input
@@ -81,16 +81,16 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full h-12 px-4 rounded-xl border border-taupe/40 bg-white text-deep-brown
-                           text-sm placeholder:text-taupe/50 focus:outline-none transition-all duration-200"
-                onFocus={(e) => { e.target.style.borderColor = "#8B2035"; e.target.style.boxShadow = "0 0 0 3px #8B203520"; }}
+                className="w-full h-12 px-4 rounded-tile border border-stone bg-white text-brown
+                           text-sm placeholder:text-stone focus:outline-none transition-all duration-200"
+                onFocus={(e) => { e.target.style.borderColor = "#8B2035"; e.target.style.boxShadow = "0 0 0 1px #4D1808"; }}
                 onBlur={(e)  => { e.target.style.borderColor = ""; e.target.style.boxShadow = ""; }}
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className="block text-xs font-medium text-brown/80 uppercase tracking-wide font-body">
+                <label htmlFor="password" className="block type-small font-semibold text-brown mb-2">
                   Password
                 </label>
                 <Link href="/auth/forgot" className="text-xs font-body" style={{ color: "#8B2035" }}>
@@ -109,7 +109,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 rounded-none text-cream font-semibold text-sm tracking-wide
+              className="w-full h-12 rounded-button text-white font-semibold text-sm tracking-wide
                          transition-all duration-200 disabled:opacity-50 hover:-translate-y-px
                          hover:shadow-lg font-body mt-2"
               style={{ backgroundColor: "#8B2035" }}
@@ -118,8 +118,8 @@ function LoginForm() {
             </button>
           </form>
 
-          <div className="mt-5 pt-5 border-t border-taupe/15 text-center">
-            <p className="text-xs text-taupe-dark font-body">
+          <div className="mt-5 pt-5 border-t border-line/15 text-center">
+            <p className="text-xs text-stone font-body">
               Don&apos;t have an account?{" "}
               <Link href="/auth/signup" className="font-semibold underline underline-offset-2"
                     style={{ color: "#8B2035" }}>

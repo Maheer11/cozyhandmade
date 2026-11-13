@@ -55,21 +55,21 @@ export default function SignupPage() {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md text-center">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-emerald-100">
-            <svg className="w-9 h-9 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-emerald-100">
+            <svg className="w-9 h-9 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V8.844a2.25 2.25 0 011.183-1.98l7.5-4.04a2.25 2.25 0 012.134 0l7.5 4.04a2.25 2.25 0 011.183 1.98V19.5z" />
             </svg>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600 font-body mb-1">Almost there</p>
-          <h1 className="font-heading italic text-3xl font-400 text-deep-brown mb-3">Check your inbox</h1>
-          <p className="text-sm text-taupe-dark font-body leading-relaxed max-w-sm mx-auto">
-            We sent a confirmation link to <strong className="text-deep-brown">{email}</strong>.
+          <p className="text-xs uppercase tracking-[0.2em] text-success font-body mb-1">Almost there</p>
+          <h1 className="type-h1 text-brown mb-3">Check your inbox</h1>
+          <p className="text-sm text-stone font-body leading-relaxed max-w-sm mx-auto">
+            We sent a confirmation link to <strong className="text-brown">{email}</strong>.
             Click it to activate your account. Then sign in.
           </p>
           <Link
             href="/auth/login"
-            className="inline-flex items-center justify-center mt-7 px-8 h-12 rounded-none
-                       text-cream font-semibold text-sm tracking-wide font-body hover:-translate-y-px
+            className="inline-flex items-center justify-center mt-7 px-8 h-12 rounded-button
+                       text-white font-semibold text-sm tracking-wide font-body hover:-translate-y-px
                        transition-all duration-200"
             style={{ backgroundColor: "#8B2035" }}
           >
@@ -85,28 +85,28 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
 
         <div className="text-center mb-8">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-taupe-dark font-body mb-2">
+          <p className="type-eyebrow text-stone font-body mb-2">
             Cozi Handmade
           </p>
-          <h1 className="font-heading italic text-4xl font-400 text-deep-brown leading-tight">
+          <h1 className="type-h1 text-brown leading-tight">
             Create your account
           </h1>
-          <p className="text-sm text-taupe-dark mt-2 font-body">
+          <p className="text-sm text-stone mt-2 font-body">
             Track orders, earn rewards, and more
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-cream-darker p-7">
+        <div className="bg-white rounded-card shadow-sm border border-peach p-7">
 
           {error && (
-            <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-700 font-body">
+            <div className="mb-5 p-3 bg-white border-2 border-error rounded-tile text-xs text-error font-body">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-body">
+              <label htmlFor="name" className="block type-small font-semibold text-brown mb-2">
                 Full Name
               </label>
               <input
@@ -116,15 +116,15 @@ export default function SignupPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Amaka Okonkwo"
-                className="w-full h-12 px-4 rounded-xl border border-taupe/40 bg-white text-deep-brown
-                           text-sm placeholder:text-taupe/50 focus:outline-none transition-all duration-200"
+                className="w-full h-12 px-4 rounded-tile border border-stone bg-white text-brown
+                           text-sm placeholder:text-stone focus:outline-none transition-all duration-200"
                 onFocus={(e) => { e.target.style.borderColor = "#C9A96E"; e.target.style.boxShadow = "0 0 0 3px #C9A96E20"; }}
                 onBlur={(e)  => { e.target.style.borderColor = ""; e.target.style.boxShadow = ""; }}
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-body">
+              <label htmlFor="email" className="block type-small font-semibold text-brown mb-2">
                 Email Address
               </label>
               <input
@@ -134,8 +134,8 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full h-12 px-4 rounded-xl border border-taupe/40 bg-white text-deep-brown
-                           text-sm placeholder:text-taupe/50 focus:outline-none transition-all duration-200"
+                className="w-full h-12 px-4 rounded-tile border border-stone bg-white text-brown
+                           text-sm placeholder:text-stone focus:outline-none transition-all duration-200"
                 onFocus={(e) => { e.target.style.borderColor = "#C9A96E"; e.target.style.boxShadow = "0 0 0 3px #C9A96E20"; }}
                 onBlur={(e)  => { e.target.style.borderColor = ""; e.target.style.boxShadow = ""; }}
               />
@@ -162,7 +162,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 rounded-none text-cream font-semibold text-sm tracking-wide
+              className="w-full h-12 rounded-button text-white font-semibold text-sm tracking-wide
                          transition-all duration-200 disabled:opacity-50 hover:-translate-y-px
                          hover:shadow-lg font-body mt-2"
               style={{ backgroundColor: "#8B2035" }}
@@ -171,8 +171,8 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <div className="mt-5 pt-5 border-t border-taupe/15 text-center">
-            <p className="text-xs text-taupe-dark font-body">
+          <div className="mt-5 pt-5 border-t border-line/15 text-center">
+            <p className="text-xs text-stone font-body">
               Already have an account?{" "}
               <Link href="/auth/login" className="font-semibold underline underline-offset-2"
                     style={{ color: "#8B2035" }}>

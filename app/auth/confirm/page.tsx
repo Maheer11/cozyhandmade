@@ -109,17 +109,17 @@ function ConfirmInner() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-md text-center">
-        <p className="text-[11px] tracking-[0.2em] text-[#8B2035] mb-3">COZI HANDMADE</p>
-        <h1 className="font-heading text-3xl text-deep-brown mb-3">
+        <p className="type-eyebrow text-burgundy mb-3">COZI HANDMADE</p>
+        <h1 className="font-heading text-3xl text-brown mb-3">
           {isSignup ? "Confirm your email" : "Reset your password"}
         </h1>
 
         {shown ? (
           <>
-            <p className="text-sm text-taupe-dark mb-6">{shown}</p>
+            <p className="text-sm text-stone mb-6">{shown}</p>
             <Link
               href={recoveryHref}
-              className="inline-flex items-center justify-center w-full h-12 rounded-xl text-white font-semibold text-sm"
+              className="inline-flex items-center justify-center w-full h-12 rounded-tile text-white font-semibold text-sm"
               style={{ backgroundColor: "#8B2035" }}
             >
               {recoveryLabel}
@@ -127,14 +127,14 @@ function ConfirmInner() {
           </>
         ) : !tokenHash ? (
           <>
-            <p className="text-sm text-taupe-dark mb-6">
+            <p className="text-sm text-stone mb-6">
               {isSignup
                 ? "This link is incomplete. Please sign up again to get a new confirmation email."
                 : "This link is incomplete. Please request a new password reset email."}
             </p>
             <Link
               href={recoveryHref}
-              className="inline-flex items-center justify-center w-full h-12 rounded-xl text-white font-semibold text-sm"
+              className="inline-flex items-center justify-center w-full h-12 rounded-tile text-white font-semibold text-sm"
               style={{ backgroundColor: "#8B2035" }}
             >
               {recoveryLabel}
@@ -142,7 +142,7 @@ function ConfirmInner() {
           </>
         ) : (
           <>
-            <p className="text-sm text-taupe-dark mb-6">
+            <p className="text-sm text-stone mb-6">
               {isSignup
                 ? "Tap continue to confirm your email and sign in to your account."
                 : "Continue to choose a new password for your account."}
@@ -152,13 +152,13 @@ function ConfirmInner() {
               onClick={handleContinue}
               disabled={busy}
               style={{ backgroundColor: "#8B2035", touchAction: "manipulation" }}
-              className="w-full h-12 rounded-xl text-white font-semibold text-sm
+              className="w-full h-12 rounded-tile text-white font-semibold text-sm
                          active:scale-[0.98] transition-transform duration-100
                          disabled:opacity-50 disabled:active:scale-100"
             >
               {busy ? "Verifying…" : isSignup ? "Confirm & sign in" : "Continue"}
             </button>
-            <p className="text-xs text-taupe-dark mt-4">
+            <p className="text-xs text-stone mt-4">
               For your security this link can only be used once.
             </p>
           </>

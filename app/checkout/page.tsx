@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import CoziLogo from "@/components/CoziLogo";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import type { StripeElementsOptionsMode } from "@stripe/stripe-js";
 import { useAuth } from "@/lib/supabase/auth-context";
@@ -62,11 +63,6 @@ function formatEUR(amount: number): string {
   return formatCurrency(amount, CURRENCIES.EUR);
 }
 
-const STEPS = [
-  { key: "shipping" as Step, label: "Shipping", n: 1 },
-  { key: "payment"  as Step, label: "Payment",  n: 2 },
-  { key: "confirmation" as Step, label: "Confirm", n: 3 },
-];
 
 // Single checkout accent. Previously this alternated with a green for the
 // Nigerian (bank-transfer) checkout mode, which no longer exists.
@@ -90,15 +86,17 @@ const ACCENT = "#8B2035";
 const STRIPE_APPEARANCE = {
   theme: "stripe" as const,
   variables: {
-    // Matches --font-body / --font-inter from globals.css so the card field
-    // is set in the same typeface as the rest of the form.
-    fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    // DM Sans, with fallbacks. Stripe renders the card field inside its own
+    // iframe, which cannot see the page's next/font, so it uses DM Sans only
+    // where the visitor's device already has it and falls back otherwise.
+    fontFamily: '"DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     fontSizeBase: "16px",
     colorPrimary: ACCENT,
-    colorText: "#3D2B1F",
-    colorTextSecondary: "#8A7968",
-    colorDanger: "#B91C1C",
-    borderRadius: "12px",
+    colorText: "#4D1808",
+    colorBackground: "#FFFFFF",
+    colorTextSecondary: "#7A6A62",
+    colorDanger: "#B3261E",
+    borderRadius: "16px",
     spacingUnit: "4px",
   },
   rules: {
@@ -107,22 +105,22 @@ const STRIPE_APPEARANCE = {
       // card field sits flush with the address fields rather than a few
       // pixels taller or shorter.
       padding: "12px 14px",
-      border: "1px solid #E4D8C8",
+      border: "1px solid #7A6A62",
       boxShadow: "none",
     },
     ".Input:focus": {
-      border: `1px solid ${ACCENT}`,
+      border: "2px solid #4D1808",
       boxShadow: "none",
       outline: "none",
     },
     ".Label": {
-      fontSize: "12px",
-      fontWeight: "500",
-      color: "#8A7968",
-      marginBottom: "6px",
+      fontSize: "14px",
+      fontWeight: "600",
+      color: "#4D1808",
+      marginBottom: "8px",
     },
     ".Tab, .Block": {
-      border: "1px solid #E4D8C8",
+      border: "1px solid #E2DCD3",
       boxShadow: "none",
     },
     ".Tab--selected": {
@@ -155,13 +153,13 @@ function TermsModal({ onClose }: { onClose: () => void }) {
 
       {/* Sheet */}
       <div className="relative w-full sm:max-w-lg max-h-[90vh] flex flex-col
-                      bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
+                      bg-white sm:rounded-card rounded-t-2xl shadow-2xl overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0"
              style={{ backgroundColor: "#8B2035" }}>
           <div>
-            <p className="text-[9px] uppercase tracking-[0.25em] text-white/60 font-system">Cozi Handmade</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-white/60 font-body">Cozi Handmade</p>
             <h2 className="font-heading italic text-white text-lg font-400 leading-tight">
               Terms & Conditions
             </h2>
@@ -177,9 +175,9 @@ function TermsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-5 py-5 text-xs text-stone-700 leading-relaxed space-y-4 font-system">
+        <div className="overflow-y-auto flex-1 px-5 py-5 text-xs text-brown leading-relaxed space-y-4 font-body">
 
-          <p className="text-[10px] text-stone-400 uppercase tracking-widest">
+          <p className="text-xs text-stone uppercase tracking-widest">
             Last updated: {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
           </p>
 
@@ -230,16 +228,16 @@ function TermsModal({ onClose }: { onClose: () => void }) {
             },
           ].map(({ title, body }) => (
             <div key={title}>
-              <p className="font-semibold text-stone-900 mb-1" style={{ color: "#4A1020" }}>{title}</p>
+              <p className="font-semibold text-brown mb-1" style={{ color: "#4D1808" }}>{title}</p>
               <p>{body}</p>
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 shrink-0 border-t border-stone-100">
+        <div className="px-5 py-4 shrink-0 border-t border-line">
           <button onClick={onClose}
-            className="w-full py-3 rounded-xl text-sm font-semibold text-white tracking-wide
+            className="w-full py-3 rounded-tile text-sm font-semibold text-white tracking-wide
                        transition-all duration-200 hover:opacity-90"
             style={{ backgroundColor: "#8B2035" }}>
             Close
@@ -282,7 +280,7 @@ function TermsCheckbox({
                    transition-all duration-200
                    peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-[#8B2035]"
         style={{
-          borderColor: accepted ? "#8B2035" : "#D1C4B8",
+          borderColor: accepted ? "#8B2035" : "#E2DCD3",
           backgroundColor: accepted ? "#8B2035" : "white",
         }}>
         {accepted && (
@@ -291,7 +289,7 @@ function TermsCheckbox({
           </svg>
         )}
       </span>
-      <span className="text-xs leading-relaxed" style={{ color: "#4A1020" }}>
+      <span className="text-xs leading-relaxed" style={{ color: "#4D1808" }}>
         I have read and agree to the{" "}
         <button
           type="button"
@@ -385,52 +383,15 @@ function LogoStripe() {
 }
 function LogoBadge({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-3 py-1.5 bg-white rounded-lg border border-stone-200 shadow-sm h-8 flex items-center justify-center">
+    <div className="px-3 py-1.5 bg-white rounded-lg border border-line shadow-sm h-8 flex items-center justify-center">
       {children}
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────
-   STEP BAR
-───────────────────────────────────────────────────────── */
-function StepBar({ current }: { current: Step }) {
-  const idx   = STEPS.findIndex((s) => s.key === current);
-  const color = ACCENT;
-  return (
-    <ol className="flex items-center justify-center gap-0 mb-8">
-      {STEPS.map((s, i) => {
-        const done   = i < idx;
-        const active = s.key === current;
-        return (
-          <li key={s.key} className="flex items-center">
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300"
-                   style={{ backgroundColor: done ? "#C9A96E" : active ? color : "#E8E0D5",
-                            color: done || active ? "#FFF8F0" : "#9B8B7A" }}>
-                {done
-                  ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  : s.n}
-              </div>
-              <span className="text-[10px] font-medium"
-                    style={{ color: active ? color : "#9B8B7A" }}>{s.label}</span>
-            </div>
-            {i < STEPS.length - 1 && (
-              <div className="w-14 sm:w-20 h-px mx-2 mb-5 transition-colors duration-300"
-                   style={{ backgroundColor: done ? "#C9A96E" : "rgba(155,139,122,0.25)" }} />
-            )}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────
    FORM FIELDS
-   Shared warm-neutral border/surface + a single umber (#792F00) focus
+   Shared warm-neutral border/surface + a single umber (#8B2035) focus
    treatment across every field in checkout — border colour change plus a
    soft matching ring, not a competing browser-default outline on top.
 ───────────────────────────────────────────────────────── */
@@ -441,10 +402,10 @@ function StepBar({ current }: { current: Step }) {
 // sm:text-sm restores the smaller size from tablet up, where no browser
 // zooms and the tighter type looks better.
 const FIELD_BASE =
-  "w-full h-12 px-4 rounded-xl bg-[#FAF6F0] text-deep-brown text-base sm:text-sm font-system " +
-  "placeholder:text-[#9C8570]/70 focus:outline-none transition-colors duration-150 " +
-  "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#F0EBE3]";
-const FIELD_OK = "border border-[#E4D8C8] focus:border-[#792F00] focus:ring-2 focus:ring-[#792F00]/20";
+  "w-full h-12 px-4 rounded-tile bg-white text-brown text-base sm:text-sm font-body " +
+  "placeholder:text-[#7A6A62]/70 focus:outline-none transition-colors duration-150 " +
+  "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#F5F4F0]";
+const FIELD_OK = "border border-[#7A6A62] focus:border-2 focus:border-[#4D1808] focus:px-[15px]";
 
 // Section shell for the checkout steps.
 //
@@ -459,13 +420,13 @@ const FIELD_OK = "border border-[#E4D8C8] focus:border-[#792F00] focus:ring-2 fo
 // From sm: up the panel returns, where there's width to spare and the card
 // edge helps separate the form from the sidebar.
 const SECTION_SHELL =
-  "px-0 py-1 sm:bg-white sm:rounded-2xl sm:border sm:border-cream-darker sm:shadow-sm sm:p-6";
-const FIELD_ERROR = "border-2 border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200";
+  "px-0 py-1 sm:bg-white sm:rounded-card sm:border sm:border-peach sm:shadow-sm sm:p-6";
+const FIELD_ERROR = "border-2 border-error focus:border-error px-[15px]";
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} className="mt-1.5 flex items-center gap-1 text-xs text-red-600 font-system">
+    <p id={id} className="mt-1.5 flex items-center gap-1 text-xs text-error font-body">
       <IcoWarning />
       {message}
     </p>
@@ -486,7 +447,7 @@ function Field({
   const errorId = `${id}-error`;
   return (
     <div className={span2 ? "sm:col-span-2" : ""}>
-      <label htmlFor={id} className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-system">
+      <label htmlFor={id} className="block type-small font-semibold text-brown mb-2">
         {label}
       </label>
       <input
@@ -612,7 +573,7 @@ function SelectField({ id, label, value, onChange, onBlur, error, options, place
 
   return (
     <div className={span2 ? "sm:col-span-2" : ""} ref={containerRef}>
-      <label id={`${id}-label`} htmlFor={id} className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-system">
+      <label id={`${id}-label`} htmlFor={id} className="block type-small font-semibold text-brown mb-2">
         {label}
       </label>
       <div className="relative">
@@ -625,12 +586,12 @@ function SelectField({ id, label, value, onChange, onBlur, error, options, place
           aria-invalid={!!error}
           aria-describedby={error ? errorId : undefined}
           className={`${FIELD_BASE} flex items-center justify-between text-left pr-10 cursor-pointer ${error ? FIELD_ERROR : FIELD_OK}`}>
-          <span className={selectedLabel ? "" : "text-[#9C8570]/70"}>
+          <span className={selectedLabel ? "" : "text-[#7A6A62]/70"}>
             {selectedLabel || placeholder || "Select…"}
           </span>
         </button>
         <svg
-          className={`pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9C8570] transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          className={`pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7A6A62] transition-transform duration-150 ${open ? "rotate-180" : ""}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
           aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -640,8 +601,8 @@ function SelectField({ id, label, value, onChange, onBlur, error, options, place
           <ul
             ref={listRef} id={`${id}-listbox`} role="listbox" aria-labelledby={`${id}-label`}
             tabIndex={-1}
-            className="absolute z-20 mt-1.5 w-full max-h-60 overflow-y-auto rounded-xl border border-[#E4D8C8]
-                       bg-white shadow-lg py-1 font-system text-sm">
+            className="absolute z-20 mt-1.5 w-full max-h-60 overflow-y-auto rounded-tile border border-[#E2DCD3]
+                       bg-white shadow-lg py-1 font-body text-sm">
             {options.map((opt, i) => (
               <li
                 key={opt.value}
@@ -650,11 +611,11 @@ function SelectField({ id, label, value, onChange, onBlur, error, options, place
                 onMouseEnter={() => setHighlighted(i)}
                 onMouseDown={(e) => { e.preventDefault(); selectIndex(i); }}
                 className={`px-4 py-2.5 cursor-pointer flex items-center justify-between
-                            ${i === highlighted ? "bg-[#FAF6F0]" : ""}
-                            ${opt.value === value ? "text-[#792F00] font-semibold" : "text-deep-brown"}`}>
+                            ${i === highlighted ? "bg-white" : ""}
+                            ${opt.value === value ? "text-[#8B2035] font-semibold" : "text-brown"}`}>
                 {opt.label}
                 {opt.value === value && (
-                  <svg className="w-3.5 h-3.5 text-[#792F00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg className="w-3.5 h-3.5 text-[#8B2035]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
@@ -679,18 +640,18 @@ function TrustBadges() {
     { ico: <IcoReturn />, label: "Easy Returns",    sub: "30-day guarantee",                          green: false },
   ];
   return (
+    // Peach trust tiles, same as the cart's (DESIGN.md §4). `green` only picks
+    // the icon tint now; all text is brown for one consistent, AA-safe look.
     <div className="grid grid-cols-2 gap-2 mt-4">
       {badges.map((b) => (
-        <div key={b.label}
-             className={`flex items-start gap-2.5 rounded-lg border-0 sm:border p-3
-                         `}>
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0
-                           ${b.green ? "bg-emerald-100 text-emerald-600" : "bg-stone-100 text-stone-500"}`}>
+        <div key={b.label} className="flex items-start gap-2.5 rounded-tile bg-peach p-3">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-cream
+                           ${b.green ? "text-success" : "text-burgundy"}`}>
             {b.ico}
           </div>
           <div className="min-w-0">
-            <p className={`text-[11px] font-semibold leading-tight ${b.green ? "text-emerald-900" : "text-stone-800"}`}>{b.label}</p>
-            <p className={`text-[10px] leading-tight mt-0.5 ${b.green ? "text-emerald-600" : "text-stone-500"}`}>{b.sub}</p>
+            <p className="text-xs font-semibold leading-tight text-brown">{b.label}</p>
+            <p className="text-xs leading-tight mt-0.5 text-brown">{b.sub}</p>
           </div>
         </div>
       ))}
@@ -703,8 +664,8 @@ function TrustBadges() {
 ───────────────────────────────────────────────────────── */
 function PaymentLogos() {
   return (
-    <div className="pt-4 border-t border-stone-100 mt-4">
-      <p className="text-[10px] text-stone-400 uppercase tracking-[0.15em] font-medium mb-3 text-center">
+    <div className="pt-4 border-t border-line mt-4">
+      <p className="text-xs text-stone uppercase tracking-[0.15em] font-medium mb-3 text-center">
         We accept
       </p>
       <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -728,24 +689,24 @@ function OrderSummary({ items, totals, orderRef, estimatedDays, customsApplies }
 }) {
 
   return (
-    <div className="space-y-3 font-system">
+    <div className="space-y-3 font-body">
 
       <div id="order-receipt-wrapper">
         {/* Clean card — one soft border, no shadow, no receipt motifs */}
-        <div className="bg-white rounded-2xl border border-[#E4D8C8] p-5">
+        <div className="bg-white rounded-card border border-[#E2DCD3] p-5">
 
           <div className="flex items-center justify-between mb-4">
             <div>
               {/* Always "Order Summary" here — this component never renders
                   after payment is confirmed (that's ConfirmationScreen), so
                   it must never claim to be a receipt for money not yet taken. */}
-              <h2 className="font-heading text-lg text-deep-brown leading-tight">Order Summary</h2>
-              <p className="text-[11px] text-taupe-dark mt-0.5">#{orderRef}</p>
+              <h2 className="font-heading text-lg text-brown leading-tight">Order Summary</h2>
+              <p className="text-xs text-stone mt-0.5">#{orderRef}</p>
             </div>
             <button
               onClick={() => window.print()}
-              className="print:hidden shrink-0 w-8 h-8 rounded-full border border-[#E4D8C8] flex items-center
-                         justify-center text-[#792F00] hover:bg-[#FAF6F0] transition-colors duration-150"
+              className="print:hidden shrink-0 w-8 h-8 rounded-full border border-[#E2DCD3] flex items-center
+                         justify-center text-[#8B2035] hover:bg-white transition-colors duration-150"
               aria-label="Print order summary">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -759,61 +720,61 @@ function OrderSummary({ items, totals, orderRef, estimatedDays, customsApplies }
             {items.map((item) => (
               <div key={cartLineKey(item)} className="flex items-center gap-3">
                 {/* Thumbnail — falls back to a plain tinted square if no image */}
-                <div className="w-12 h-12 rounded-lg bg-[#FAF6F0] border border-[#E4D8C8] shrink-0 overflow-hidden">
+                <div className="w-12 h-12 rounded-lg bg-white border border-[#E2DCD3] shrink-0 overflow-hidden">
                   {item.image && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={item.image} alt="" className="w-full h-full object-cover" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-deep-brown leading-snug truncate">{item.name}</p>
-                  <p className="text-xs text-taupe-dark mt-0.5 tabular-nums">
+                  <p className="text-sm font-medium text-brown leading-snug truncate">{item.name}</p>
+                  <p className="text-xs text-stone mt-0.5 tabular-nums">
                     Qty {item.quantity} · {formatEUR(item.price)} each
                   </p>
                 </div>
-                <p className="text-sm font-semibold text-deep-brown tabular-nums shrink-0">
+                <p className="text-sm font-semibold text-brown tabular-nums shrink-0">
                   {formatEUR(item.price * item.quantity)}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="border-t border-[#E4D8C8] my-4" />
+          <div className="border-t border-[#E2DCD3] my-4" />
 
           {/* Subtotals — small uppercase labels, larger values */}
           <div className="space-y-2 mb-4">
             <div className="flex justify-between items-baseline">
-              <span className="text-[10px] uppercase tracking-wide text-taupe-dark">Subtotal</span>
-              <span className="text-sm text-deep-brown tabular-nums">{totals.formattedSubtotal}</span>
+              <span className="text-xs uppercase tracking-wide text-stone">Subtotal</span>
+              <span className="text-sm text-brown tabular-nums">{totals.formattedSubtotal}</span>
             </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-[10px] uppercase tracking-wide text-taupe-dark">Shipping</span>
-              <span className="text-sm text-deep-brown tabular-nums">{totals.formattedShipping}</span>
+              <span className="text-xs uppercase tracking-wide text-stone">Shipping</span>
+              <span className="text-sm text-brown tabular-nums">{totals.formattedShipping}</span>
             </div>
           </div>
 
           {/* Total — visually heaviest block, separated */}
-          <div className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ backgroundColor: "#792F00" }}>
+          <div className="flex items-center justify-between px-4 py-3 rounded-tile" style={{ backgroundColor: "#4D1808" }}>
             <span className="text-xs font-semibold tracking-wide text-white uppercase">Total</span>
             <span className="text-lg font-bold text-white tabular-nums">{totals.formattedTotal}</span>
           </div>
 
           {totals.approxTotal && (
-            <p className="text-[11px] text-center mt-2 text-taupe-dark tabular-nums">
+            <p className="text-xs text-center mt-2 text-stone tabular-nums">
               {totals.approxTotal} in your currency · you&apos;ll be charged in euro
             </p>
           )}
 
-          <p className="text-[10px] text-center mt-3 text-taupe-dark">
+          <p className="text-xs text-center mt-3 text-stone">
             Processed via Stripe · PCI-DSS Level 1 · EUR
           </p>
 
-          <p className="text-[10px] text-center mt-1.5 text-taupe-dark">
+          <p className="text-xs text-center mt-1.5 text-stone">
             Estimated delivery: <strong>{estimatedDays}</strong>
           </p>
 
           {customsApplies && (
-            <p className="mt-3 text-[10px] leading-relaxed text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            <p className="mt-3 text-xs leading-relaxed text-orange bg-peach border border-peach rounded-lg px-3 py-2">
               Customers outside the EU may be charged import duties or taxes on delivery.
               These are set by your country and are not included in this price.
             </p>
@@ -822,11 +783,22 @@ function OrderSummary({ items, totals, orderRef, estimatedDays, customsApplies }
       </div>
 
       {/* Trust badges + payment logos */}
-      <div className="print:hidden bg-white rounded-2xl border border-[#E4D8C8] p-4">
+      <div className="print:hidden bg-white rounded-card border border-[#E2DCD3] p-4">
         <TrustBadges />
         <PaymentLogos />
       </div>
     </div>
+  );
+}
+
+/* Numbered section heading: 1 Contact · 2 Address · 3 Delivery · 4 Payment.
+   Delivery follows Address because pickup eligibility and the delivery
+   estimate both depend on the address typed above it. */
+function StepHeading({ n, title }: { n: number; title: string }) {
+  return (
+    <h2 className="type-h2 mb-4 mt-8 text-brown first:mt-0">
+      <span className="text-burgundy">{n}.</span> {title}
+    </h2>
   );
 }
 
@@ -875,7 +847,7 @@ function ShippingStep({
 }) {
   return (
     <div className={SECTION_SHELL}>
-      <h2 className="font-heading font-600 text-deep-brown text-xl mb-5">Shipping Information</h2>
+      <StepHeading n={1} title="Contact" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field id="fn" label="First Name" placeholder="e.g. Jane"
                autoComplete="given-name"
@@ -889,10 +861,14 @@ function ShippingStep({
                placeholder="e.g. jane@example.com"
                value={ship.email} onChange={(v) => setShip({ ...ship, email: v })}
                onBlur={() => onFieldBlur("email")} error={fieldError("email")} span2 />
-        <Field id="ph" label="Phone" type="tel" inputMode="tel" autoComplete="tel"
+        <Field id="ph" label="Phone (for delivery updates)" type="tel" inputMode="tel" autoComplete="tel"
                placeholder="e.g. +44 7700 000000"
                value={ship.phone} onChange={(v) => setShip({ ...ship, phone: v })}
                onBlur={() => onFieldBlur("phone")} error={fieldError("phone")} span2 />
+      </div>
+
+      <StepHeading n={2} title="Address" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field id="addr" label="Street Address" autoComplete="address-line1"
                placeholder="e.g. 12 Willow Lane"
                value={ship.address} onChange={(v) => setShip({ ...ship, address: v })}
@@ -910,30 +886,31 @@ function ShippingStep({
                      options={COUNTRY_OPTIONS} span2 />
       </div>
 
+      <StepHeading n={3} title="Delivery" />
       {pickupEligible && (
-        <div className="mt-4 rounded-xl border-0 sm:border sm:border-emerald-100 bg-emerald-50/70 p-3">
-          <p className="text-xs font-semibold text-emerald-800 mb-2">
+        <div className="rounded-tile border-0 sm:border sm:border-line bg-peach/60 p-3">
+          <p className="text-xs font-semibold text-success mb-2">
             Your address is in Dublin. How would you like to receive your order?
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <label className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-xs cursor-pointer transition-colors
-                               ${deliveryMethod === "courier" ? "border-emerald-400 bg-white" : "border-emerald-100 bg-emerald-50/50"}`}>
+                               ${deliveryMethod === "courier" ? "border-line bg-white" : "border-line bg-peach/60"}`}>
               <input type="radio" name="deliveryMethod" checked={deliveryMethod === "courier"}
-                     onChange={() => setDeliveryMethod("courier")} className="accent-emerald-600" />
-              <span className="text-emerald-900 font-medium">Standard courier delivery</span>
+                     onChange={() => setDeliveryMethod("courier")} className="accent-[#8B2035]" />
+              <span className="text-success font-medium">Standard courier delivery</span>
             </label>
             <label className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-xs cursor-pointer transition-colors
-                               ${deliveryMethod === "pickup" ? "border-emerald-400 bg-white" : "border-emerald-100 bg-emerald-50/50"}`}>
+                               ${deliveryMethod === "pickup" ? "border-line bg-white" : "border-line bg-peach/60"}`}>
               <input type="radio" name="deliveryMethod" checked={deliveryMethod === "pickup"}
-                     onChange={() => setDeliveryMethod("pickup")} className="accent-emerald-600" />
-              <span className="text-emerald-900 font-medium">Pick up in Dublin (Free)</span>
+                     onChange={() => setDeliveryMethod("pickup")} className="accent-[#8B2035]" />
+              <span className="text-success font-medium">Pick up in Dublin (Free)</span>
             </label>
           </div>
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50/70 rounded-xl border-0 sm:border sm:border-blue-100 text-xs text-blue-800 font-system">
-        <div className="w-4 h-4 shrink-0 text-blue-500"><IcoTruck /></div>
+      <div className="mt-4 flex items-center gap-2 p-3 bg-peach rounded-tile border-0 sm:border sm:border-line text-xs text-brown font-body">
+        <div className="w-4 h-4 shrink-0 text-burgundy"><IcoTruck /></div>
         {/* pickupEligible too: a customer who chose pickup and then changed the
             address away from Dublin is priced as courier, so must not be told "pickup". */}
         {pickupEligible && deliveryMethod === "pickup"
@@ -941,8 +918,8 @@ function ShippingStep({
           : ship.country === "IE" ? "Shipping within Ireland" : "International shipping"} · Estimated: <strong>{estimatedDays}</strong>
       </div>
       {customsApplies && (
-        <div className="mt-2 flex items-start gap-2 p-3 bg-amber-50/70 rounded-xl border-0 sm:border sm:border-amber-100 text-xs text-amber-800 font-system">
-          <div className="w-4 h-4 shrink-0 text-amber-500 mt-0.5"><IcoWarning /></div>
+        <div className="mt-2 flex items-start gap-2 p-3 bg-peach/70 rounded-tile border-0 sm:border sm:border-peach text-xs text-orange font-body">
+          <div className="w-4 h-4 shrink-0 text-orange mt-0.5"><IcoWarning /></div>
           Customers outside the EU may be charged import duties or taxes on delivery. These are set
           by your country and are not included in this price.
         </div>
@@ -950,8 +927,8 @@ function ShippingStep({
 
       <div className="hidden lg:flex justify-end mt-6">
         <button onClick={onNext}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-none text-cream font-semibold
-                     text-sm tracking-wide hover:-translate-y-px transition-all duration-200 shadow-sm font-system"
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-button text-cream font-semibold
+                     text-sm tracking-wide hover:-translate-y-px transition-all duration-200 shadow-sm font-body"
           style={{ backgroundColor: ACCENT }}>
           Continue to Payment <IcoArrow />
         </button>
@@ -1101,21 +1078,21 @@ function StripeCardForm({ amountCents, formattedTotal, orderRef, requestIntent, 
       </div>
 
       {error && (
-        <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+        <p className="mt-3 text-xs text-error bg-error/10 border border-error/20 rounded-tile px-4 py-2.5">
           {error}
         </p>
       )}
 
       <button type="button" onClick={handleSubmit} disabled={!termsAccepted || !stripe || busy}
         className="mt-5 w-full lg:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 lg:py-3
-                   rounded-none text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
+                   rounded-button text-white font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm
                    disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0
                    enabled:hover:-translate-y-px"
         style={{ backgroundColor: "#635BFF" }}>
         {waitingForOrder ? "Confirming your order…" : submitting ? "Processing payment…" : <>Pay <span className="tabular-nums">{formattedTotal}</span> with Stripe <IcoArrow /></>}
       </button>
-      <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-600">
-        <div className="text-emerald-600"><IcoShield /></div>
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-success">
+        <div className="text-success"><IcoShield /></div>
         PCI-DSS Level 1 compliant · Stripe certified
       </div>
     </div>
@@ -1156,15 +1133,15 @@ function PaymentStep({
 
   return (
     <div className={SECTION_SHELL}>
-      <h2 className="font-heading font-600 text-deep-brown text-xl mb-2">Payment</h2>
-      <p className="text-xs text-taupe-dark mb-5">Pay securely by card.</p>
+      <StepHeading n={4} title="Payment" />
+      <p className="text-xs text-stone mb-5">Pay securely by card.</p>
 
-          <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-5">
-            <div className="text-emerald-600 shrink-0"><IcoShield /></div>
-            <span className="text-xs text-emerald-700 font-medium">256-bit SSL encryption active</span>
+          <div className="flex items-center gap-2 p-3 bg-peach/60 rounded-tile border border-line mb-5">
+            <div className="text-success shrink-0"><IcoShield /></div>
+            <span className="text-xs text-success font-medium">256-bit SSL encryption active</span>
             <div className="ml-auto flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-emerald-600 text-[10px] font-medium">SECURE</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-success" />
+              <span className="text-success text-xs font-medium">SECURE</span>
             </div>
           </div>
 
@@ -1181,7 +1158,7 @@ function PaymentStep({
             </div>
           </div>
 
-          <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl p-5 mb-5">
+          <div className="bg-white border border-t-0 border-line rounded-b-xl p-5 mb-5">
             <Elements stripe={getStripePromise()} options={elementsOptions}>
               <StripeCardForm
                 amountCents={amountCents}
@@ -1199,8 +1176,8 @@ function PaymentStep({
 
       <div className="hidden lg:flex mt-6">
         <button type="button" onClick={onBack}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-none border-2 border-stone-200
-                     text-stone-500 font-medium text-sm hover:border-stone-400 hover:text-stone-700 transition-all">
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-button border-2 border-line
+                     text-stone font-medium text-sm hover:border-stone hover:text-brown transition-all">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
@@ -1230,31 +1207,31 @@ function ConfirmationScreen({ orderRef, firstName, summary, estimatedDays }: {
   const isStripe = summary.paymentChannel === "stripe_card";
 
   return (
-    <div className="min-h-screen bg-cream flex items-start justify-center px-4 pt-10 pb-24 font-system">
+    <div className="min-h-screen bg-cream flex items-start justify-center px-4 pt-10 pb-24 font-body">
       <div className="w-full max-w-md">
 
         {/* Status icon */}
         <div className="text-center mb-6">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-emerald-100">
-            <svg className="w-10 h-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="w-20 h-20 bg-peach/60 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-peach">
+            <svg className="w-10 h-10 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
 
-          <p className="text-[10px] uppercase tracking-[0.2em] font-medium mb-1 text-emerald-600">
+          <p className="text-xs uppercase tracking-[0.2em] font-medium mb-1 text-success">
             Order Confirmed
           </p>
-          <h1 className="font-heading text-3xl font-700 text-deep-brown mb-2">
+          <h1 className="font-heading text-3xl font-700 text-brown mb-2">
             {`Thank you${firstName ? `, ${firstName}` : ""}!`}
           </h1>
-          <p className="text-brown/70 text-sm leading-relaxed max-w-xs mx-auto">
+          <p className="text-stone text-sm leading-relaxed max-w-xs mx-auto">
             {`Order ${orderRef} is being lovingly prepared by our artisans.`}
           </p>
         </div>
 
         {/* Order card */}
-        <div className="bg-white rounded-2xl border border-cream-darker p-5 mb-4 shadow-sm">
-          <h2 className="font-heading text-base font-600 text-deep-brown mb-3 pb-2 border-b border-taupe/15">
+        <div className="bg-white rounded-card border border-peach p-5 mb-4 shadow-sm">
+          <h2 className="font-heading text-base font-600 text-brown mb-3 pb-2 border-b border-line/15">
             Order Details
           </h2>
           <div className="space-y-2 text-sm mb-3">
@@ -1267,43 +1244,43 @@ function ConfirmationScreen({ orderRef, firstName, summary, estimatedDays }: {
               ["Estimated Delivery", estimatedDays],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
-                <span className="text-taupe-dark">{label}</span>
-                <span className="font-semibold text-deep-brown text-right max-w-[55%] tabular-nums">{value}</span>
+                <span className="text-stone">{label}</span>
+                <span className="font-semibold text-brown text-right max-w-[55%] tabular-nums">{value}</span>
               </div>
             ))}
           </div>
 
-          <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-            <div className="text-emerald-500 shrink-0"><IcoCheck /></div>
-            <span className="text-xs text-emerald-700">Payment confirmed · Tracked delivery included</span>
+          <div className="flex items-center gap-2 p-3 bg-peach/60 rounded-tile border border-line">
+            <div className="text-success shrink-0"><IcoCheck /></div>
+            <span className="text-xs text-success">Payment confirmed · Tracked delivery included</span>
           </div>
 
           {/* Payment security indicator — understated, only for genuine
               Stripe-confirmed orders. DB-verified via payment_channel, same
               reasoning as "Payment via" above. */}
           {isStripe && (
-            <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-taupe/10">
-              <div className="text-taupe-dark shrink-0"><IcoShield /></div>
-              <span className="text-[11px] text-taupe-dark">Secured by</span>
+            <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-line/10">
+              <div className="text-stone shrink-0"><IcoShield /></div>
+              <span className="text-xs text-stone">Secured by</span>
               <LogoStripe />
             </div>
           )}
         </div>
 
         {/* Share */}
-        <div className="bg-white rounded-2xl border border-cream-darker p-4 shadow-sm mb-4 text-center">
-          <p className="text-xs font-semibold text-deep-brown mb-1">Share the love</p>
-          <p className="text-[10px] text-taupe-dark mb-3">Tag us when your order arrives</p>
+        <div className="bg-white rounded-card border border-peach p-4 shadow-sm mb-4 text-center">
+          <p className="text-xs font-semibold text-brown mb-1">Share the love</p>
+          <p className="text-xs text-stone mb-3">Tag us when your order arrives</p>
           <div className="flex items-center justify-center gap-4">
             <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer"
                aria-label="Follow Cozi Handmade on Instagram"
-               className="w-9 h-9 rounded-full flex items-center justify-center text-stone-400
+               className="w-9 h-9 rounded-full flex items-center justify-center text-stone
                           hover:text-[#E4405F] transition-colors duration-200">
               <InstagramIcon className="w-5 h-5" />
             </a>
             <a href={whatsappLink()} target="_blank" rel="noopener noreferrer"
                aria-label="Chat with Cozi Handmade on WhatsApp"
-               className="w-9 h-9 rounded-full flex items-center justify-center text-stone-400
+               className="w-9 h-9 rounded-full flex items-center justify-center text-stone
                           hover:text-[#25D366] transition-colors duration-200">
               <WhatsAppIcon className="w-5 h-5" />
             </a>
@@ -1311,7 +1288,7 @@ function ConfirmationScreen({ orderRef, firstName, summary, estimatedDays }: {
         </div>
 
         <Link href="/products"
-          className="flex items-center justify-center w-full h-12 rounded-none text-cream font-semibold
+          className="flex items-center justify-center w-full h-12 rounded-button text-cream font-semibold
                      text-sm tracking-wide hover:opacity-90 transition-opacity shadow-sm"
           style={{ backgroundColor: "#8B2035" }}>
           Continue Shopping
@@ -1330,35 +1307,35 @@ function ConfirmationScreen({ orderRef, firstName, summary, estimatedDays }: {
 ═════════════════════════════════════════════════════════ */
 function SoldOutRefundedScreen({ productName }: { productName: string | null }) {
   return (
-    <div className="min-h-screen bg-cream flex items-start justify-center px-4 pt-10 pb-24 font-system">
+    <div className="min-h-screen bg-cream flex items-start justify-center px-4 pt-10 pb-24 font-body">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-amber-100">
-            <svg className="w-10 h-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="w-20 h-20 bg-peach rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-peach">
+            <svg className="w-10 h-10 text-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
             </svg>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.2em] font-medium mb-1 text-amber-600">
+          <p className="text-xs uppercase tracking-[0.2em] font-medium mb-1 text-orange">
             Sold Out
           </p>
-          <h1 className="font-heading text-3xl font-700 text-deep-brown mb-2">
+          <h1 className="font-heading text-3xl font-700 text-brown mb-2">
             You have not been charged
           </h1>
-          <p className="text-brown/70 text-sm leading-relaxed max-w-xs mx-auto">
+          <p className="text-stone text-sm leading-relaxed max-w-xs mx-auto">
             {productName ? `"${productName}" sold out` : "This item sold out"} just as your payment
             completed, and we&apos;ve automatically refunded you in full. We&apos;re sorry for the disappointment.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-cream-darker p-5 mb-4 shadow-sm">
-          <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-            <div className="text-emerald-500 shrink-0"><IcoCheck /></div>
-            <span className="text-xs text-emerald-700">Refund confirmed · Funds return in 5–10 business days, depending on your bank</span>
+        <div className="bg-white rounded-card border border-peach p-5 mb-4 shadow-sm">
+          <div className="flex items-center gap-2 p-3 bg-peach/60 rounded-tile border border-line">
+            <div className="text-success shrink-0"><IcoCheck /></div>
+            <span className="text-xs text-success">Refund confirmed · Funds return in 5–10 business days, depending on your bank</span>
           </div>
         </div>
 
         <Link href="/products"
-          className="flex items-center justify-center w-full h-12 rounded-none text-cream font-semibold
+          className="flex items-center justify-center w-full h-12 rounded-button text-cream font-semibold
                      text-sm tracking-wide hover:opacity-90 transition-opacity shadow-sm"
           style={{ backgroundColor: "#8B2035" }}>
           Browse Similar Pieces
@@ -1372,11 +1349,12 @@ function SoldOutRefundedScreen({ productName }: { productName: string | null }) 
    MAIN PAGE  — mode auto-derived from selected currency
 ═════════════════════════════════════════════════════════ */
 export default function CheckoutPage() {
-  const { items, total, clearCart } = useCart();
+  const { items, total, clearCart, itemCount } = useCart();
   const { currency, priceCheckout } = useCurrency();
   const { user, loading: authLoading } = useAuth();
 
   const [step,          setStep]          = useState<Step>("shipping");
+  const [summaryOpen,   setSummaryOpen]   = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms,     setShowTerms]     = useState(false);
   const [orderRef]                        = useState(() =>
@@ -1559,11 +1537,11 @@ export default function CheckoutPage() {
   /* Empty cart guard */
   if (items.length === 0 && step !== "confirmation") {
     return (
-      <div className="min-h-[70vh] bg-cream flex flex-col items-center justify-center px-6 text-center font-system">
-        <h1 className="font-heading text-2xl font-700 text-deep-brown mb-4">Nothing to check out</h1>
+      <div className="min-h-[70vh] bg-cream flex flex-col items-center justify-center px-6 text-center font-body">
+        <h1 className="font-heading text-2xl font-700 text-brown mb-4">Nothing to check out</h1>
         <Link href="/products"
-              className="inline-flex items-center justify-center px-8 py-3 rounded-none
-                         bg-gold text-cream font-semibold text-sm hover:bg-gold-dark transition-colors">
+              className="inline-flex items-center justify-center px-8 py-3 rounded-button
+                         bg-burgundy text-cream font-semibold text-sm hover:bg-burgundy-dark transition-colors">
           Shop Now
         </Link>
       </div>
@@ -1596,33 +1574,54 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream font-system">
-      {/* Header. Sticks BELOW the site navbar, never on top of it: the navbar
-          is also sticky at the top (z-40) and holds the currency picker, whose
-          dropdown can't rise above the navbar's own layer, so a bar at the same
-          spot and layer covered it. Desktop: the navbar is always shown and is
-          5rem tall, so this sits right under it. Mobile: the navbar hides on
-          scroll-down, so this takes the top, and z-30 lets the navbar slide
-          back over it on scroll-up with its dropdown usable. */}
-      <div className="sticky top-[env(safe-area-inset-top,0px)] lg:top-[calc(5rem_+_env(safe-area-inset-top,0px))] z-30 bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"
-                 stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <div className="min-h-screen bg-cream font-body">
+      {/* Slim checkout header: back to the bag, the logo, and "Secure". The
+          site navbar steps aside on /checkout (see Navbar), so this is the
+          only bar at the top and nothing competes with finishing the order. */}
+      <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 border-b border-line bg-cream">
+        <div className="mx-auto grid h-16 max-w-4xl grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6">
+          <Link href="/cart" className="focus-ring -ml-2 inline-flex min-h-11 items-center gap-1.5 justify-self-start rounded-pill px-2 type-small font-semibold text-brown hover:text-burgundy">
+            <span aria-hidden="true">←</span> Bag
+          </Link>
+          <Link href="/" aria-label="Cozi Handmade home" className="focus-ring rounded-small">
+            <CoziLogo className="h-8 w-auto" />
+          </Link>
+          <p className="inline-flex items-center gap-1.5 justify-self-end type-small font-semibold text-brown">
+            <svg className="h-4 w-4 shrink-0 text-burgundy" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="11" width="18" height="11" rx="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
-            <h1 className="font-heading text-xl sm:text-2xl font-700 text-deep-brown">Secure Checkout</h1>
-          </div>
-          <p className="text-xs font-medium tracking-wide pl-6 sm:pl-0" style={{ color: ACCENT }}>
-            {"Secure card payment · Stripe · EUR"}
+            Secure
           </p>
+        </div>
+      </header>
+
+      {/* Collapsible order summary: phones only (the sidebar shows it from lg) */}
+      <div className="border-b border-line bg-peach lg:hidden">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
+          <button
+            type="button"
+            onClick={() => setSummaryOpen((o) => !o)}
+            aria-expanded={summaryOpen}
+            aria-controls="mobile-order-summary"
+            className="focus-ring flex min-h-14 w-full items-center justify-between gap-3 text-left font-body text-brown"
+          >
+            <span className="type-small font-semibold">
+              {summaryOpen ? "Hide" : "Show"} order summary ({itemCount} {itemCount === 1 ? "item" : "items"}){" "}
+              <span aria-hidden="true">{summaryOpen ? "▴" : "▾"}</span>
+            </span>
+            <span className="text-lg font-semibold tabular-nums">{display.formattedTotal}</span>
+          </button>
+          {summaryOpen && (
+            <div id="mobile-order-summary" className="pb-4">
+              <OrderSummary items={items} totals={display} orderRef={orderRef}
+                estimatedDays={estimatedDaysDisplay} customsApplies={customsAppliesDisplay} />
+            </div>
+          )}
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-52 lg:pb-10">
-        <StepBar current={step} />
-
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Form */}
           <div className="flex-1 min-w-0 space-y-4">
@@ -1630,7 +1629,7 @@ export default function CheckoutPage() {
                 email. The cart lives in localStorage, so it survives the
                 trip to the login page and back. */}
             {step === "shipping" && !authLoading && !user && (
-              <p className="text-sm text-taupe-dark">
+              <p className="text-sm text-stone">
                 Have an account?{" "}
                 <Link href="/auth/login?next=/checkout" className="font-semibold underline underline-offset-2"
                       style={{ color: ACCENT }}>
@@ -1664,7 +1663,7 @@ export default function CheckoutPage() {
               />
             )}
             {/* Mobile trust + logos */}
-            <div className="lg:hidden sm:bg-white sm:rounded-2xl sm:border sm:border-cream-darker sm:shadow-sm sm:p-4 pt-2">
+            <div className="lg:hidden sm:bg-white sm:rounded-card sm:border sm:border-peach sm:shadow-sm sm:p-4 pt-2">
               <TrustBadges />
               <div className="mt-3"><PaymentLogos /></div>
             </div>
@@ -1682,7 +1681,7 @@ export default function CheckoutPage() {
 
       {/* Mobile sticky bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-md
-                      border-t border-taupe/20 px-4 pt-3 shadow-2xl"
+                      border-t border-line/20 px-4 pt-3 shadow-2xl"
            style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}>
         {/* Shipping, spelled out. The OrderSummary that carries the
             subtotal/shipping breakdown is `hidden lg:block`, so on a phone the
@@ -1690,30 +1689,30 @@ export default function CheckoutPage() {
             delivery country changes, reading as the price quietly going up.
             Green and semibold so the fee is the line that gets noticed, and
             "Free" said outright when pickup or a zero quote applies. */}
-        <div className="flex items-baseline justify-between gap-3 mb-1 text-[11px] tabular-nums">
-          <span className="text-taupe-dark">Subtotal {display.formattedSubtotal}</span>
-          <span className="font-semibold text-emerald-600">
+        <div className="flex items-baseline justify-between gap-3 mb-1 text-xs tabular-nums">
+          <span className="text-stone">Subtotal {display.formattedSubtotal}</span>
+          <span className="font-semibold text-success">
             {display.isFreeShipping ? "Shipping: Free" : `Shipping: ${display.formattedShipping}`}
           </span>
         </div>
         <div className="flex items-center justify-between mb-2.5 text-sm">
-          <span className="text-taupe-dark text-xs">{step === "shipping" ? "Step 1 of 2" : "Step 2 of 2"}</span>
-          <span className="font-semibold text-deep-brown tabular-nums">
+          <span className="text-stone text-xs">{step === "shipping" ? "Step 1 of 2" : "Step 2 of 2"}</span>
+          <span className="font-semibold text-brown tabular-nums">
             {display.formattedTotal}
-            {display.approxTotal && <span className="ml-1.5 text-[11px] font-normal text-taupe-dark">{display.approxTotal}</span>}
+            {display.approxTotal && <span className="ml-1.5 text-xs font-normal text-stone">{display.approxTotal}</span>}
           </span>
         </div>
 
         {step === "shipping" && (
           <button type="button" onClick={handleContinueToPayment}
-            className="w-full h-12 rounded-none text-white font-semibold text-sm tracking-wide
-                       active:scale-[0.98] transition-all duration-150 shadow-sm"
+            className="focus-ring w-full min-h-12 rounded-button text-white font-semibold text-sm
+                       active:scale-[0.98] transition-all duration-150"
             style={{ backgroundColor: ACCENT }}>
             Continue to Payment →
           </button>
         )}
         {step === "shipping" && showAllShipErrors && Object.keys(shipErrors).length > 0 && (
-          <p className="text-[10px] text-red-600 text-center mt-1 font-system">
+          <p className="text-xs text-error text-center mt-1 font-body">
             Please fix the highlighted fields above before continuing.
           </p>
         )}
@@ -1721,8 +1720,8 @@ export default function CheckoutPage() {
           <div className="flex gap-3">
             <button type="button"
               onClick={() => { setStep("shipping"); setTermsAccepted(false); }}
-              className="h-12 px-5 rounded-none border-2 border-stone-200 text-stone-500
-                         font-medium text-sm active:bg-stone-100 transition-all duration-150 shrink-0">
+              className="h-12 px-5 rounded-button border-2 border-line text-stone
+                         font-medium text-sm active:bg-peach transition-all duration-150 shrink-0">
               ← Back
             </button>
             {/* The real Stripe submit button lives inline next to the card
@@ -1730,15 +1729,15 @@ export default function CheckoutPage() {
                 sticky-bar button can't reach that context, and putting a
                 pay button anywhere but right next to the card form is
                 confusing anyway. This is just a pointer to it. */}
-            <div className="flex-1 h-12 rounded-none border-2 border-taupe/30 flex items-center justify-center
-                            text-xs text-taupe-dark px-3 text-center">
+            <div className="flex-1 h-12 rounded-button border-2 border-line/30 flex items-center justify-center
+                            text-xs text-stone px-3 text-center">
               ↑ Enter card details above to pay
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-1.5 mt-2 text-[10px] text-stone-500">
-          <span className="text-emerald-500"><IcoShield /></span>
+        <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-stone">
+          <span className="text-success"><IcoShield /></span>
           PCI-DSS Level 1 · Stripe secured
         </div>
       </div>

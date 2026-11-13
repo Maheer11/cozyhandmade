@@ -3,6 +3,7 @@
 import { Fragment, memo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import Badge from "@/components/ui/Badge";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { CartItem } from "@/components/CartContext";
@@ -67,16 +68,11 @@ export const FeaturedPieceCard = memo(function FeaturedPieceCard({
       onTouchStart={() => setRevealed(true)}
       onTouchEnd={() => setRevealed(false)}
       onTouchCancel={() => setRevealed(false)}
-      className={`group relative flex flex-col rounded-sm overflow-hidden bg-white
-                 border border-cream-darker shadow-sm
-                 hover:-translate-y-1.5 hover:shadow-2xl
-                 active:translate-y-0 active:shadow-sm
-                 transition-all duration-300 ease-out
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold
+      className={`focus-ring group relative flex flex-col rounded-card
                  ${variant === "rail" ? "shrink-0 snap-start w-[68vw] max-w-[280px] sm:w-72 lg:w-80" : "w-full"}`}
     >
       {/* Image stage — square, per spec */}
-      <div className="relative w-full aspect-square bg-cream-dark overflow-hidden">
+      <div className="relative w-full aspect-[4/5] overflow-hidden rounded-card bg-peach/40">
         <Image
           src={item.product_image}
           alt={item.name}
@@ -99,43 +95,25 @@ export const FeaturedPieceCard = memo(function FeaturedPieceCard({
           />
         )}
 
-        <div
-          className={`absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent
-                      transition-opacity duration-300 ${revealed ? "opacity-100" : "opacity-0"}`}
-        />
-
-        <div className="absolute top-3 left-3 right-3 flex flex-col items-start gap-1.5">
-          <span
-            className={`text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full
-                         ${item.sold_out ? "bg-black text-white" : "bg-white/95 text-deep-brown shadow-sm"}`}
-          >
-            {item.sold_out ? "Sold Out" : "Available"}
-          </span>
-
-          {item.is_handmade && (
-            <span className="bg-cream/90 text-brown text-[10px] font-medium
-                             px-2.5 py-1 rounded-full backdrop-blur-sm border border-taupe/20">
-              ✦ Handmade
-            </span>
-          )}
+        <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
+          {item.sold_out && <Badge variant="soldOut">Sold out</Badge>}
+          {item.is_handmade && <Badge variant="handmade">✦ Handmade</Badge>}
         </div>
       </div>
 
       {/* Info */}
-      <div className="flex flex-col gap-1 p-4 sm:p-5">
-        <p className="font-ios font-600 text-deep-brown text-base sm:text-lg leading-snug truncate">
-          {item.name}
-        </p>
-        <div className="flex items-baseline gap-2 font-ios">
+      <div className="mt-3">
+        <p className="line-clamp-2 font-body text-base leading-6 text-brown">{item.name}</p>
+        <p className="mt-1 flex items-baseline gap-2 font-body text-base font-semibold text-brown">
           {item.discount_price ? (
             <>
-              <span className="text-sm font-600 text-brown">{formatAmount(item.discount_price)}</span>
-              <span className="text-xs text-taupe-dark line-through">{formatAmount(item.price)}</span>
+              {formatAmount(item.discount_price)}
+              <span className="text-sm font-normal text-stone line-through">{formatAmount(item.price)}</span>
             </>
           ) : (
-            <span className="text-sm font-600 text-brown">{formatAmount(item.price)}</span>
+            formatAmount(item.price)
           )}
-        </div>
+        </p>
       </div>
     </Link>
   );
@@ -148,10 +126,10 @@ const ViewAllTile = memo(function ViewAllTile() {
       style={{ touchAction: "manipulation" }}
       className="group relative flex flex-col items-center justify-center gap-3 shrink-0 snap-start
                  w-[68vw] max-w-[280px] sm:w-72 lg:w-80 aspect-square sm:aspect-auto sm:h-auto
-                 rounded-sm overflow-hidden bg-cream-dark border border-cream-darker
+                 rounded-sm overflow-hidden bg-peach border border-peach
                  hover:-translate-y-1.5 hover:shadow-2xl active:translate-y-0
                  transition-all duration-300 ease-out
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-burgundy"
     >
       <span className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white flex items-center justify-center shadow-sm
                        group-hover:translate-x-1 transition-transform duration-300">
@@ -159,14 +137,14 @@ const ViewAllTile = memo(function ViewAllTile() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
         </svg>
       </span>
-      <span className="font-heading italic text-deep-brown text-lg sm:text-xl text-center px-2">View all Featured Pieces →</span>
+      <span className="font-heading italic text-brown text-lg sm:text-xl text-center px-2">View all Featured Pieces →</span>
     </Link>
   );
 });
 
 // Divider thread between cards — echoes the site's stitched-border motif.
 function Divider() {
-  return <div className="hidden sm:block w-px self-stretch bg-taupe/20 shrink-0 my-6" />;
+  return <div className="hidden sm:block w-px self-stretch bg-line/20 shrink-0 my-6" />;
 }
 
 function ScrollArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | null> }) {
@@ -178,8 +156,8 @@ function ScrollArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | n
       <button
         onClick={() => scrollBy(-1)}
         aria-label="Scroll Featured Pieces left"
-        className="w-10 h-10 rounded-full border border-taupe/30 flex items-center justify-center
-                   text-brown hover:bg-cream-dark hover:border-taupe/50 transition-colors duration-150"
+        className="w-10 h-10 rounded-full border border-stone flex items-center justify-center
+                   text-brown hover:bg-peach hover:border-line/50 transition-colors duration-150"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -188,8 +166,8 @@ function ScrollArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | n
       <button
         onClick={() => scrollBy(1)}
         aria-label="Scroll Featured Pieces right"
-        className="w-10 h-10 rounded-full border border-taupe/30 flex items-center justify-center
-                   text-brown hover:bg-cream-dark hover:border-taupe/50 transition-colors duration-150"
+        className="w-10 h-10 rounded-full border border-stone flex items-center justify-center
+                   text-brown hover:bg-peach hover:border-line/50 transition-colors duration-150"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -208,10 +186,10 @@ export default function FeaturedPiecesSection({ items }: { items: FeaturedPieceC
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ScrollReveal className="mb-10 lg:mb-14 flex items-end justify-between gap-4">
           <div className="text-center lg:text-left w-full lg:w-auto">
-            <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
+            <p className="type-eyebrow text-burgundy mb-3">
               ✦ Just Landed
             </p>
-            <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown">
+            <h2 className="type-h1 text-brown">
               Featured Pieces
             </h2>
           </div>

@@ -491,7 +491,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
                 </tbody>
               </table>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1.5">
+            <p className="text-xs text-gray-400 mt-1.5">
               Total stock: {Object.values(form.variant_stock).reduce((s, v) => s + v, 0)} units
             </p>
 
@@ -828,29 +828,34 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
                     <p className="text-xs text-gray-400">{uploadingMain ? "Uploading…" : "Click to upload"}</p>
                   </div>
                 )}
-                {/* Delete button — visible on hover when image is uploaded */}
+                {/* Remove + Change are ALWAYS visible: touch screens (phone,
+                    tablet) have no hover, so hover-only controls were
+                    unreachable there. Both are 44px touch targets. */}
                 {form.image && !uploadingMain && (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); set("image", ""); if (fileRef.current) fileRef.current.value = ""; }}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover/main:opacity-100 transition-opacity shadow-md"
-                    style={{ backgroundColor: "#8B2035" }}
-                    title="Remove image"
+                    className="absolute top-2 right-2 flex h-11 items-center gap-1.5 rounded-full pl-3 pr-4 text-sm font-semibold text-white shadow-md
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-burgundy"
+                    style={{ backgroundColor: "#8B2035", touchAction: "manipulation" }}
+                    aria-label="Remove main image"
                   >
-                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
+                    Remove
                   </button>
                 )}
-                {/* Change image button — visible on hover when image is uploaded */}
                 {form.image && !uploadingMain && (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-                    className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium text-white opacity-0 group-hover/main:opacity-100 transition-opacity shadow-md whitespace-nowrap"
-                    style={{ backgroundColor: "rgba(26,8,16,0.75)" }}
+                    className="absolute bottom-2 left-1/2 -translate-x-1/2 flex h-11 items-center gap-1.5 px-4 rounded-full text-sm font-semibold text-white shadow-md whitespace-nowrap
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    style={{ backgroundColor: "rgba(26,8,16,0.8)", touchAction: "manipulation" }}
+                    aria-label="Change main image"
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                     </svg>
                     Change
@@ -871,7 +876,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
                       style={{ width: `${mainProgress}%`, backgroundColor: "#8B2035" }}
                     />
                   </div>
-                  <span className="text-white/60 text-[10px] tracking-widest uppercase">uploading</span>
+                  <span className="text-white/60 text-xs tracking-widest uppercase">uploading</span>
                 </div>
               )}
               </div>
@@ -926,18 +931,31 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
             )}
             <div className="grid grid-cols-3 gap-2 mb-2">
               {form.images.map((img, i) => (
-                <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group">
-                  <Image src={img} alt="" fill sizes="(max-width: 768px) 33vw, 150px" className="object-cover" />
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                  <Image src={img} alt={`Additional image ${i + 1}`} fill sizes="(max-width: 768px) 33vw, 150px" className="object-cover" />
+                  {/* Always visible (no hover on touch screens). The 44px
+                      button is a transparent hit area around a 32px circle. */}
                   <button
                     type="button"
                     onClick={() => removeImage(i)}
-                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >×</button>
+                    aria-label={`Remove additional image ${i + 1}`}
+                    style={{ touchAction: "manipulation" }}
+                    className="group/rm absolute top-0 right-0 flex h-11 w-11 items-center justify-center focus:outline-none"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full text-white shadow-md
+                                     group-active/rm:scale-90 group-focus-visible/rm:ring-2 group-focus-visible/rm:ring-white transition-transform"
+                          style={{ backgroundColor: "#8B2035" }}>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </span>
+                  </button>
                 </div>
               ))}
               <button
                 type="button"
                 onClick={() => !uploadingMore && moreRef.current?.click()}
+                aria-label="Add more images"
                 className="aspect-square rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-300 hover:text-gray-400 text-2xl flex items-center justify-center transition-colors disabled:opacity-50"
               >{uploadingMore ? "…" : "+"}</button>
             </div>

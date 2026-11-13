@@ -115,7 +115,7 @@ export default function HeroProductCarousel({
       <Link
         href={itemHref(current)}
         aria-label={`Shop ${current.name}, ${formatAmount(payPrice)}`}
-        className="focus-ring group absolute inset-0 block cursor-pointer overflow-hidden rounded-card bg-ui-surface"
+        className="focus-ring group absolute inset-0 block cursor-pointer overflow-hidden rounded-block bg-brown/30"
       >
         {items.map((item, i) =>
           rendered.has(i) || (autoplay && i === next) ? (
@@ -147,20 +147,20 @@ export default function HeroProductCarousel({
             first photo arrives; after that only its text crossfades, keyed to
             the product, so the card itself stays put. */}
         <span
-          className={`absolute bottom-3 left-3 max-w-[60%] sm:bottom-4 sm:left-4
-                      rounded-card border border-ui-border bg-ui-surface px-2.5 py-2 sm:px-4 sm:py-2.5
-                      text-ui-text shadow-[0_6px_20px_-6px_rgba(26,8,16,0.35)]
+          className={`absolute bottom-4 left-4 max-w-[80%] sm:bottom-5 sm:left-5
+                      rounded-pill bg-milk px-4 py-2.5 sm:px-5 sm:py-3
+                      text-brown shadow-soft
                       transition-[translate] duration-200 ease-out group-hover:-translate-y-0.5
                       motion-reduce:transition-none motion-reduce:group-hover:translate-y-0
                       motion-reduce:opacity-100
                       ${firstPhotoReady ? "animate-hero-label" : "opacity-0"}`}
         >
           <span key={index} className="block animate-fade-in">
-            <span className="font-heading text-[15px] font-medium leading-snug sm:text-lg">{current.name}</span>{" "}
-            <span className="whitespace-nowrap font-body text-[13px] font-semibold leading-snug sm:text-sm">
+            <span className="font-body text-sm font-medium leading-snug sm:text-base">{current.name}</span>{" "}
+            <span className="whitespace-nowrap font-body text-sm font-semibold leading-snug sm:text-base">
               {formatAmount(payPrice)}
               {current.discount_price && (
-                <span className="ml-1.5 font-normal text-ui-muted line-through">{formatAmount(current.price)}</span>
+                <span className="ml-1.5 font-normal text-stone line-through">{formatAmount(current.price)}</span>
               )}
               <span
                 aria-hidden="true"

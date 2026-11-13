@@ -1,38 +1,36 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useCart, cartLineKey, CartItem } from "@/components/CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { calculateShipping, type ShippingItemInput } from "@/lib/checkout/shipping";
+import Button from "@/components/ui/Button";
+import CartLineItem from "@/components/ui/CartLineItem";
 
 /* ─────────────────────────────────────────────────────────
-   PAYMENT PLATFORM LOGOS
+   PAYMENT LOGOS — brand marks, kept as they were
 ───────────────────────────────────────────────────────── */
 function PaymentLogos() {
   return (
-    <div className="pt-4 border-t border-taupe/15 mt-4">
-      <p className="text-[10px] text-taupe-dark uppercase tracking-[0.15em] font-medium mb-3 text-center">
+    <div className="mt-5 border-t border-line pt-4">
+      <p className="mb-3 text-center type-caption font-semibold uppercase tracking-[0.15em] text-stone">
         Secure payment via
       </p>
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
-        {/* Stripe */}
-        <div className="flex items-center justify-center px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 min-w-[44px]">
-          <svg viewBox="0 0 50 14" className="h-3 w-auto">
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <div className="flex h-7 min-w-[44px] items-center justify-center rounded-small border border-line bg-white px-2.5">
+          <svg viewBox="0 0 50 14" className="h-3 w-auto" aria-label="Stripe" role="img">
             <text x="1" y="11" fontFamily="Arial" fontWeight="bold" fontSize="11" fill="#635BFF">stripe</text>
           </svg>
         </div>
-        {/* Visa */}
-        <div className="flex items-center justify-center px-2.5 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 min-w-[40px]">
-          <svg viewBox="0 0 50 16" className="h-3 w-auto">
+        <div className="flex h-7 min-w-[40px] items-center justify-center rounded-small border border-line bg-white px-2.5">
+          <svg viewBox="0 0 50 16" className="h-3 w-auto" aria-label="Visa" role="img">
             <text x="1" y="12" fontFamily="Arial" fontWeight="bold" fontSize="13" fill="#1A1F71" fontStyle="italic">VISA</text>
           </svg>
         </div>
-        {/* Mastercard */}
-        <div className="flex items-center justify-center px-2 py-1 bg-white rounded border border-gray-200 shadow-sm h-7 gap-0.5">
-          <div className="w-3.5 h-3.5 rounded-full bg-[#EB001B]" />
-          <div className="w-3.5 h-3.5 rounded-full bg-[#F79E1B] -ml-1.5" />
+        <div className="flex h-7 items-center justify-center gap-0.5 rounded-small border border-line bg-white px-2" role="img" aria-label="Mastercard">
+          <div className="h-3.5 w-3.5 rounded-full bg-[#EB001B]" />
+          <div className="-ml-1.5 h-3.5 w-3.5 rounded-full bg-[#F79E1B]" />
         </div>
       </div>
     </div>
@@ -40,57 +38,32 @@ function PaymentLogos() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   TRUST BADGES  — green = secured / active, neutral = info
+   TRUST TILES — the same four claims as before, as peach tiles
 ───────────────────────────────────────────────────────── */
-function TrustBadges() {
+function TrustTiles() {
+  const tiles = [
+    { title: "SSL Secured", sub: "256-bit encryption" },
+    { title: "Verified Processor", sub: "Stripe" },
+    { title: "Tracked Delivery", sub: "Real-time updates" },
+    { title: "Easy Returns", sub: "30-day guarantee" },
+  ];
   return (
-    <div className="grid grid-cols-2 gap-2 mt-4">
-      {/* Green: actively secured */}
-      <div className="flex items-start gap-2 bg-white rounded border border-green-200 p-2.5 shadow-sm">
-        <svg className="w-3.5 h-3.5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"
-             stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" />
-          <path d="M7 11V7a5 5 0 0110 0v4" />
-        </svg>
-        <div>
-          <p className="text-[11px] font-semibold text-stone-800 leading-tight">SSL Secured</p>
-          <p className="text-[10px] text-stone-500 leading-tight">256-bit encryption</p>
-        </div>
-      </div>
-      <div className="flex items-start gap-2 bg-white rounded border border-green-200 p-2.5 shadow-sm">
-        <svg className="w-3.5 h-3.5 shrink-0 mt-0.5 text-green-500" fill="none" viewBox="0 0 24 24"
-             stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div>
-          <p className="text-[11px] font-semibold text-stone-800 leading-tight">Verified Processor</p>
-          <p className="text-[10px] text-stone-500 leading-tight">Stripe</p>
-        </div>
-      </div>
-      {/* Neutral: policy info */}
-      <div className="flex items-start gap-2 bg-white rounded border border-taupe/20 p-2.5 shadow-sm">
-        <span className="text-sm leading-none mt-0.5">🚚</span>
-        <div>
-          <p className="text-[11px] font-semibold text-deep-brown leading-tight">Tracked Delivery</p>
-          <p className="text-[10px] text-taupe-dark leading-tight">Real-time updates</p>
-        </div>
-      </div>
-      <div className="flex items-start gap-2 bg-white rounded border border-taupe/20 p-2.5 shadow-sm">
-        <span className="text-sm leading-none mt-0.5">↩️</span>
-        <div>
-          <p className="text-[11px] font-semibold text-deep-brown leading-tight">Easy Returns</p>
-          <p className="text-[10px] text-taupe-dark leading-tight">30-day guarantee</p>
-        </div>
-      </div>
-    </div>
+    <ul className="mt-5 grid grid-cols-2 gap-3">
+      {tiles.map(({ title, sub }) => (
+        <li key={title} className="rounded-tile bg-peach p-3 text-brown">
+          <p className="type-small font-semibold">{title}</p>
+          <p className="type-caption">{sub}</p>
+        </li>
+      ))}
+    </ul>
   );
 }
 
 /* ─────────────────────────────────────────────────────────
-   SOCIAL STRIP
-───────────────────────────────────────────────────────── */
-/* ─────────────────────────────────────────────────────────
-   SWIPEABLE CART ITEM
+   CART LINE — swipe left to reveal Remove (phones), plus a visible ✕.
+   Quantity stays READ-ONLY on purpose: it was capped against the variant's
+   real stock on the product page, and a cart-side stepper could push a line
+   past what exists. To change it, remove the line and re-add it.
 ───────────────────────────────────────────────────────── */
 function SwipeableItem({
   item,
@@ -141,76 +114,35 @@ function SwipeableItem({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl transition-all duration-300
-                  ${removing ? "max-h-0 opacity-0 mb-0" : "max-h-48 opacity-100 mb-3"}`}
+      className={`relative overflow-hidden rounded-card transition-all duration-300
+                  ${removing ? "mb-0 max-h-0 opacity-0" : "mb-4 max-h-48 opacity-100"}`}
     >
-      {/* Delete zone */}
-      <div className="absolute inset-y-0 right-0 w-22 bg-[#8B2035] rounded-2xl
-                      flex items-center justify-center">
-        <button
-          onClick={triggerRemove}
-          className="flex flex-col items-center gap-1 text-cream px-4
-                     active:opacity-70 transition-opacity duration-150"
-          aria-label={`Remove ${item.name}`}
-          style={{ touchAction: "manipulation" }}
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-          </svg>
-          <span className="text-[10px] font-medium">Remove</span>
-        </button>
-      </div>
+      {/* Delete zone, revealed by the swipe */}
+      {offset > 0 && (
+        <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center rounded-card bg-burgundy" aria-hidden="true">
+          <span className="type-caption font-semibold text-white">Remove</span>
+        </div>
+      )}
 
-      {/* Item card */}
       <div
-        className="relative z-10 bg-white rounded-2xl border border-cream-darker flex gap-3 p-3.5"
+        className="relative z-10"
         style={{ transform: `translateX(-${offset}px)` }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <Link href={itemHref} className="shrink-0">
-          <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-cream-dark">
-            <Image src={item.image} alt={item.name} fill loading="lazy" className="object-cover" />
-          </div>
-        </Link>
-
-        <div className="flex-1 min-w-0">
-          <Link href={itemHref}>
-            <h3 className="font-heading font-600 text-deep-brown text-sm leading-snug
-                           active:text-[#8B2035] transition-colors line-clamp-2">
-              {item.name}
-            </h3>
-          </Link>
-          <p className="text-sm font-semibold text-brown mt-0.5">{formatAmount(item.price)}</p>
-
-          <div className="flex items-center justify-between mt-2.5">
-            {/* Read-only — see the matching note in components/CartDrawer.tsx.
-                The quantity a customer chose on the product page was capped
-                against that variant's real stock; this stepper was not, so it
-                could push a line past what exists. Removing the line and
-                re-adding is the way to change it. */}
-            <span className="inline-flex items-center h-11 px-3.5 border border-taupe/30 rounded-xl
-                             text-xs font-semibold text-deep-brown">
+        <CartLineItem
+          name={item.name}
+          image={item.image}
+          href={itemHref}
+          price={formatAmount(item.price * item.quantity)}
+          quantityControl={
+            <span className="inline-flex h-11 items-center rounded-pill border border-stone bg-white px-4 type-small font-semibold text-brown">
               Qty {item.quantity}
             </span>
-            <p className="text-sm font-bold text-deep-brown">
-              {formatAmount(item.price * item.quantity)}
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={triggerRemove}
-          className="hidden lg:flex shrink-0 w-8 h-8 items-center justify-center
-                     text-taupe hover:text-[#8B2035] transition-colors duration-200 rounded-lg"
-          aria-label={`Remove ${item.name}`}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+          }
+          onRemove={triggerRemove}
+        />
       </div>
     </div>
   );
@@ -242,227 +174,80 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-[70vh] bg-cream flex flex-col items-center justify-center text-center px-6">
-        <div className="text-5xl mb-5">🛒</div>
-        <h1 className="font-heading text-2xl font-700 text-deep-brown mb-2">Your cart is empty</h1>
-        <p className="text-brown/60 text-sm mb-8 max-w-xs">
-          You haven&apos;t added anything yet. Let&apos;s find something you love.
-        </p>
-        <Link
-          href="/products"
-          className="inline-flex items-center justify-center px-10 py-3 rounded-none
-                     bg-[#8B2035] text-cream font-semibold text-sm tracking-wide
-                     hover:bg-[#6e1929] active:scale-[0.98] transition-all duration-150 shadow-sm"
-          style={{ touchAction: "manipulation" }}
-        >
-          Browse Products
-        </Link>
+      <div className="bg-cream">
+        <div className="page-container flex min-h-[60vh] items-center justify-center py-12">
+          <div className="w-full max-w-md rounded-block bg-peach px-6 py-12 text-center">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-pill bg-cream text-burgundy" aria-hidden="true">
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z" />
+              </svg>
+            </span>
+            <h1 className="type-h2 mt-5 text-brown">Your bag is empty</h1>
+            <p className="type-body mt-2 text-brown">
+              You haven&apos;t added anything yet. Let&apos;s find something you love.
+            </p>
+            <Button href="/products" className="mt-7">Shop the Collection</Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* ── Secure checkout banner ── */}
-      <div className="bg-white border-b border-green-200 text-center py-2 px-4">
-        <p className="text-[11px] font-medium flex items-center justify-center gap-2 text-stone-600">
-          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none"
-               stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0110 0v4" />
-          </svg>
-          Secure checkout · SSL encrypted · Powered by Stripe
-        </p>
-      </div>
+      {/* Secure checkout note */}
+      <p className="bg-peach px-4 py-2 text-center type-caption font-medium text-brown">
+        Secure checkout · SSL encrypted · Powered by Stripe
+      </p>
 
-      {/* ── Page header ── */}
-      <div className="bg-cream-dark border-b border-taupe/20 border-t-[3px] border-t-[#8B2035]/30
-                      px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="font-heading text-2xl sm:text-3xl font-700 text-deep-brown
-                         border-l-[3px] border-l-[#8B2035]/50 pl-3">
-            Shopping Cart
-          </h1>
-          <p className="text-taupe-dark text-sm mt-1 pl-3">
-            {itemCount} {itemCount === 1 ? "item" : "items"}
-          </p>
-        </div>
-      </div>
+      <div className="page-container pb-12 pt-8 lg:pb-16">
+        <h1 className="type-h1 text-brown">Your bag ({itemCount})</h1>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-52 lg:pb-10">
+        <div className="mt-6 lg:grid lg:grid-cols-[1fr_24rem] lg:items-start lg:gap-10">
+          {/* Items */}
+          <div>
+            {items.map((item) => (
+              <SwipeableItem key={cartLineKey(item)} item={item} onRemove={removeItem} />
+            ))}
+          </div>
 
-        {/* Swipe hint — mobile */}
-        <p className="lg:hidden text-[11px] text-taupe-dark text-center mb-4 flex items-center justify-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Swipe left to remove items
-        </p>
-
-        {/* Items */}
-        <div>
-          {items.map((item) => (
-            <SwipeableItem
-              key={cartLineKey(item)}
-              item={item}
-              onRemove={removeItem}
-            />
-          ))}
-        </div>
-
-        <Link
-          href="/products"
-          className="flex items-center gap-1.5 text-sm text-brown/70 active:text-[#8B2035]
-                     transition-colors duration-150 mt-2"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Continue Shopping
-        </Link>
-
-        {/* ── Desktop order summary ── */}
-        <div className="hidden lg:block mt-8">
-          <div className="bg-white rounded-2xl border border-cream-darker shadow-sm overflow-hidden">
-
-            {/* Secure header */}
-            <div className="bg-white border-b border-green-200 px-5 py-2.5 flex items-center gap-2">
-              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none"
-                   stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" />
-                <path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
-              <p className="text-stone-700 text-[11px] font-semibold tracking-wide">
-                Secure Order Summary · Your data is protected
-              </p>
-              <span className="ml-auto flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-stone-400 text-[10px] font-medium">LIVE</span>
-              </span>
-            </div>
-
-            <div className="p-6">
-              <h2 className="font-heading font-600 text-deep-brown text-xl mb-5">Order Summary</h2>
-              <div className="space-y-3 text-sm mb-5">
-                <div className="flex justify-between text-brown/75">
-                  <span>Subtotal ({itemCount} items)</span>
-                  <span>{pricing.formattedSubtotal}</span>
+          {/* Summary */}
+          <aside aria-label="Order summary" className="mt-2 lg:sticky lg:top-28 lg:mt-0">
+            <div className="rounded-card bg-white p-5 shadow-soft">
+              <h2 className="sr-only">Order summary</h2>
+              <dl className="space-y-3 font-body text-base text-brown">
+                <div className="flex justify-between">
+                  <dt className="text-stone">Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})</dt>
+                  <dd>{pricing.formattedSubtotal}</dd>
                 </div>
-                <div className="flex justify-between text-brown/75">
-                  <span>Shipping (estimate)</span>
-                  <span>{pricing.formattedShipping}</span>
+                <div className="flex justify-between">
+                  <dt className="text-stone">Shipping (estimate)</dt>
+                  <dd>{pricing.formattedShipping}</dd>
                 </div>
-              </div>
-              <p className="text-[10px] text-taupe-dark -mt-3 mb-4">
+                <div className="flex justify-between border-t border-line pt-4 text-lg font-semibold">
+                  <dt>Total</dt>
+                  <dd>{pricing.formattedTotal}</dd>
+                </div>
+              </dl>
+              <p className="mt-3 type-caption text-stone">
                 Exact shipping is calculated at checkout once you enter your delivery address.
               </p>
-
-              <div className="border-t border-taupe/20 pt-4 flex justify-between
-                              font-semibold text-deep-brown text-base mb-6">
-                <span>Total</span>
-                <span>{pricing.formattedTotal}</span>
-              </div>
-
-              {/* Checkout button — sharp, properly sized */}
-              <div className="flex flex-col items-center gap-2">
-                <Link
-                  href="/checkout"
-                  className="inline-flex items-center justify-center gap-2
-                             px-10 py-3 rounded-none bg-[#8B2035] text-cream
-                             font-semibold text-sm tracking-wide
-                             hover:bg-[#6e1929] hover:-translate-y-px
-                             transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  Proceed to Checkout
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                       stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-                <p className="text-[10px] text-stone-500 font-medium flex items-center gap-1">
-                  <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none"
-                       stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" />
-                    <path d="M7 11V7a5 5 0 0110 0v4" />
-                  </svg>
-                  Payments are encrypted &amp; secure
-                </p>
-              </div>
-
-              {/* Trust badges */}
-              <TrustBadges />
-
-              {/* Payment logos */}
-              <PaymentLogos />
-
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* ── Mobile sticky summary bar ── */}
-      <div
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50
-                   bg-cream border-t border-taupe/20 px-4 pt-3 shadow-2xl"
-        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
-      >
-        {/* Scrollable payment logos on mobile */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none">
-          <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 text-[9px] font-bold whitespace-nowrap" style={{ color: "#635BFF" }}>
-            Stripe
-          </div>
-          <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6 gap-0.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#EB001B]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[#F79E1B] -ml-1" />
-          </div>
-          <div className="flex-none flex items-center justify-center px-2 py-0.5 bg-white rounded border border-gray-200 shadow-sm h-6">
-            <svg viewBox="0 0 48 14" className="h-2.5 w-auto">
-              <text x="1" y="11" fontFamily="Arial" fontWeight="bold" fontSize="12" fill="#1A1F71" fontStyle="italic">VISA</text>
-            </svg>
-          </div>
-        </div>
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <Button href="/checkout" fullWidth>Checkout securely</Button>
+              <Link
+                href="/products"
+                className="focus-ring inline-flex min-h-11 items-center rounded-pill px-4 type-body font-semibold text-burgundy hover:text-burgundy-dark"
+              >
+                Continue shopping
+              </Link>
+            </div>
 
-        <div className="flex items-center justify-between mb-1.5">
-          <div>
-            {/* Shipping in green, not the same muted grey as the item count —
-                it's the part of this line a customer needs to actually see, so
-                it shouldn't read as filler next to it. */}
-            <p className="text-xs text-taupe-dark">
-              {itemCount} items ·{" "}
-              <span className="font-semibold text-emerald-600 tabular-nums">
-                {shippingEstimateEUR === 0
-                  ? "Shipping (est.) Free"
-                  : `Shipping (est.) ${pricing.formattedShipping}`}
-              </span>
-            </p>
-            <p className="font-semibold text-deep-brown text-base">
-              Total: {pricing.formattedTotal}
-            </p>
-          </div>
-          <Link
-            href="/checkout"
-            className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-none
-                       bg-[#8B2035] text-cream font-semibold text-sm
-                       active:bg-[#6e1929] active:scale-[0.98] transition-all duration-150 shadow-md"
-            style={{ touchAction: "manipulation" }}
-          >
-            Checkout
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
-                 stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+            <TrustTiles />
+            <PaymentLogos />
+          </aside>
         </div>
-
-        {/* Security micro-copy */}
-        <p className="text-[10px] text-stone-500 font-medium text-center flex items-center justify-center gap-1 pb-0.5">
-          <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none"
-               stroke="#C9A227" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0110 0v4" />
-          </svg>
-          SSL secured · Easy 30-day returns
-        </p>
       </div>
     </div>
   );

@@ -30,16 +30,16 @@ export default function Toast({
 
   const bgColor =
     type === "success"
-      ? "bg-emerald-50 border-emerald-100"
+      ? "bg-success/10 border-success/20"
       : type === "error"
-        ? "bg-red-50 border-red-100"
+        ? "bg-error/10 border-error/20"
         : "bg-blue-50 border-blue-100";
 
   const textColor =
     type === "success"
-      ? "text-emerald-700"
+      ? "text-success"
       : type === "error"
-        ? "text-red-700"
+        ? "text-error"
         : "text-blue-700";
 
   const icon =

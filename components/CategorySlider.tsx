@@ -215,14 +215,14 @@ export default function CategorySlider({
               }
             }}
             aria-current={selected === cat.id ? "true" : undefined}
-            className={`group relative rounded-2xl overflow-hidden block shrink-0 snap-center
+            className={`group relative rounded-card overflow-hidden block shrink-0 snap-center
                        w-[68vw] max-w-[280px] aspect-[4/5]
                        sm:w-[42vw] sm:max-w-[300px]
                        lg:w-[calc((100%-4*1rem)/5)] lg:max-w-none
                        hover:shadow-2xl hover:-translate-y-1
                        transition-all duration-300 ease-out
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold
-                       ${selected === cat.id ? "ring-2 ring-gold ring-offset-2 ring-offset-cream-dark" : ""}`}
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-burgundy
+                       ${selected === cat.id ? "ring-2 ring-burgundy ring-offset-2 ring-offset-peach" : ""}`}
             style={{ touchAction: "manipulation" }}
           >
             {cat.image ? (
@@ -236,12 +236,12 @@ export default function CategorySlider({
                 className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
               />
             ) : (
-              <div className="absolute inset-0 bg-cream-darker" />
+              <div className="absolute inset-0 bg-peach" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-deep-brown/80 via-deep-brown/15 to-transparent
-                            group-hover:from-deep-brown/70 transition-all duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-t from-brown/80 via-brown/15 to-transparent
+                            group-hover:from-brown/70 transition-all duration-300" />
             <div className="absolute bottom-0 left-0 right-0 p-4">
-              <p className="text-cream/70 text-[10px] uppercase tracking-[0.2em] font-body mb-1">
+              <p className="text-cream/70 text-xs uppercase tracking-[0.2em] font-body mb-1">
                 Collection
               </p>
               <h3 className="font-heading italic text-cream font-400 text-lg leading-tight">
@@ -258,9 +258,9 @@ export default function CategorySlider({
       <button
         onClick={() => { holdAutoplay(); scrollBy(-1); }}
         className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10
-                   w-11 h-11 rounded-full bg-cream/90 backdrop-blur-sm border border-taupe/20
+                   w-11 h-11 rounded-full bg-cream/90 backdrop-blur-sm border border-line
                    text-brown items-center justify-center shadow-lg
-                   hover:bg-gold hover:text-cream hover:border-gold
+                   hover:bg-burgundy hover:text-cream hover:border-burgundy
                    transition-all duration-200"
         aria-label="Previous categories"
       >
@@ -271,9 +271,9 @@ export default function CategorySlider({
       <button
         onClick={() => { holdAutoplay(); scrollBy(1); }}
         className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10
-                   w-11 h-11 rounded-full bg-cream/90 backdrop-blur-sm border border-taupe/20
+                   w-11 h-11 rounded-full bg-cream/90 backdrop-blur-sm border border-line
                    text-brown items-center justify-center shadow-lg
-                   hover:bg-gold hover:text-cream hover:border-gold
+                   hover:bg-burgundy hover:text-cream hover:border-burgundy
                    transition-all duration-200"
         aria-label="Next categories"
       >
@@ -289,7 +289,7 @@ export default function CategorySlider({
             key={i}
             onClick={() => { holdAutoplay(); scrollToIndex(i); }}
             className={`rounded-full transition-all duration-300 ${
-              i === active ? "w-7 h-2 bg-gold" : "w-2 h-2 bg-taupe/30 hover:bg-taupe/50"
+              i === active ? "w-7 h-2 bg-burgundy" : "w-2 h-2 bg-line/30 hover:bg-line/50"
             }`}
             aria-label={`Go to category ${i + 1}`}
           />

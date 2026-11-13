@@ -7,6 +7,8 @@ import { useCart } from "./CartContext";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import CoziLogo from "./CoziLogo";
+import AnimatedCoziLogo from "@/components/brand/AnimatedCoziLogo";
+import Button from "@/components/ui/Button";
 import CurrencyPicker from "./CurrencyPicker";
 import { socialLinks, whatsappLink } from "@/lib/social-links";
 
@@ -40,6 +42,15 @@ const navLinks = [
   { href: "/#newsletter", label: "Journal" },
 ];
 
+// Desktop header nav (DESIGN.md §4: Shop, Featured, Custom order). The mobile
+// drawer keeps navLinks above; Journal stays on desktop as existing content.
+const desktopNavLinks = [
+  { href: "/products", label: "Shop" },
+  { href: "/featured-pieces", label: "Featured Pieces" },
+  { href: "/custom-order", label: "Custom order" },
+  { href: "/#newsletter", label: "Journal" },
+];
+
 export default function Navbar({ categories }: { categories: { id: string; name: string }[] }) {
   const drawerCategories = categories.map((c) => ({
     href: `/products?category=${c.id}`,
@@ -56,12 +67,6 @@ export default function Navbar({ categories }: { categories: { id: string; name:
   // <header> below), where a disappearing nav on a large screen reads as a bug.
   const [hidden,      setHidden]      = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  // Expanded by default: the drawer opens showing its content, and "More"
-  // collapses it back. Expanding used to take 383px of a 664px drawer and
-  // squeeze the nav scroll area to 217px, hiding "Shop by Category" behind the
-  // footer — the expanded panel is now height-capped and scrolls internally
-  // (see the collapsible region below), so it can't swallow the nav list again.
-  const [footerOpen,  setFooterOpen]  = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   async function handleSignOut() {
@@ -123,34 +128,30 @@ export default function Navbar({ categories }: { categories: { id: string; name:
   /* Close menu on route change */
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
-  /* Footer section resets to EXPANDED every time the drawer closes, so each
-     open shows its content first and "More" is there to fold it away. */
-  useEffect(() => { if (!menuOpen) setFooterOpen(true); }, [menuOpen]);
-
   /* Lock body scroll when menu open */
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
+  // Checkout has its own slim header (back, logo, Secure): the site navbar and
+  // its drawer step aside there. Every hook above has already run.
+  if (pathname.startsWith("/checkout")) return null;
+
   return (
     <>
       {/* ── Top Bar ──
-          The homepage hero's own background is cream-dark (not the white
-          "cream" every other page starts with) — match whichever one is
-          actually behind the navbar, on scroll too, so there's never a seam. */}
+          Cream with a 1px line underneath (the shadow only appears once the
+          page has scrolled). Sticky; on phones it slides away on scroll-down
+          and returns on scroll-up (see the scroll handler above). */}
       <header
-        className={`sticky top-0 z-40 transition-all duration-300
-          ${pathname === "/" ? (scrolled ? "bg-cream-dark/97" : "bg-cream-dark") : (scrolled ? "bg-cream/97" : "bg-cream")}
-          ${scrolled
-            ? "backdrop-blur-md shadow-md border-b border-taupe/20"
-            : "border-b border-transparent"
-          }
+        className={`sticky top-0 z-40 border-b border-line transition-[background-color,box-shadow,transform,opacity] duration-300
+          ${scrolled ? "bg-cream/95 backdrop-blur-md shadow-soft" : "bg-cream"}
           ${hidden ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"}
           lg:opacity-100 lg:translate-y-0 lg:pointer-events-auto`}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
-        <div className="page-container flex items-center justify-between h-20">
+        <div className="page-container flex items-center justify-between h-16 lg:h-20">
 
           {/* ── Mobile: hamburger ──
               Wrapped in a flex-1 zone (mirrored by the right-side icon zone
@@ -163,7 +164,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
             <button
               onClick={() => setMenuOpen(true)}
               className="focus-ring w-11 h-11 -ml-2 flex items-center justify-center
-                         text-brown active:bg-cream-dark rounded-xl transition-colors duration-150"
+                         text-brown active:bg-peach rounded-pill transition-colors duration-150"
               aria-label="Open menu"
               aria-expanded={menuOpen}
             >
@@ -176,7 +177,14 @@ export default function Navbar({ categories }: { categories: { id: string; name:
           {/* ── Logo ── */}
           <Link href="/" aria-label="Cozi Handmade home" className="focus-ring flex items-center group shrink-0 rounded-button">
             {/* Slightly smaller on mobile, full size from sm up. */}
-            <CoziLogo className="h-11 w-auto sm:h-14 transition-opacity duration-200 group-hover:opacity-75" />
+            {/* Colour-wave logo (owner's call). The Link above carries the
+                accessible name; the static colour shows until load and with
+                reduced motion. The site header never renders on checkout. */}
+            <AnimatedCoziLogo
+              variant="mark"
+              surface="cream"
+              className="h-12 w-auto lg:h-16 transition-opacity duration-200 group-hover:opacity-75"
+            />
           </Link>
 
           {/* ── Desktop nav links ── */}
@@ -185,8 +193,8 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               without competing with the primary button for weight. Home is
               left out on desktop because the logo beside it is the home link;
               the mobile drawer keeps it, where the logo habit is weaker. */}
-          <nav className="hidden lg:flex items-center gap-8">
-            {navLinks.filter(({ href }) => href !== "/").map(({ href, label }) => {
+          <nav className="hidden lg:flex items-center gap-7">
+            {desktopNavLinks.map(({ href, label }) => {
               // Compare paths only: "/#newsletter" and "/" share a pathname, so the
               // hash has to be stripped before deciding what's current.
               const linkPath = href.split("#")[0] || "/";
@@ -204,11 +212,11 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                   className={`focus-ring relative py-2 text-[15px] font-medium font-body
                               transition-colors duration-150
                               after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5
-                              after:bg-ui-accent after:transition-opacity after:duration-150
+                              after:bg-burgundy after:transition-opacity after:duration-150
                               ${
                                 isActive
-                                  ? "text-ui-accent after:opacity-100"
-                                  : "text-ui-text hover:text-ui-accent after:opacity-0"
+                                  ? "text-burgundy after:opacity-100"
+                                  : "text-brown hover:text-burgundy after:opacity-0"
                               }`}
                 >
                   {label}
@@ -223,6 +231,35 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               the note above the hamburger for why that matters. Reverts to
               a normal (non-growing) box at lg, matching the old desktop layout. */}
           <div className="flex-1 lg:flex-none flex items-center justify-end gap-3">
+            {/* Search field — desktop only. A plain GET to the shop's existing
+                ?q= search (ProductsContent reads it), so no new logic. */}
+            <form action="/products" method="get" role="search" className="hidden xl:block">
+              <label htmlFor="header-search" className="sr-only">Search products</label>
+              <div className="flex h-11 w-56 items-center gap-2 rounded-pill border border-line bg-white px-4
+                              focus-within:border-brown focus-within:ring-1 focus-within:ring-brown">
+                <svg className="h-4.5 w-4.5 shrink-0 text-stone" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+                </svg>
+                <input
+                  id="header-search"
+                  name="q"
+                  type="search"
+                  placeholder="Search pieces"
+                  className="min-w-0 flex-1 bg-transparent font-body text-sm text-brown placeholder:text-stone outline-none"
+                />
+              </div>
+            </form>
+            {/* lg–xl: not enough room for the field, so an icon to the shop search. */}
+            <Link
+              href="/products?focusSearch=1"
+              aria-label="Search the shop"
+              className="focus-ring hidden h-11 w-11 items-center justify-center rounded-pill text-brown
+                         transition-colors duration-150 hover:text-burgundy lg:flex xl:hidden"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+              </svg>
+            </Link>
             {/* Currency picker — desktop only */}
             <div className="hidden lg:block">
               <CurrencyPicker />
@@ -241,7 +278,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                   <button
                     onClick={() => setUserMenuOpen((o) => !o)}
                     className="focus-ring w-12 h-12 flex items-center justify-center
-                               text-brown active:bg-cream-dark lg:hover:text-gold rounded-xl
+                               text-brown active:bg-peach lg:hover:text-burgundy rounded-xl
                                transition-colors duration-150"
                     aria-label="Account menu"
                   >
@@ -251,12 +288,12 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                   </button>
 
                   {userMenuOpen && (
-                    <div className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-cream-darker z-50 overflow-hidden">
-                      <div className="px-4 py-3 border-b border-taupe/15">
-                        <p className="text-xs font-semibold text-deep-brown truncate">
+                    <div className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-peach z-50 overflow-hidden">
+                      <div className="px-4 py-3 border-b border-line/15">
+                        <p className="text-xs font-semibold text-brown truncate">
                           {(user.user_metadata?.full_name as string) ?? "My Account"}
                         </p>
-                        <p className="text-[10px] text-taupe-dark truncate">{user.email}</p>
+                        <p className="text-xs text-stone truncate">{user.email}</p>
                       </div>
                       <Link
                         href="/account"
@@ -280,8 +317,8 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                       </Link>
                       <button
                         onClick={handleSignOut}
-                        className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-red-600
-                                   hover:bg-red-50 transition-colors border-t border-taupe/10"
+                        className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-error
+                                   hover:bg-error/10 transition-colors border-t border-line/10"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
@@ -294,14 +331,27 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               ) : (
                 <Link
                   href="/auth/login"
-                  className="focus-ring hidden lg:inline-flex items-center gap-1.5 px-4 py-2 rounded-none
-                             border border-brown/30 text-sm font-medium text-brown font-body
-                             hover:border-brown/70 transition-colors duration-200"
+                  className="focus-ring hidden lg:inline-flex min-h-11 items-center gap-1.5 px-5 rounded-pill
+                             border border-brown text-sm font-semibold text-brown font-body
+                             hover:bg-brown hover:text-cream transition-colors duration-200"
                 >
                   Sign In
                 </Link>
               )}
             </div>
+
+            {/* Search — phones. Lands on the shop with the search field focused. */}
+            <Link
+              href="/products?focusSearch=1"
+              aria-label="Search the shop"
+              style={{ touchAction: "manipulation" }}
+              className="focus-ring -mr-1 flex h-11 w-11 items-center justify-center rounded-pill text-brown
+                         transition-colors duration-100 active:bg-peach lg:hidden"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+              </svg>
+            </Link>
 
             {/* Cart icon — opens slide-in drawer */}
             {/* Three things make this read as tappable on a phone, and it
@@ -321,9 +371,8 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               onClick={openCart}
               style={{ touchAction: "manipulation" }}
               className="focus-ring relative w-12 h-12 flex items-center justify-center
-                         text-brown rounded-xl bg-cream-dark/50 lg:bg-transparent
-                         active:bg-cream-dark active:scale-90 lg:hover:text-gold
-                         lg:active:scale-100 transition-all duration-100"
+                         text-brown rounded-pill active:bg-peach active:scale-90
+                         lg:hover:text-burgundy lg:active:scale-100 transition-all duration-100"
               aria-label={`Cart, ${itemCount} items`}
             >
               <svg
@@ -333,8 +382,8 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
               </svg>
               {itemCount > 0 && (
-                <span className="animate-badge-pop absolute top-0.5 right-0.5 min-w-5 h-5 px-1 bg-ui-accent text-white
-                                 text-[10px] font-bold rounded-full flex items-center justify-center">
+                <span className="animate-badge-pop absolute top-0.5 right-0.5 min-w-5 h-5 px-1 bg-burgundy text-white
+                                 text-xs font-bold rounded-full flex items-center justify-center">
                   {itemCount > 9 ? "9+" : itemCount}
                 </span>
               )}
@@ -346,15 +395,23 @@ export default function Navbar({ categories }: { categories: { id: string; name:
       {/* ── Backdrop ── */}
       <div
         onClick={() => setMenuOpen(false)}
-        className={`fixed inset-0 z-50 bg-deep-brown/40 backdrop-blur-sm
+        className={`fixed inset-0 z-50 bg-brown/40 backdrop-blur-sm
                     transition-opacity duration-300
                     ${menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       />
 
-      {/* ── Slide-from-left drawer ── */}
+      {/* ── Slide-from-left drawer ──
+          Layout: fixed header, ONE scrolling column (custom order, navigation,
+          categories, then socials / credit / currency), and a fixed account
+          card at the bottom. The old drawer put the nav list in its own small
+          scroll box above a tall footer, so on a short phone the box was a
+          third of the drawer and the last nav item ("Featured Pieces") sat
+          half-hidden at its edge with nothing to say it scrolled. Now
+          everything scrolls together and the only fixed parts are the header
+          and the sign-in card, which stay small. */}
       <div
         className={`fixed top-0 left-0 bottom-0 z-50 w-[82vw] max-w-sm
-                    bg-cream-dark flex flex-col shadow-2xl
+                    bg-cream flex flex-col shadow-soft
                     transition-[transform,visibility] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]
                     ${menuOpen ? "translate-x-0 visible" : "-translate-x-full invisible"}`}
         // Closed, the drawer is parked off-screen: invisible stops its shadow
@@ -368,14 +425,14 @@ export default function Navbar({ categories }: { categories: { id: string; name:
         aria-label="Navigation menu"
       >
         {/* Drawer header */}
-        <div className="flex items-center justify-between h-16 px-5 pl-6 border-b border-taupe/20">
-          <Link href="/" onClick={() => setMenuOpen(false)}>
-            <CoziLogo className="w-36 h-12" />
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-line pl-6 pr-4">
+          <Link href="/" onClick={() => setMenuOpen(false)} aria-label="Cozi Handmade home" className="focus-ring rounded-small">
+            <CoziLogo className="h-9 w-auto" />
           </Link>
           <button
             onClick={() => setMenuOpen(false)}
-            className="w-11 h-11 flex items-center justify-center rounded-xl
-                       text-brown active:bg-cream-dark active:scale-90 transition-transform duration-100"
+            className="focus-ring flex h-11 w-11 items-center justify-center rounded-pill text-brown
+                       transition-transform duration-100 active:scale-90 active:bg-peach"
             aria-label="Close menu"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -384,33 +441,29 @@ export default function Navbar({ categories }: { categories: { id: string; name:
           </button>
         </div>
 
-        {/* Drawer content — only mounted while open, so the stagger animation replays every time */}
+        {/* Drawer content: only mounted while open, so the stagger animation replays every time */}
         {menuOpen && (
-          <nav className="flex-1 overflow-y-auto py-4 pl-6 pr-4">
-            {/* Custom order CTA — most prominent action in the drawer */}
+          <nav className="min-h-0 flex-1 overflow-y-auto py-4 pl-6 pr-4">
+            {/* Custom order CTA: the most prominent action in the drawer */}
             <Link
               href="/custom-order"
               onClick={() => setMenuOpen(false)}
-              className="animate-fade-up flex items-center gap-3 mb-4 mr-2 px-4 py-3 rounded-2xl
-                         text-deep-brown shadow-md shadow-black/10
-                         active:scale-[0.98] transition-transform duration-100"
-              style={{ backgroundColor: "#F7D9C0" }}
+              className="focus-ring animate-fade-up mb-5 mr-2 flex items-center gap-3 rounded-card bg-peach px-4 py-3
+                         text-brown transition-transform duration-100 active:scale-[0.98]"
             >
-              <span className="w-9 h-9 rounded-full bg-deep-brown/10 flex items-center justify-center shrink-0">
-                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-cream" aria-hidden="true">
+                <svg className="w-4.5 h-4.5 text-burgundy" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
                 </svg>
               </span>
               <span className="flex-1">
-                <span className="block text-sm font-semibold">Create a Custom Order</span>
-                <span className="block text-[11px] text-deep-brown/70">Tell us exactly what you&apos;d like made</span>
+                <span className="block type-small font-semibold">Create a Custom Order</span>
+                <span className="block type-caption">Tell us exactly what you&apos;d like made</span>
               </span>
-              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+              <span aria-hidden="true" className="shrink-0 text-burgundy">→</span>
             </Link>
 
-            <p className="animate-fade-up delay-100 text-[10px] uppercase tracking-widest text-taupe-dark mb-2 font-body">
+            <p className="animate-fade-up delay-100 mb-1 type-caption font-semibold uppercase tracking-widest text-stone">
               Navigate
             </p>
             {navLinks.map(({ href, label }, i) => (
@@ -418,16 +471,16 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                 key={label}
                 href={href}
                 onClick={() => setMenuOpen(false)}
-                className="animate-fade-up flex items-center gap-3.5 py-3 text-lg font-medium text-brown
-                           active:text-gold active:bg-cream-dark/60 transition-colors duration-150 border-b border-taupe/10"
+                className="focus-ring animate-fade-up flex min-h-12 items-center gap-3.5 border-b border-line py-3 type-body font-semibold text-brown
+                           transition-colors duration-150 active:text-burgundy"
                 style={{ animationDelay: `${100 + i * 40}ms` }}
               >
-                <span className="text-gold shrink-0">{navIcons[label]}</span>
+                <span className="shrink-0 text-burgundy">{navIcons[label]}</span>
                 {label}
               </Link>
             ))}
 
-            <p className="animate-fade-up text-[10px] uppercase tracking-widest text-taupe-dark mt-5 mb-2 font-body"
+            <p className="animate-fade-up mb-1 mt-6 type-caption font-semibold uppercase tracking-widest text-stone"
                style={{ animationDelay: `${100 + navLinks.length * 40}ms` }}>
               Shop by Category
             </p>
@@ -439,46 +492,92 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                 // the filtered results are never seen — it reads as the link
                 // having done nothing.
                 onClick={() => setMenuOpen(false)}
-                className="animate-fade-up flex items-center gap-3 py-2.5 text-base text-brown/80
-                           active:text-gold active:bg-cream-dark/60 transition-colors duration-150 border-b border-taupe/10"
+                className="focus-ring animate-fade-up flex min-h-12 items-center gap-3 border-b border-line py-2.5 type-body text-brown
+                           transition-colors duration-150 active:text-burgundy"
                 style={{ animationDelay: `${140 + (navLinks.length + i) * 40}ms` }}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" aria-hidden="true" />
+                <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-burgundy" aria-hidden="true" />
                 {label}
               </Link>
             ))}
+
+            {/* Everything secondary sits at the end of the same scroll */}
+            <div className="mt-8 space-y-5 border-t border-line pt-6">
+              {/* Social handles — real links, same as the footer */}
+          <div className="flex items-center gap-3">
+            <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
+               className="focus-ring flex h-11 w-11 items-center justify-center rounded-pill bg-peach text-brown
+                          active:bg-burgundy active:text-white active:scale-90 transition-transform duration-100">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+              </svg>
+            </a>
+            <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
+               className="focus-ring flex h-11 w-11 items-center justify-center rounded-pill bg-peach text-brown
+                          active:bg-burgundy active:text-white active:scale-90 transition-transform duration-100">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.06L2 22l5.06-1.36C8.5 21.5 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/>
+              </svg>
+            </a>
+            <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok"
+               className="focus-ring flex h-11 w-11 items-center justify-center rounded-pill bg-peach text-brown
+                          active:bg-burgundy active:text-white active:scale-90 transition-transform duration-100">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+              </svg>
+            </a>
+            <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
+               className="focus-ring flex h-11 w-11 items-center justify-center rounded-pill bg-peach text-brown
+                          active:bg-burgundy active:text-white active:scale-90 transition-transform duration-100">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+              </svg>
+            </a>
+          </div>
+
+
+              <a
+                href="https://buildwithmaheer.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-pill py-2 type-small text-brown underline underline-offset-4 hover:text-burgundy"
+              >
+                Built by Maheer
+              </a>
+
+              {/* Currency: a drop-up, so its menu opens over the content above it */}
+              <div className="flex items-center justify-between">
+                <p className="type-small font-semibold text-brown">Currency</p>
+                <CurrencyPicker dropUp />
+              </div>
+            </div>
           </nav>
         )}
 
-        {/* Drawer footer. The account block sits OUTSIDE the collapsible
-            section: signing in is the one action here a customer comes
-            looking for, so it has to be on screen the moment the drawer
-            opens. Everything secondary — socials, currency, build credit —
-            lives behind the "More" arrow, which is what keeps the footer
-            from crowding the nav links above it. */}
+        {/* Account block: pinned at the bottom, small, always on screen.
+            Signing in is the one action here a customer comes looking for. */}
         <div
-          className="border-t border-taupe/20"
+          className="shrink-0 border-t border-line pl-6 pr-4 pt-3"
           style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
         >
-          <div className="pl-6 pr-4 pt-3 pb-1">
             {user ? (
               <div className="space-y-1">
                 <Link href="/account" onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
+                  className="flex items-center gap-2 py-2.5 min-h-11 type-small font-semibold text-brown active:text-burgundy">
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                   </svg>
                   My Account
                 </Link>
                 <Link href="/account/orders" onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-brown active:text-gold">
+                  className="flex items-center gap-2 py-2.5 min-h-11 type-small font-semibold text-brown active:text-burgundy">
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z" />
                   </svg>
                   My Orders
                 </Link>
                 <button onClick={() => { setMenuOpen(false); handleSignOut(); }}
-                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-red-600 w-full">
+                  className="flex items-center gap-2 py-2.5 text-sm font-medium text-error w-full">
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
                   </svg>
@@ -486,132 +585,20 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                 </button>
               </div>
             ) : (
-              /* Member card — returning customers sign in, new ones create an
-                 account, presented as an explicit choice instead of one
-                 generic button. Kept compact: it is always on screen now, so
-                 every pixel it takes comes straight out of the nav list above
-                 it. The three-benefit line was dropped and padding tightened. */
-              <div className="rounded-2xl bg-white/70 border border-taupe/15 p-3 space-y-2">
-                <p className="text-[13px] font-semibold text-deep-brown font-body text-center">
+              <div className="rounded-card bg-white p-3 shadow-soft">
+                <p className="mb-2 text-center type-small font-semibold text-brown">
                   Join the Cozi family
                 </p>
                 <div className="grid grid-cols-2 gap-2.5">
-                  <Link href="/auth/login" onClick={() => setMenuOpen(false)}
-                    className="flex items-center justify-center h-10 rounded-none text-cream text-[13px]
-                               font-semibold tracking-wide font-body
-                               active:scale-[0.97] transition-transform duration-100"
-                    style={{ backgroundColor: "#8B2035" }}>
+                  <Button href="/auth/login" onClick={() => setMenuOpen(false)} className="px-2! text-[13px]">
                     Sign In
-                  </Link>
-                  <Link href="/auth/signup" onClick={() => setMenuOpen(false)}
-                    className="flex items-center justify-center h-10 rounded-none text-[13px]
-                               font-semibold tracking-wide font-body border border-brown/30 text-brown
-                               active:scale-[0.97] active:border-brown/70 transition-all duration-100"
-                  >
+                  </Button>
+                  <Button href="/auth/signup" onClick={() => setMenuOpen(false)} variant="secondary" className="px-2! text-[13px]">
                     Create Account
-                  </Link>
+                  </Button>
                 </div>
               </div>
             )}
-          </div>
-
-          <button
-            onClick={() => setFooterOpen((o) => !o)}
-            aria-expanded={footerOpen}
-            className="w-full flex items-center justify-between pl-6 pr-4 py-3.5
-                       active:bg-cream-dark/60 transition-colors duration-150"
-          >
-            <span className="text-[11px] uppercase tracking-widest text-taupe-dark font-body font-semibold">
-              More
-            </span>
-            <span
-              className="w-6 h-6 flex items-center justify-center border border-taupe/40 text-gold
-                         shrink-0 transition-transform duration-300"
-              style={{ transform: footerOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-              aria-hidden="true"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-              </svg>
-            </span>
-          </button>
-
-          {/* max-h caps what the expanded panel can take from the nav list
-              above it — the whole reason this section used to open collapsed.
-              Past the cap it scrolls inside itself rather than pushing "Shop by
-              Category" off the drawer. */}
-          <div
-            className="grid transition-all duration-300 ease-in-out"
-            style={{ gridTemplateRows: footerOpen ? "1fr" : "0fr" }}
-          >
-            <div className="overflow-x-hidden overflow-y-auto max-h-[38vh]">
-              <div className="pl-6 pr-4 pb-2 pt-1 space-y-4">
-
-          {/* Social handles — real links, same as the footer */}
-          <div className="flex items-center justify-center gap-3 pt-1">
-            <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
-               className="w-10 h-10 rounded-full flex items-center justify-center bg-brown/8 text-brown
-                          active:bg-gold active:text-cream active:scale-90 transition-transform duration-100">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-              </svg>
-            </a>
-            <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
-               className="w-10 h-10 rounded-full flex items-center justify-center bg-brown/8 text-brown
-                          active:bg-gold active:text-cream active:scale-90 transition-transform duration-100">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.06L2 22l5.06-1.36C8.5 21.5 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/>
-              </svg>
-            </a>
-            <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok"
-               className="w-10 h-10 rounded-full flex items-center justify-center bg-brown/8 text-brown
-                          active:bg-gold active:text-cream active:scale-90 transition-transform duration-100">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
-              </svg>
-            </a>
-            <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
-               className="w-10 h-10 rounded-full flex items-center justify-center bg-brown/8 text-brown
-                          active:bg-gold active:text-cream active:scale-90 transition-transform duration-100">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-              </svg>
-            </a>
-          </div>
-
-          {/* Build credit — one quiet line, matching the footer's. There's no
-              hover on touch, so the gold sheen plays once each time the drawer
-              opens: the class is only present while menuOpen is true, so
-              re-adding it restarts the animation. */}
-          <a
-            href="https://buildwithmaheer.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="credit-chip flex items-center justify-center gap-2 rounded-full
-                       px-4 py-2.5 text-brown/80 active:text-gold transition-colors duration-150"
-          >
-            <svg className="w-3.5 h-3.5 text-terracotta-dark shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-            </svg>
-            <span
-              className={`credit-link text-sm font-body tracking-wide
-                          ${menuOpen ? "credit-sheen-once" : ""}`}
-              style={{ ["--sheen" as string]: "var(--color-terracotta-dark)" }}
-            >
-              Built by Maheer
-            </span>
-          </a>
-
-          {/* Currency — bottom of the panel so its drop-up menu opens over
-              the content above it instead of being clipped */}
-          <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-taupe-dark font-body">Currency</p>
-            <CurrencyPicker dropUp />
-          </div>
-
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </>

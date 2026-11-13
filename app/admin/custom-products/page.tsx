@@ -144,9 +144,9 @@ export default function AdminCustomProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream-dark">
+    <div className="min-h-screen bg-peach">
       {/* Header */}
-      <div className="bg-deep-brown text-cream py-8 px-6 sticky top-0 z-50">
+      <div className="bg-brown text-cream py-8 px-6 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="font-heading italic text-4xl font-400">
@@ -154,7 +154,7 @@ export default function AdminCustomProductsPage() {
             </h1>
             <Link
               href="/"
-              className="text-sm font-semibold text-gold hover:text-gold-light transition-colors"
+              className="text-sm font-semibold text-burgundy hover:text-stone transition-colors"
             >
               ← Back to Site
             </Link>
@@ -205,8 +205,8 @@ export default function AdminCustomProductsPage() {
               });
             }}
             className="inline-flex items-center gap-2 h-12 px-6 rounded-lg font-semibold
-                     bg-gold text-cream
-                     hover:bg-gold-dark transition-colors duration-200"
+                     bg-burgundy text-cream
+                     hover:bg-burgundy-dark transition-colors duration-200"
           >
             + Add New Custom Product
           </button>
@@ -217,21 +217,21 @@ export default function AdminCustomProductsPage() {
           <div className="lg:col-span-2">
             {loading ? (
               <div className="text-center py-12">
-                <p className="text-taupe-dark">Loading products...</p>
+                <p className="text-stone">Loading products...</p>
               </div>
             ) : products.length === 0 ? (
-              <div className="bg-white rounded-2xl p-12 text-center border border-taupe/20">
-                <p className="text-taupe-dark mb-4">No custom products yet</p>
-                <p className="text-sm text-taupe">Click "Add New Custom Product" to create one</p>
+              <div className="bg-white rounded-2xl p-12 text-center border border-line/20">
+                <p className="text-stone mb-4">No custom products yet</p>
+                <p className="text-sm text-stone">Click "Add New Custom Product" to create one</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl overflow-hidden border border-taupe/20">
-                <div className="divide-y divide-taupe/10">
+              <div className="bg-white rounded-2xl overflow-hidden border border-line/20">
+                <div className="divide-y divide-line/10">
                   {products.map((product) => (
-                    <div key={product.id} className="p-5 hover:bg-cream-dark/30 transition-colors group">
+                    <div key={product.id} className="p-5 hover:bg-peach/30 transition-colors group">
                       <div className="flex gap-4 items-start">
                         {/* Image */}
-                        <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-cream-dark">
+                        <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-peach">
                           <Image
                             src={product.image || "/images/placeholder.jpg"}
                             alt={product.name}
@@ -242,10 +242,10 @@ export default function AdminCustomProductsPage() {
 
                         {/* Details */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-heading italic text-lg font-400 text-deep-brown">
+                          <h3 className="font-heading italic text-lg font-400 text-brown">
                             {product.name}
                           </h3>
-                          <p className="text-sm text-taupe-dark mt-1">
+                          <p className="text-sm text-stone mt-1">
                             €{product.price.toFixed(2)}
                             {product.original_price && (
                               <span className="ml-2 line-through">
@@ -253,15 +253,15 @@ export default function AdminCustomProductsPage() {
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-taupe/60 mt-1 line-clamp-2">
+                          <p className="text-xs text-stone/60 mt-1 line-clamp-2">
                             {product.description}
                           </p>
                           <div className="flex gap-2 mt-2">
-                            <span className="text-[10px] font-semibold text-gold bg-gold/10 px-2 py-1 rounded">
+                            <span className="text-xs font-semibold text-burgundy bg-burgundy/10 px-2 py-1 rounded">
                               Order: {product.display_order}
                             </span>
                             <span
-                              className={`text-[10px] font-semibold px-2 py-1 rounded ${
+                              className={`text-xs font-semibold px-2 py-1 rounded ${
                                 product.in_stock
                                   ? "bg-green-100 text-green-700"
                                   : "bg-red-100 text-red-700"
@@ -302,8 +302,8 @@ export default function AdminCustomProductsPage() {
           {/* Form */}
           {showForm && (
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl p-6 border border-taupe/20 sticky top-24">
-                <h3 className="font-heading italic text-lg font-400 text-deep-brown mb-4">
+              <div className="bg-white rounded-2xl p-6 border border-line/20 sticky top-24">
+                <h3 className="font-heading italic text-lg font-400 text-brown mb-4">
                   {editingId ? "Edit Product" : "Add New Product"}
                 </h3>
 
@@ -313,7 +313,7 @@ export default function AdminCustomProductsPage() {
                     placeholder="Product Name"
                     value={formData.name || ""}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-taupe/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+                    className="w-full px-3 py-2 border border-line/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-burgundy"
                     required
                   />
 
@@ -322,7 +322,7 @@ export default function AdminCustomProductsPage() {
                     placeholder="Price (€)"
                     value={formData.price || ""}
                     onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 border border-taupe/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+                    className="w-full px-3 py-2 border border-line/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-burgundy"
                     required
                   />
 
@@ -333,7 +333,7 @@ export default function AdminCustomProductsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, original_price: parseFloat(e.target.value) || null })
                     }
-                    className="w-full px-3 py-2 border border-taupe/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+                    className="w-full px-3 py-2 border border-line/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-burgundy"
                   />
 
                   <input
@@ -341,7 +341,7 @@ export default function AdminCustomProductsPage() {
                     placeholder="Category"
                     value={formData.category || ""}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-taupe/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+                    className="w-full px-3 py-2 border border-line/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-burgundy"
                     required
                   />
 
@@ -350,14 +350,14 @@ export default function AdminCustomProductsPage() {
                     placeholder="Display Order"
                     value={formData.display_order || ""}
                     onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-taupe/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+                    className="w-full px-3 py-2 border border-line/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-burgundy"
                   />
 
                   <textarea
                     placeholder="Description"
                     value={formData.description || ""}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-taupe/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold resize-none"
+                    className="w-full px-3 py-2 border border-line/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-burgundy resize-none"
                     rows={3}
                   />
 
@@ -366,15 +366,15 @@ export default function AdminCustomProductsPage() {
                     placeholder="Main Image URL"
                     value={formData.image || ""}
                     onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    className="w-full px-3 py-2 border border-taupe/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+                    className="w-full px-3 py-2 border border-line/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-burgundy"
                   />
 
                   <div className="flex gap-2">
                     <button
                       type="submit"
                       className="flex-1 h-10 rounded-lg font-semibold text-sm
-                               bg-gold text-cream
-                               hover:bg-gold-dark transition-colors"
+                               bg-burgundy text-cream
+                               hover:bg-burgundy-dark transition-colors"
                     >
                       {editingId ? "Update" : "Create"}
                     </button>
@@ -385,8 +385,8 @@ export default function AdminCustomProductsPage() {
                         setEditingId(null);
                       }}
                       className="flex-1 h-10 rounded-lg font-semibold text-sm
-                               bg-taupe/20 text-taupe-dark
-                               hover:bg-taupe/30 transition-colors"
+                               bg-line/20 text-stone
+                               hover:bg-line/30 transition-colors"
                     >
                       Cancel
                     </button>

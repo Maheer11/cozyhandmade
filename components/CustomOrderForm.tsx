@@ -36,7 +36,7 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
     <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-12">
       <div className="space-y-5">
         <div>
-          <label className="block text-xs font-semibold text-deep-brown uppercase tracking-wide mb-2">
+          <label className="block type-small font-semibold text-brown mb-2">
             Your Name
           </label>
           <input
@@ -44,15 +44,15 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Sarah"
-            className="w-full h-12 px-4 rounded-xl bg-white border border-taupe/30 text-sm
-                       text-deep-brown placeholder:text-taupe-dark
-                       focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30
+            className="w-full h-12 px-4 rounded-tile bg-white border border-stone text-sm
+                       text-brown placeholder:text-stone
+                       focus:outline-none focus:border-burgundy focus:ring-2 focus:ring-burgundy/30
                        transition-all duration-200"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-deep-brown uppercase tracking-wide mb-2">
+          <label className="block type-small font-semibold text-brown mb-2">
             Email or Phone
           </label>
           <input
@@ -60,22 +60,23 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
             value={contact}
             onChange={(e) => setContact(e.target.value)}
             placeholder="So we know where to reach you"
-            className="w-full h-12 px-4 rounded-xl bg-white border border-taupe/30 text-sm
-                       text-deep-brown placeholder:text-taupe-dark
-                       focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30
+            className="w-full h-12 px-4 rounded-tile bg-white border border-stone text-sm
+                       text-brown placeholder:text-stone
+                       focus:outline-none focus:border-burgundy focus:ring-2 focus:ring-burgundy/30
                        transition-all duration-200"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-deep-brown uppercase tracking-wide mb-2">
+          <label htmlFor="custom-order-category" className="block type-small font-semibold text-brown mb-2">
             What kind of piece?
           </label>
           <select
+            id="custom-order-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full h-12 px-4 rounded-xl bg-white border border-taupe/30 text-sm text-deep-brown
-                       focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30
+            className="w-full h-12 px-4 rounded-tile bg-white border border-stone text-sm text-brown
+                       focus:outline-none focus:border-burgundy focus:ring-2 focus:ring-burgundy/30
                        transition-all duration-200 cursor-pointer"
           >
             {categories.map((c) => (
@@ -86,7 +87,7 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-deep-brown uppercase tracking-wide mb-2">
+          <label className="block type-small font-semibold text-brown mb-2">
             Describe what you&apos;d like
           </label>
           <textarea
@@ -94,25 +95,25 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
             onChange={(e) => setDescription(e.target.value)}
             rows={5}
             placeholder="Colours, size, who it's for, when you need it by…"
-            className="w-full px-4 py-3 rounded-xl bg-white border border-taupe/30 text-sm
-                       text-deep-brown placeholder:text-taupe-dark resize-none
-                       focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30
+            className="w-full px-4 py-3 rounded-tile bg-white border border-stone text-sm
+                       text-brown placeholder:text-stone resize-none
+                       focus:outline-none focus:border-burgundy focus:ring-2 focus:ring-burgundy/30
                        transition-all duration-200"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-deep-brown uppercase tracking-wide mb-2">
-            Budget <span className="font-normal normal-case text-taupe-dark">(optional)</span>
+          <label className="block type-small font-semibold text-brown mb-2">
+            Budget <span className="font-normal normal-case text-stone">(optional)</span>
           </label>
           <input
             type="text"
             value={budget}
             onChange={(e) => setBudget(e.target.value)}
             placeholder="e.g. €80–120"
-            className="w-full h-12 px-4 rounded-xl bg-white border border-taupe/30 text-sm
-                       text-deep-brown placeholder:text-taupe-dark
-                       focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30
+            className="w-full h-12 px-4 rounded-tile bg-white border border-stone text-sm
+                       text-brown placeholder:text-stone
+                       focus:outline-none focus:border-burgundy focus:ring-2 focus:ring-burgundy/30
                        transition-all duration-200"
           />
         </div>
@@ -140,11 +141,11 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
               keepalive: true,
             }).catch(() => {});
           }}
-          className={`flex items-center justify-center gap-2 w-full h-14 rounded-none
+          className={`flex items-center justify-center gap-2 w-full h-14 rounded-button
                       font-semibold text-sm tracking-wide transition-all duration-150
                       ${canSubmit
-                        ? "bg-gold text-cream active:scale-[0.98] shadow-sm shadow-gold/20"
-                        : "bg-taupe/20 text-taupe-dark cursor-not-allowed"
+                        ? "bg-burgundy text-white active:scale-[0.98] shadow-sm shadow-burgundy/20"
+                        : "bg-line/20 text-stone cursor-not-allowed"
                       }`}
           style={{ touchAction: "manipulation" }}
         >
@@ -153,13 +154,13 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
           </svg>
           Send via WhatsApp
         </a>
-        <p className="text-xs text-taupe-dark text-center leading-relaxed">
+        <p className="text-xs text-stone text-center leading-relaxed">
           This opens WhatsApp with your details filled in, and emails a copy of your request to our team.
         </p>
 
         <Link
           href="/products"
-          className="flex items-center justify-center gap-1.5 text-sm text-brown/70 active:text-gold
+          className="flex items-center justify-center gap-1.5 text-sm text-stone active:text-burgundy
                      transition-colors duration-150 pt-2"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

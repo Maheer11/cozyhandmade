@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* Sidebar */}
       <aside className="w-56 shrink-0 flex flex-col" style={{ backgroundColor: "#2C1810" }}>
         <div className="px-5 py-5 border-b border-white/10">
-          <p className="text-[9px] uppercase tracking-[0.2em] text-white/40 font-body mb-0.5">Admin Panel</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/40 font-body mb-0.5">Admin Panel</p>
           <p className="font-heading italic text-lg text-white leading-tight">Cozi Handmade</p>
         </div>
 
@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </svg>
             Back to store
           </Link>
-          <p className="text-[10px] text-white/25 truncate">{user.email}</p>
+          <p className="text-xs text-white/25 truncate">{user.email}</p>
         </div>
       </aside>
 

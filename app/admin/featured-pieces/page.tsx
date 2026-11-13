@@ -103,7 +103,7 @@ export default async function AdminFeaturedPiecesPage() {
                             {!item.product_id && (
                               <span
                                 title="No product linked. This piece has no stock source and cannot be sold. Edit it and pick a product."
-                                className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800"
+                                className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
                               >
                                 ⚠ no product
                               </span>
@@ -111,7 +111,7 @@ export default async function AdminFeaturedPiecesPage() {
                             {missingWeight && (
                               <span
                                 title="No shipping weight set. This item's orders fall back to the default (high) weight and may be mispriced."
-                                className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800"
+                                className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
                               >
                                 ⚠ weight
                               </span>
@@ -140,7 +140,7 @@ export default async function AdminFeaturedPiecesPage() {
                         <span>
                           <span className={stock <= 0 ? "text-red-600 font-medium" : ""}>{stock}</span>
                           {product?.name && (
-                            <span className="block text-[11px] text-gray-400 truncate max-w-[160px]" title={product.name}>
+                            <span className="block text-xs text-gray-400 truncate max-w-[160px]" title={product.name}>
                               via {product.name}
                             </span>
                           )}
@@ -175,7 +175,7 @@ export default async function AdminFeaturedPiecesPage() {
                           is undone in this admin, an empty product is fixed on
                           the product. */}
                       {effectivelySoldOut && (
-                        <span className="block text-[11px] text-gray-400 mt-0.5">
+                        <span className="block text-xs text-gray-400 mt-0.5">
                           {item.sold_out ? "manual override" : stock === null ? "no product linked" : "product out of stock"}
                         </span>
                       )}

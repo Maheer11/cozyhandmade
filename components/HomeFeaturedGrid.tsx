@@ -1,20 +1,16 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { itemHref, type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
-import QuickAddButton from "@/components/home/QuickAddButton";
+import Badge from "@/components/ui/Badge";
+import ProductCard from "@/components/ui/ProductCard";
+import SectionHeader from "@/components/ui/SectionHeader";
 
 /**
- * The homepage "Featured pieces" grid — the admin-curated `show_on_homepage`
- * items, laid out as a plain product grid directly under the hero.
- *
- * Every card is built the same way so the row reads as one set: a 4:5 image
- * well (object-cover, so no letterbox bands whatever the photo's own ratio),
- * then the name in the serif and the price in the sans. Names wrap to two
- * lines rather than truncating — at 4 columns and ≥1280px even the longest
- * current name fits in two.
+ * The homepage "Featured pieces" grid: the admin-curated `show_on_homepage`
+ * items as a plain product grid (2 columns on phones, 3 from md, 4 from lg).
+ * Every card is one big link to the piece's page, with no add-to-bag button.
+ * Sold-out pieces keep their place but carry a "Sold out" badge.
  *
  * A client component only because formatAmount depends on the visitor's
  * chosen currency; app/page.tsx does the data work and the sold-out ordering.
@@ -27,90 +23,29 @@ export default function HomeFeaturedGrid({ items }: { items: FeaturedPieceCardDa
   return (
     // scroll-mt clears the sticky header when the hero's "See featured pieces"
     // link jumps here.
-    <section id="featured-pieces" aria-labelledby="featured-heading" className="bg-ui-bg scroll-mt-20">
-      <div className="page-container py-12 lg:py-16">
-        <div className="flex items-baseline justify-between gap-4 mb-6 lg:mb-8">
-          <h2
-            id="featured-heading"
-            className="font-heading font-medium text-ui-text text-[clamp(1.75rem,1.4rem+1.2vw,2.5rem)] leading-tight"
-          >
-            Featured pieces
-          </h2>
-          <Link
-            href="/featured-pieces"
-            className="focus-ring rounded-button font-body text-sm font-medium text-ui-accent
-                       underline-offset-4 hover:underline"
-          >
-            View all
-          </Link>
-        </div>
-
-        <ul className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 lg:gap-x-6">
+    <section id="featured-pieces" aria-labelledby="featured-heading" className="scroll-mt-20 bg-cream">
+      <div className="page-container pb-4 pt-12 lg:pb-8 lg:pt-20">
+        <SectionHeader
+          eyebrow="Handmade"
+          title="Featured pieces"
+          id="featured-heading"
+          seeAllHref="/featured-pieces"
+          className="mb-6"
+        />
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">
           {items.map((item) => {
             const payPrice = item.discount_price ?? item.price;
             return (
-              <li key={`${item.source ?? "featured_piece"}-${item.id}`} className="flex flex-col">
-                <Link href={itemHref(item)} className="focus-ring group block flex-1 rounded-card">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-card bg-ui-surface">
-                    <Image
-                      src={item.product_image}
-                      alt={item.name}
-                      fill
-                      sizes="(min-width: 1280px) 296px, (min-width: 1024px) 23vw, 50vw"
-                      className={`object-cover transition-transform duration-200 ease-out
-                                  group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100
-                                  ${item.sold_out ? "opacity-70" : ""}`}
-                    />
-                    {item.sold_out && (
-                      <span className="absolute top-3 left-3 rounded-button bg-ui-surface px-2 py-1
-                                       font-body text-xs font-medium text-ui-text">
-                        Sold out
-                      </span>
-                    )}
-                  </div>
-                  <div className="pt-3">
-                    <h3 className="font-heading text-lg lg:text-xl leading-snug text-ui-text line-clamp-2
-                                   group-hover:underline underline-offset-4 decoration-1">
-                      {item.name}
-                    </h3>
-                    <p className="mt-1 font-body text-sm flex items-baseline gap-2">
-                      <span className="font-semibold text-ui-text">{formatAmount(payPrice)}</span>
-                      {item.discount_price && (
-                        <span className="text-ui-muted line-through">
-                          <span className="sr-only">Was </span>
-                          {formatAmount(item.price)}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </Link>
-                {/* Sold-out state and stock come from the admin dashboard
-                    (products.stock_quantity, featured_pieces.sold_out). A card
-                    only offers "Add to bag" when it is in stock with nothing to
-                    choose; otherwise it goes to the piece's page. */}
-                <div className="pt-3">
-                  {item.sold_out ? (
-                    <button
-                      type="button"
-                      disabled
-                      className="flex h-10 w-full items-center justify-center rounded-full border border-ui-border
-                                 font-body text-sm font-semibold text-ui-muted disabled:cursor-not-allowed"
-                    >
-                      Sold out
-                    </button>
-                  ) : item.quickAdd ? (
-                    <QuickAddButton item={item.quickAdd} />
-                  ) : (
-                    <Link
-                      href={itemHref(item)}
-                      className="focus-ring flex h-10 w-full items-center justify-center rounded-full border border-ui-accent
-                                 font-body text-sm font-semibold text-ui-accent transition-colors duration-150
-                                 hover:bg-ui-accent hover:text-white"
-                    >
-                      Choose options
-                    </Link>
-                  )}
-                </div>
+              <li key={`${item.source ?? "featured_piece"}-${item.id}`}>
+                <ProductCard
+                  href={itemHref(item)}
+                  name={item.name}
+                  image={item.product_image}
+                  price={formatAmount(payPrice)}
+                  wasPrice={item.discount_price ? formatAmount(item.price) : undefined}
+                  soldOut={item.sold_out}
+                  badges={item.sold_out ? <Badge variant="soldOut">Sold out</Badge> : undefined}
+                />
               </li>
             );
           })}

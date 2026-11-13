@@ -28,7 +28,7 @@ export default function PasswordInput({
       {label && (
         <label
           htmlFor={id}
-          className="block text-xs font-medium text-brown/80 uppercase tracking-wide mb-1.5 font-body"
+          className="block type-small font-semibold text-brown mb-2"
         >
           {label}
         </label>
@@ -41,11 +41,11 @@ export default function PasswordInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`w-full h-12 px-4 pr-12 rounded-xl border border-taupe/40 bg-white text-deep-brown
-                       text-sm placeholder:text-taupe/50 focus:outline-none transition-all duration-200 ${className}`}
+          className={`w-full h-12 px-4 pr-12 rounded-tile border border-stone bg-white text-brown
+                       text-sm placeholder:text-stone focus:outline-none transition-all duration-200 ${className}`}
           onFocus={(e) => {
-            e.target.style.borderColor = "#8B2035";
-            e.target.style.boxShadow = "0 0 0 3px #8B203520";
+            e.target.style.borderColor = "#4D1808";
+            e.target.style.boxShadow = "0 0 0 1px #4D1808";
           }}
           onBlur={(e) => {
             e.target.style.borderColor = "";
@@ -56,7 +56,7 @@ export default function PasswordInput({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-taupe-dark hover:text-deep-brown transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-stone hover:text-brown transition-colors"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? (

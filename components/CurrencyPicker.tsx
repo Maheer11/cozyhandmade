@@ -32,7 +32,7 @@ export default function CurrencyPicker({ dropUp = false }: { dropUp?: boolean })
         onClick={() => setOpen((o) => !o)}
         className="focus-ring flex items-center gap-1.5 px-2.5 h-11 rounded-md text-xs font-body
                    transition-colors duration-150 hover:bg-black/5 active:bg-black/10 active:scale-95"
-        style={{ touchAction: "manipulation", color: "#5C3D2A" }}
+        style={{ touchAction: "manipulation", color: "#4D1808" }}
         aria-label="Change currency"
         aria-expanded={open}
       >
@@ -56,10 +56,10 @@ export default function CurrencyPicker({ dropUp = false }: { dropUp?: boolean })
           className={`absolute right-0 w-52 rounded-xl shadow-lg border z-50 overflow-hidden ${
             dropUp ? "bottom-full mb-1" : "top-full mt-1"
           }`}
-          style={{ backgroundColor: "#FAF4ED", borderColor: "rgba(92,61,42,0.15)" }}
+          style={{ backgroundColor: "#FBF0E4", borderColor: "#E2DCD3" }}
         >
-          <p className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-widest font-body"
-             style={{ color: "#8B7355" }}>
+          <p className="px-3 pt-2 pb-1 text-xs uppercase tracking-widest font-body"
+             style={{ color: "#7A6A62" }}>
             Select Currency
           </p>
           {DISPLAYED.map((code) => {
@@ -74,7 +74,7 @@ export default function CurrencyPicker({ dropUp = false }: { dropUp?: boolean })
                 style={{
                   touchAction: "manipulation",
                   backgroundColor: active ? "rgba(139,32,53,0.08)" : "transparent",
-                  color: active ? "#8B2035" : "#3D2B1F",
+                  color: active ? "#8B2035" : "#4D1808",
                 }}
               >
                 <span className="w-7 text-right font-semibold shrink-0">{cfg.symbol}</span>
