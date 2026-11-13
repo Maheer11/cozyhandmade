@@ -1,5 +1,5 @@
 import Link from "next/link";
-import CoziLogo from "./CoziLogo";
+import AnimatedCoziLogo from "@/components/brand/AnimatedCoziLogo";
 import { socialLinks, whatsappLink } from "@/lib/social-links";
 
 const shopLinks = [
@@ -33,7 +33,7 @@ function MobileFooter() {
     <footer className="bg-brown text-cream lg:hidden">
       <div className="page-container pb-8 pt-10">
         <Link href="/" aria-label="Cozi Handmade home" className="focus-ring inline-block rounded-small">
-          <CoziLogo className="h-10 w-auto" color="var(--color-cream)" />
+          <AnimatedCoziLogo variant="mark" surface="brown" className="h-14 w-auto" />
         </Link>
         <p className="mt-5 font-body text-base leading-6">
           Every stitch made with love: duvets, baby clothes, handbags, purses, scarves
@@ -74,10 +74,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-8 mb-8">
           {/* Brand column */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <Link href="/" className="block mb-3 group">
-              <CoziLogo
-                className="w-32 h-11 opacity-90 group-hover:opacity-100 transition-opacity duration-200"
-                color="var(--color-cream)"
+            <Link href="/" aria-label="Cozi Handmade home" className="focus-ring mb-3 inline-block rounded-small group">
+              <AnimatedCoziLogo
+                variant="mark"
+                surface="brown"
+                className="h-16 w-auto opacity-90 group-hover:opacity-100 transition-opacity duration-200"
               />
             </Link>
             <p className="text-cream/60 text-sm leading-relaxed mb-4 max-w-xs font-body">

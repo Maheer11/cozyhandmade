@@ -19,8 +19,8 @@ import { LOGO_ART } from "./logo-paths";
  * - Pauses off-screen (IntersectionObserver toggles data-playing).
  * - Accessible name "Cozi Handmade" on the svg; the letter paths are
  *   presentational and hidden from assistive tech.
- * - Used for the site header "cozi." (owner's decision, 2026-11-13). Checkout
- *   keeps the static CoziLogo; the site header is not rendered there.
+ * - Every logo on the site uses this (owner's decision, 2026-11-13): header,
+ *   mobile drawer, footer (brown surface) and the checkout header.
  */
 
 // Wave order: each letter's step in the wave. HANDMADE moves as one.
@@ -29,7 +29,7 @@ const WAVE_STEP: Record<string, number> = {
 };
 const HANDMADE_STEP = 5;
 
-type Surface = "cream" | "orange";
+type Surface = "cream" | "orange" | "brown";
 
 export default function AnimatedCoziLogo({
   surface = "cream",

@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "./CartContext";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createClient } from "@/lib/supabase/client";
-import CoziLogo from "./CoziLogo";
 import AnimatedCoziLogo from "@/components/brand/AnimatedCoziLogo";
 import Button from "@/components/ui/Button";
 import CurrencyPicker from "./CurrencyPicker";
@@ -427,7 +426,7 @@ export default function Navbar({ categories }: { categories: { id: string; name:
         {/* Drawer header */}
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-line pl-6 pr-4">
           <Link href="/" onClick={() => setMenuOpen(false)} aria-label="Cozi Handmade home" className="focus-ring rounded-small">
-            <CoziLogo className="h-9 w-auto" />
+            <AnimatedCoziLogo variant="mark" surface="cream" className="h-12 w-auto" />
           </Link>
           <button
             onClick={() => setMenuOpen(false)}
