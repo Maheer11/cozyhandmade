@@ -1,13 +1,15 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useCart } from "./CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { Product } from "@/lib/products";
+import Badge from "@/components/ui/Badge";
+import UiProductCard from "@/components/ui/ProductCard";
 
+/**
+ * Product listing / related-products card. The whole card is the link to the
+ * product page; there is no add-to-bag button on it (docs/DESIGN.md).
+ */
 export default function ProductCard({ product }: { product: Product }) {
-  const { addItem, openCart } = useCart();
   const { formatAmount, isLoading } = useCurrency();
 
   // The price shown is the one the product page opens on: the first size's
@@ -19,92 +21,31 @@ export default function ProductCard({ product }: { product: Product }) {
       ? product.variantPrice[defaultSize]
       : product.price;
 
-  // A piece with a size or colour to choose can't be added from the card: the
-  // cart line would have no selection, and its price and stock depend on it.
-  // Its button goes to the product page instead.
-  const hasChoices = product.sizes.length > 0 || product.colors.length > 0;
-
-  const handleAdd = (e: React.MouseEvent) => {
-    if (hasChoices) return; // let the link open the product page
-    e.preventDefault();
-    addItem({ id: product.id, name: product.name, price: product.price, image: product.image, source: "product", maxQuantity: product.stockQuantity, shippingWeightGrams: product.shippingWeightGrams });
-    openCart();
-  };
+  const badges = (
+    <>
+      {!product.inStock && <Badge variant="soldOut">Sold out</Badge>}
+      {product.originalPrice && product.inStock && (
+        <span className="inline-flex items-center rounded-pill bg-burgundy px-3 py-1 font-body text-xs font-semibold leading-4 text-white">
+          Sale
+        </span>
+      )}
+      {product.isHandmade && product.inStock && <Badge variant="handmade">✦ Handmade</Badge>}
+    </>
+  );
 
   return (
-    <Link
+    <UiProductCard
       href={`/products/${product.id}`}
-      className="group flex flex-col bg-white rounded-sm overflow-hidden
-                 border border-cream-darker shadow-sm
-                 hover:-translate-y-1.5 hover:shadow-xl
-                 active:translate-y-0 active:shadow-sm
-                 transition-all duration-300 ease-out
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold
-                 animate-fade-up"
-      style={{ touchAction: "manipulation" }}
-    >
-      {/* Image */}
-      <div className="relative overflow-hidden bg-cream-dark aspect-square">
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          loading="lazy"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-        />
-
-        <div className="absolute top-2 left-2 right-2 flex flex-col items-start gap-1">
-          {product.originalPrice && (
-            <span className="bg-gold text-cream text-[10px] font-semibold px-2 py-0.5 rounded-full">
-              Sale
-            </span>
-          )}
-
-          {product.isHandmade && (
-            <span className="bg-cream/90 text-brown text-[10px] font-medium
-                             px-2 py-0.5 rounded-full backdrop-blur-sm border border-taupe/20">
-              ✦ Handmade
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Info */}
-      <div className="flex flex-col flex-1 p-3 sm:p-4">
-        <h3 className="font-ios font-600 text-deep-brown text-xs sm:text-sm leading-snug mb-2 line-clamp-2">
-          {product.name}
-        </h3>
-
-        <div className="flex items-baseline gap-1.5 mt-auto mb-3">
-          {isLoading ? (
-            <span className="h-5 w-20 bg-taupe/20 rounded animate-pulse" />
-          ) : (
-            <>
-              <span className="font-ios text-sm font-600 text-brown">{formatAmount(displayPrice)}</span>
-              {product.originalPrice && displayPrice === product.price && (
-                <span className="text-xs text-taupe-dark line-through">{formatAmount(product.originalPrice)}</span>
-              )}
-            </>
-          )}
-        </div>
-
-        <button
-          onClick={handleAdd}
-          disabled={!product.inStock}
-          className="w-full h-11 rounded-sm text-xs sm:text-sm font-semibold tracking-wide
-                     bg-cream-dark text-brown border border-taupe/30
-                     hover:bg-gold hover:text-cream hover:border-gold
-                     hover:-translate-y-px hover:shadow-md hover:shadow-gold/20
-                     active:bg-gold active:text-cream active:border-gold active:translate-y-0
-                     disabled:opacity-40 disabled:cursor-not-allowed
-                     transition-all duration-200 ease-out
-                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-          style={{ touchAction: "manipulation" }}
-        >
-          {!product.inStock ? "Out of Stock" : hasChoices ? "Choose options" : "Add to Cart"}
-        </button>
-      </div>
-    </Link>
+      name={product.name}
+      image={product.image}
+      soldOut={!product.inStock}
+      badges={badges}
+      price={isLoading ? <span className="inline-block h-5 w-20 animate-pulse rounded-small bg-line" /> : formatAmount(displayPrice)}
+      wasPrice={
+        !isLoading && product.originalPrice && displayPrice === product.price
+          ? formatAmount(product.originalPrice)
+          : undefined
+      }
+    />
   );
 }

@@ -83,18 +83,18 @@ export default function FaqPage() {
       />
 
       {/* Header */}
-      <div className="bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
+      <div className="bg-cream border-b border-line px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
         {/* max-w-xl is a phone measure; on a desktop screen it left the header
             as a narrow ribbon adrift in the middle of the page. The list below
             uses the same width so the two stay in one column. */}
         <div className="max-w-xl lg:max-w-3xl mx-auto">
-          <p className="text-gold text-[11px] uppercase tracking-[0.28em] font-body font-semibold mb-2">
+          <p className="type-eyebrow text-burgundy mb-2">
             ✦ Help
           </p>
-          <h1 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown mb-3">
+          <h1 className="type-h1 text-brown mb-3">
             Frequently Asked Questions
           </h1>
-          <p className="text-deep-brown/70 text-sm sm:text-base leading-relaxed max-w-xl">
+          <p className="type-body max-w-xl text-stone">
             Delivery, care, custom orders, and payment: answered. Can&apos;t
             find what you need? Reach us any time on WhatsApp.
           </p>
@@ -106,38 +106,32 @@ export default function FaqPage() {
       <div className="max-w-xl lg:max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 pb-28 lg:pb-16">
         <div>
           {faqs.map(({ q, a }) => (
-            <details key={q} className="group border-b border-taupe/20 first:border-t">
+            <details key={q} className="group border-b border-line first:border-t">
               {/* Hover feedback matters here in a way it doesn't on a phone:
                   with a pointer, a row that doesn't answer the cursor reads as
                   static text rather than something that opens. */}
               <summary
-                className="flex items-center justify-between gap-3 py-3.5 lg:py-5 text-left cursor-pointer
+                className="focus-ring flex min-h-14 items-center justify-between gap-3 py-3 text-left cursor-pointer
                            list-none [&::-webkit-details-marker]:hidden group/row"
               >
-                <span className="font-ios font-700 text-xs lg:text-sm uppercase tracking-widest text-deep-brown
-                                 transition-colors duration-150 group-hover/row:text-gold">
+                <span className="font-heading text-lg font-medium leading-6 text-brown
+                                 transition-colors duration-150 group-hover/row:text-burgundy">
                   {q}
                 </span>
-                <span
-                  className="w-6 h-6 flex items-center justify-center border border-taupe/40 text-gold
-                             text-base font-medium leading-none shrink-0
-                             transition-all duration-300 group-open:rotate-180
-                             group-hover/row:border-gold group-hover/row:bg-gold/10"
-                >
+                <span aria-hidden="true" className="shrink-0 font-body text-xl text-burgundy">
                   <span className="group-open:hidden">+</span>
                   <span className="hidden group-open:inline">−</span>
                 </span>
               </summary>
-              <p className="pb-4 lg:pb-6 pr-9 text-sm sm:text-base text-brown/75 leading-relaxed">{a}</p>
+              <p className="type-body pb-4 pr-9 text-stone">{a}</p>
             </details>
           ))}
         </div>
 
         <Link
           href="/custom-order"
-          className="group flex items-center justify-center gap-1.5 text-sm text-brown/70
-                     hover:text-gold active:text-gold
-                     transition-colors duration-150 pt-8 lg:pt-12"
+          className="focus-ring group flex min-h-11 items-center justify-center gap-1.5 rounded-pill pt-8 type-body font-semibold text-burgundy
+                     transition-colors duration-150 hover:text-burgundy-dark lg:pt-12"
         >
           Have something specific in mind? Create a custom order
           <svg className="w-4 h-4 transition-transform duration-150 group-hover:translate-x-1"

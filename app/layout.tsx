@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Jost } from "next/font/google";
+import { Fredoka, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
 import { CurrencyProvider } from "@/lib/currency/CurrencyContext";
@@ -10,20 +10,23 @@ import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 import MobileFooterCredit from "@/components/MobileFooterCredit";
+import FooterGate from "@/components/FooterGate";
+import TrustBar from "@/components/home/TrustBar";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import CartDrawer from "@/components/CartDrawer";
 import KeyboardAware from "@/components/KeyboardAware";
 
-const cormorant = Cormorant_Garamond({
-  variable: "--font-playfair", // keep same CSS var name so @theme still works
+// Headings: Fredoka (variable, weights 300-700). Body/UI/prices: DM Sans
+// (variable). Both self-hosted by next/font; the CSS variables feed
+// --font-heading / --font-body in globals.css, which carry the fallbacks.
+const fredoka = Fredoka({
+  variable: "--font-fredoka",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
   display: "swap",
 });
 
-const jost = Jost({
-  variable: "--font-inter", // keep same CSS var name
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
   display: "swap",
 });
@@ -56,12 +59,13 @@ export default async function RootLayout({
   const categories = await getStockedCategories(supabase);
 
   return (
-    <html lang="en" className={`${cormorant.variable} ${jost.variable}`}>
-      <body className="min-h-screen flex flex-col bg-cream text-deep-brown antialiased">
+    <html lang="en" className={`${fredoka.variable} ${dmSans.variable}`}>
+      <body className="min-h-screen flex flex-col bg-cream text-brown antialiased">
         <AuthProvider>
         <CurrencyProvider>
         <CartProvider>
-          {/* Top bar — always visible */}
+          {/* Home-only dark trust strip, then the sticky header */}
+          <TrustBar />
           <Navbar categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
 
           {/* Page content. No bottom-nav padding here: MobileFooterCredit below
@@ -69,10 +73,10 @@ export default async function RootLayout({
               left a band of dead cream at the end of every page. */}
           <main className="flex-1">{children}</main>
 
-          {/* Desktop footer — hidden on mobile (bottom nav handles navigation) */}
-          <div className="hidden lg:block">
+          {/* Footer: compact on phones, full from lg. Not on phone checkout. */}
+          <FooterGate>
             <Footer />
-          </div>
+          </FooterGate>
 
           {/* Bottom-of-page clearance and, on the homepage, the build credit.
               See MobileFooterCredit for why it varies by route. */}

@@ -1,59 +1,86 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── White · Gold · Purple · Violet Palette ── */
-
-  /* White / milk / warm-brown bases */
-  --color-cream:        #FFFFFF;   /* pure white — main background      */
-  --color-cream-dark:   #FBF0E4;   /* warm milk — section alternates    */
-  --color-cream-darker: #F2E2CC;   /* light warm brown — deeper sections */
-
-  /* Burgundy family — darkest → lightest */
-  --color-deep-brown:   #1A0810;   /* near-black wine — headings, footer  */
-  --color-brown:        #4A1020;   /* deep burgundy — body text, borders  */
-  --color-brown-light:  #7A2030;   /* rich burgundy — mid tones           */
-  --color-taupe-dark:   #9B3A50;   /* medium burgundy — subtle text       */
-  --color-taupe:        #D49AA8;   /* soft blush — dividers, icons        */
-
-  /* Gold — primary accent */
-  --color-terracotta:       #C9A227;   /* rich gold — buttons, badges    */
-  --color-terracotta-light: #FEF3C7;   /* light gold — backgrounds       */
-  --color-terracotta-dark:  #9A7D0A;   /* deep gold — active states      */
-
-  /* Burgundy — hover / highlight accent */
-  --color-gold:       #8B2035;   /* vivid burgundy — hover, underlines   */
-  --color-gold-light: #C06878;   /* light mauve-burgundy                 */
-  --color-gold-dark:  #6B1828;   /* deep burgundy                        */
-
-  /* ── Semantic UI tokens ──
-     Named for their role, not their hue: the legacy names above drifted
-     (`gold` is burgundy, `cream` is white), so new work should reach for these.
-     Contrast on ui-bg: text 17.2:1, muted 6.4:1, accent 7.9:1; white on
-     accent 8.9:1. The gold (#C9A227) is deliberately absent at 2.2:1. */
-  --color-ui-bg:           #FBF0E4;   /* warm cream page ground            */
-  --color-ui-surface:      #FFFFFF;   /* cards, image wells                */
-  --color-ui-text:         #1A0810;   /* headings, names, prices           */
-  --color-ui-muted:        #6B5058;   /* supporting copy                   */
-  --color-ui-accent:       #8B2035;   /* maroon — primary action, active   */
-  --color-ui-accent-hover: #6B1828;
-  --color-ui-border:       #EAD9C6;   /* hairlines (decorative, non-text)  */
+  /* ── Cozi design system tokens — see docs/DESIGN.md ──
+     These are the source of truth. Utilities: bg-cream, text-brown,
+     bg-burgundy, bg-orange, bg-milk, bg-peach, text-stone, border-line … */
+  --color-cream:         #FBF0E4;  /* page background, header, drawer      */
+  --color-brown:         #4D1808;  /* primary text, footer, dark blocks    */
+  --color-burgundy:      #8B2035;  /* PRIMARY BUTTONS, active tab, links   */
+  --color-burgundy-dark: #6E1829;  /* button hover / pressed               */
+  --color-orange:        #A74508;  /* hero block, low-stock badge. NEVER a button */
+  --color-rust:          #88290B;  /* logo colourway only                  */
+  --color-milk:          #F5F4F0;  /* logo off-white; text/buttons on orange */
+  --color-peach:         #F7D9C0;  /* soft cards, trust tiles, gift wrap   */
+  --color-stone:         #7A6A62;  /* secondary text                       */
+  --color-line:          #E2DCD3;  /* borders, dividers                    */
+  --color-success:       #2F6B3A;
+  --color-error:         #B3261E;
+  /* white (#FFFFFF) is Tailwind's built-in bg-white / text-white. */
 
   /* 1376px: the first width where page-container's side gutter reaches 96px
      (1280px content + 48px padding + 48px margin), wide enough for the full
-     floating chat bubble. See FloatingWhatsApp. */
+     floating chat bubble. See FloatingWhatsApp. Standard Tailwind breakpoints
+     (sm 640, md 768, lg 1024, xl 1280) already match the design system. */
   --breakpoint-wide: 86rem;
 
-  --radius-card:   0.5rem;  /* 8px — every product card and image well */
-  --radius-button: 0.25rem; /* 4px — every button                      */
+  /* Radius: 8 small · 16 inputs/tiles · 24 cards/images · 32 feature blocks ·
+     pill buttons/chips/badges. Named, so Tailwind's own rounded-sm/md/lg/xl
+     (used all over the codebase) are left untouched. */
+  --radius-small:  0.5rem;
+  --radius-tile:   1rem;
+  --radius-card:   1.5rem;
+  --radius-block:  2rem;
+  --radius-button: 9999px;
+  --radius-pill:   9999px;
 
-  --font-heading: var(--font-playfair), "Playfair Display", Georgia, serif;
-  --font-body: var(--font-inter), Inter, system-ui, sans-serif;
-  /* San Francisco on Apple devices, falls back to the closest system font elsewhere */
+  /* Warm, soft shadow only — never grey or hard. */
+  --shadow-soft: 0 4px 16px rgba(77, 24, 8, 0.08);
+
+  /* Fonts: Fredoka headings, DM Sans everything else. */
+  --font-heading: var(--font-fredoka), "Fredoka", ui-rounded, "Nunito", system-ui, sans-serif;
+  --font-body: var(--font-dm-sans), "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* San Francisco on Apple devices; kept for checkout UI until Phase 5. */
   --font-ios: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  /* Native Apple system stack for checkout UI/body text — reads native on
-     iOS/macOS. Cormorant Garamond (--font-heading) stays for display
-     headings; this is deliberately a separate token, not a replacement. */
   --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ── Type scale (mobile → desktop at lg) ──
+   Display 40/44→64/68 · H1 32/38→44/50 · H2 24/30→32/38 · H3 18/24 ·
+   Body 16/24 · Small 14/20 · Caption 12/16 · Eyebrow 12/16 caps, 0.3em.
+   Headings are Fredoka SemiBold; everything else DM Sans. */
+@utility type-display {
+  font-family: var(--font-heading); font-weight: 600;
+  font-size: 2.5rem; line-height: 2.75rem;
+  @variant lg { font-size: 4rem; line-height: 4.25rem; }
+}
+@utility type-h1 {
+  font-family: var(--font-heading); font-weight: 600;
+  font-size: 2rem; line-height: 2.375rem;
+  @variant lg { font-size: 2.75rem; line-height: 3.125rem; }
+}
+@utility type-h2 {
+  font-family: var(--font-heading); font-weight: 600;
+  font-size: 1.5rem; line-height: 1.875rem;
+  @variant lg { font-size: 2rem; line-height: 2.375rem; }
+}
+@utility type-h3 {
+  font-family: var(--font-heading); font-weight: 500;
+  font-size: 1.125rem; line-height: 1.5rem;
+}
+@utility type-body {
+  font-family: var(--font-body); font-size: 1rem; line-height: 1.5rem;
+}
+@utility type-small {
+  font-family: var(--font-body); font-size: 0.875rem; line-height: 1.25rem;
+}
+@utility type-caption {
+  font-family: var(--font-body); font-size: 0.75rem; line-height: 1rem;
+}
+@utility type-eyebrow {
+  font-family: var(--font-body); font-weight: 600;
+  font-size: 0.75rem; line-height: 1rem;
+  text-transform: uppercase; letter-spacing: 0.3em;
 }
 
 /* One content width for header, hero and grid, so their left edges line up:
@@ -72,7 +99,7 @@
    cream, white and photos alike; mouse clicks don't trigger it. */
 @utility focus-ring {
   &:focus-visible {
-    outline: 2px solid var(--color-ui-accent);
+    outline: 2px solid var(--color-burgundy);
     outline-offset: 3px;
   }
 }
@@ -87,16 +114,16 @@ html {
      `lg`, the footer's deep brown above it. (body carries
      overscroll-behavior-y: none, which stops pull-to-refresh but does not stop
      the bounce itself on iOS.) */
-  background-color: var(--color-cream-darker);
+  background-color: var(--color-peach);
 }
 @media (min-width: 1024px) {
-  html { background-color: var(--color-deep-brown); }
+  html { background-color: var(--color-brown); }
 }
 
 body {
-  background-color: #FFFFFF;
-  color: #1A0810;
-  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  background-color: var(--color-cream);
+  color: var(--color-brown);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Prevent pull-to-refresh on mobile overscroll */
@@ -123,6 +150,12 @@ html[data-keyboard-open] [data-bottom-nav] {
 html[data-keyboard-open] body {
   padding-bottom: var(--keyboard-inset, 0px);
 }
+
+/* Fredoka has no italic, and a synthesised slant on a rounded face looks
+   broken. Headings that were set in italic stay upright. */
+[class~="font-heading"][class~="italic"],
+[class~="font-heading"] i,
+[class~="font-heading"] em { font-style: normal; }
 
 /* Remove iOS tap highlight on all interactive elements */
 * {
@@ -156,9 +189,9 @@ html[data-keyboard-open] body {
 
 /* ─── Scrollbar ───────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #FBF0E4; }
-::-webkit-scrollbar-thumb { background: #D49AA8; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #9B3A50; }
+::-webkit-scrollbar-track { background: var(--color-cream); }
+::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-stone); }
 
 /* ─── Touch / mobile utilities ───────────────────── */
 .touch-action-pan-y { touch-action: pan-y; }
@@ -379,7 +412,7 @@ html[data-keyboard-open] body {
    through as the base tone — only the travelling highlight
    is fixed to gold. */
 .credit-link {
-  --sheen: var(--color-terracotta);
+  --sheen: var(--color-burgundy);
   position: relative;
   display: inline-block;
   background-image: linear-gradient(
@@ -459,13 +492,13 @@ html[data-keyboard-open] body {
    background *colour* too, so a fill on the gradient element would only
    paint behind the glyphs. */
 .credit-chip {
-  border: 1px solid color-mix(in srgb, var(--color-terracotta) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-burgundy) 30%, transparent);
   transition: border-color 0.3s ease, background-color 0.3s ease;
 }
 .credit-chip:hover,
 .credit-chip:focus-visible {
-  border-color: color-mix(in srgb, var(--color-terracotta) 70%, transparent);
-  background-color: color-mix(in srgb, var(--color-terracotta) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-burgundy) 70%, transparent);
+  background-color: color-mix(in srgb, var(--color-burgundy) 10%, transparent);
 }
 /* Hovering anywhere on the chip — including its padding — drives the sheen
    on the text inside it. */

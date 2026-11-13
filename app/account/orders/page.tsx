@@ -38,7 +38,7 @@ const STATUS_STYLES: Record<string, string> = {
   processing: "bg-purple-50 text-purple-700 border-purple-100",
   shipped:    "bg-sky-50 text-sky-700 border-sky-100",
   delivered:  "bg-emerald-50 text-emerald-700 border-emerald-100",
-  cancelled:  "bg-red-50 text-red-700 border-red-100",
+  cancelled:  "bg-red-50 text-error border-red-100",
 };
 
 export default async function OrdersPage() {
@@ -58,26 +58,26 @@ export default async function OrdersPage() {
       <div className="max-w-2xl mx-auto">
 
         <div className="flex items-center gap-3 mb-6">
-          <Link href="/account" className="text-taupe-dark hover:text-brown transition-colors">
+          <Link href="/account" className="text-stone hover:text-brown transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
           <div>
-            <p className="text-[10px] uppercase tracking-[0.25em] text-taupe-dark font-body">My Account</p>
-            <h1 className="font-heading italic text-3xl font-400 text-deep-brown">My Orders</h1>
+            <p className="text-xs uppercase tracking-[0.25em] text-stone font-body">My Account</p>
+            <h1 className="type-h1 text-brown">My Orders</h1>
           </div>
         </div>
 
         {!orders || orders.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-cream-darker shadow-sm p-10 text-center">
-            <svg className="w-12 h-12 text-taupe/40 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+          <div className="bg-white rounded-card border border-peach shadow-sm p-10 text-center">
+            <svg className="w-12 h-12 text-stone/40 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z" />
             </svg>
-            <p className="font-heading text-xl italic text-deep-brown mb-2">No orders yet</p>
-            <p className="text-sm text-taupe-dark font-body mb-5">Your purchases will appear here after checkout.</p>
+            <p className="font-heading text-xl italic text-brown mb-2">No orders yet</p>
+            <p className="text-sm text-stone font-body mb-5">Your purchases will appear here after checkout.</p>
             <Link href="/products"
-              className="inline-flex items-center px-7 h-11 rounded-none text-cream font-semibold
+              className="inline-flex items-center px-7 h-11 rounded-button text-white font-semibold
                          text-sm tracking-wide font-body"
               style={{ backgroundColor: "#8B2035" }}>
               Shop Now
@@ -87,24 +87,24 @@ export default async function OrdersPage() {
           <div className="space-y-4">
             {orders.map((order) => (
               <div key={order.id}
-                className="bg-white rounded-2xl border border-cream-darker shadow-sm overflow-hidden">
+                className="bg-white rounded-card border border-peach shadow-sm overflow-hidden">
 
                 {/* Order header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-taupe/10">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-line/10">
                   <div>
-                    <p className="text-xs text-taupe-dark font-body">
+                    <p className="text-xs text-stone font-body">
                       {new Date(order.created_at).toLocaleDateString("en-GB", {
                         day: "numeric", month: "long", year: "numeric",
                       })}
                     </p>
-                    <p className="text-xs font-mono text-brown/60 mt-0.5">{order.id.slice(0, 8).toUpperCase()}</p>
+                    <p className="text-xs font-mono text-stone mt-0.5">{order.id.slice(0, 8).toUpperCase()}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1
+                    <span className={`text-xs uppercase tracking-wider font-semibold px-2.5 py-1
                                       rounded-full border font-body ${STATUS_STYLES[order.status] ?? STATUS_STYLES.pending}`}>
                       {order.status}
                     </span>
-                    <p className="text-sm font-bold text-deep-brown">
+                    <p className="text-sm font-bold text-brown">
                       €{order.total_amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
@@ -112,7 +112,7 @@ export default async function OrdersPage() {
 
                 {/* Lifecycle status — estimated ship-by / shipped / delivered */}
                 {lifecycleMessage(order) && (
-                  <div className="px-5 py-3 bg-cream/60 border-b border-taupe/10">
+                  <div className="px-5 py-3 bg-cream/60 border-b border-line/10">
                     <p className="text-xs text-brown/80 font-body">{lifecycleMessage(order)}</p>
                   </div>
                 )}
@@ -121,7 +121,7 @@ export default async function OrdersPage() {
                 <div className="px-5 py-4 space-y-3">
                   {order.order_items?.map((item, i) => (
                     <div key={i} className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-cream-darker shrink-0 overflow-hidden">
+                      <div className="w-10 h-10 rounded-lg bg-peach shrink-0 overflow-hidden">
                         {item.product_image && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={item.product_image} alt={item.product_name}
@@ -129,10 +129,10 @@ export default async function OrdersPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-deep-brown truncate">{item.product_name}</p>
-                        <p className="text-xs text-taupe-dark font-body">Qty {item.quantity} × €{item.unit_price.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="text-sm font-medium text-brown truncate">{item.product_name}</p>
+                        <p className="text-xs text-stone font-body">Qty {item.quantity} × €{item.unit_price.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       </div>
-                      <p className="text-sm font-semibold text-deep-brown shrink-0">
+                      <p className="text-sm font-semibold text-brown shrink-0">
                         €{item.subtotal.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
@@ -140,13 +140,13 @@ export default async function OrdersPage() {
                 </div>
 
                 {/* Invoice download */}
-                <div className="px-5 py-3 border-t border-taupe/10 flex justify-end">
+                <div className="px-5 py-3 border-t border-line/10 flex justify-end">
                   <a
                     href={`/api/orders/${order.id}/invoice`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs font-semibold font-body
-                               text-brown/70 hover:text-deep-brown transition-colors group"
+                               text-stone hover:text-brown transition-colors group"
                   >
                     <svg className="w-3.5 h-3.5 shrink-0 group-hover:-translate-y-0.5 transition-transform"
                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

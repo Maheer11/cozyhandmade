@@ -125,10 +125,10 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
           e.preventDefault();
           if (query.trim()) router.push(shopHref);
         }}
-        className="flex h-12 items-center gap-3 rounded-full border border-ui-border bg-ui-surface px-4
-                   shadow-[0_6px_18px_-12px_rgba(26,8,16,0.4)] focus-within:border-ui-accent/60"
+        className="flex h-12 items-center gap-3 rounded-full border border-line bg-white px-4
+                   shadow-[0_6px_18px_-12px_rgba(26,8,16,0.4)] focus-within:border-burgundy/60"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 shrink-0 text-ui-accent"
+        <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 shrink-0 text-burgundy"
              fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
           <circle cx="11" cy="11" r="6.5" />
           <path d="M20 20l-4.2-4.2" />
@@ -146,7 +146,7 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
           onBlur={() => setFocused(false)}
           placeholder="Search blankets, bags, baby gifts…"
           // 16px: iOS zooms the page when focusing any smaller input.
-          className="min-w-0 flex-1 bg-transparent font-body text-base text-ui-text placeholder:text-ui-muted
+          className="min-w-0 flex-1 bg-transparent font-body text-base text-brown placeholder:text-stone
                      focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
@@ -154,8 +154,8 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
             type="button"
             onClick={() => setQuery("")}
             aria-label="Clear search"
-            className="focus-ring -mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ui-muted
-                       active:bg-ui-border/60"
+            className="focus-ring -mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone
+                       active:bg-line/60"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor"
                  strokeWidth={2} strokeLinecap="round">
@@ -168,50 +168,50 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
       {q && (
         <div aria-live="polite"
              // overscroll-contain: scrolling the list doesn't scroll the page behind it.
-             className="mt-2 overflow-y-auto overscroll-contain rounded-2xl border border-ui-border bg-ui-surface
+             className="mt-2 overflow-y-auto overscroll-contain rounded-2xl border border-line bg-white
                         shadow-[0_14px_30px_-18px_rgba(26,8,16,0.45)]"
              style={panelMaxPx ? { maxHeight: panelMaxPx } : undefined}>
           {matches.length === 0 ? (
-            <div className="px-4 py-4 font-body text-sm text-ui-muted">
+            <div className="px-4 py-4 font-body text-sm text-stone">
               <p>No pieces match &ldquo;{deferredQuery.trim()}&rdquo;.</p>
               <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                <Link href="/products" className="focus-ring rounded-button font-medium text-ui-accent">
+                <Link href="/products" className="focus-ring rounded-button font-medium text-burgundy">
                   Browse all pieces
                 </Link>
                 <a href={whatsappLink(`Hi! I'm looking for "${deferredQuery.trim()}". Do you make this?`)}
                    target="_blank" rel="noopener noreferrer"
-                   className="focus-ring rounded-button font-medium text-ui-accent">
+                   className="focus-ring rounded-button font-medium text-burgundy">
                   Ask us on WhatsApp
                 </a>
               </p>
             </div>
           ) : (
             <>
-              <ul className="divide-y divide-ui-border">
+              <ul className="divide-y divide-line">
                 {matches.slice(0, MAX_RESULTS).map((item) => (
                   <li key={item.id}>
                     <Link
                       href={`/products/${item.id}`}
                       className="focus-ring flex items-center gap-3 px-3 py-2.5 transition-colors duration-100
-                                 active:bg-ui-bg"
+                                 active:bg-cream"
                       style={{ touchAction: "manipulation" }}
                     >
-                      <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-cream-dark">
+                      <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-peach">
                         <Image src={item.image} alt="" fill sizes="48px"
                                className={`object-cover ${item.soldOut ? "opacity-60" : ""}`} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-body text-sm font-medium text-ui-text">{item.name}</span>
-                        <span className="block truncate font-body text-xs text-ui-muted">{item.categoryName}</span>
+                        <span className="block truncate font-body text-sm font-medium text-brown">{item.name}</span>
+                        <span className="block truncate font-body text-xs text-stone">{item.categoryName}</span>
                       </span>
                       <span className="shrink-0 text-right font-body text-sm">
                         {item.soldOut ? (
-                          <span className="text-xs font-medium text-ui-muted">Sold out</span>
+                          <span className="text-xs font-medium text-stone">Sold out</span>
                         ) : (
                           <>
-                            <span className="block font-semibold text-ui-text">{formatAmount(item.price)}</span>
+                            <span className="block font-semibold text-brown">{formatAmount(item.price)}</span>
                             {item.wasPrice && (
-                              <span className="block text-xs text-ui-muted line-through">
+                              <span className="block text-xs text-stone line-through">
                                 <span className="sr-only">Was </span>{formatAmount(item.wasPrice)}
                               </span>
                             )}
@@ -224,8 +224,8 @@ export default function MobileProductSearch({ items }: { items: SearchItem[] }) 
               </ul>
               {matches.length > MAX_RESULTS && (
                 <Link href={shopHref}
-                      className="focus-ring flex h-11 items-center justify-center border-t border-ui-border
-                                 font-body text-sm font-semibold text-ui-accent active:bg-ui-bg">
+                      className="focus-ring flex h-11 items-center justify-center border-t border-line
+                                 font-body text-sm font-semibold text-burgundy active:bg-cream">
                   See all {matches.length} results →
                 </Link>
               )}

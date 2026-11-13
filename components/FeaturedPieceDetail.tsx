@@ -1,12 +1,17 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "./CartContext";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { FeaturedPieceCardData } from "./FeaturedPiecesSection";
 import { parseDescription } from "@/lib/parse-featured-piece-description";
+import Accordion, { type AccordionItem } from "@/components/ui/Accordion";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import QuantityStepper from "@/components/ui/QuantityStepper";
+import SizeSelector from "@/components/ui/SizeSelector";
 import {
   featuredPieceMaxQuantity,
   isFeaturedPieceSoldOut,
@@ -36,17 +41,22 @@ export default function FeaturedPieceDetail({ item }: { item: FeaturedPieceDetai
   const [selectedColor, setSelectedColor] = useState<string | null>(item.colors[0] ?? null);
   const [selectedSize, setSelectedSize]   = useState<string | null>(item.sizes[0] ?? null);
   const [descExpanded, setDescExpanded]   = useState(false);
-  const [openSections, setOpenSections]   = useState<Set<number>>(new Set());
+  const galleryRef = useRef<HTMLDivElement>(null);
   const descSections = useMemo(() => parseDescription(item.description ?? ""), [item.description]);
   const introSection = descSections.find((s) => s.heading === null) ?? null;
   const namedSections = useMemo(() => descSections.filter((s) => s.heading !== null), [descSections]);
 
-  const toggleSection = (i: number) => {
-    setOpenSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i); else next.add(i);
-      return next;
-    });
+  // Swipeable gallery: native scroll-snap swipes; these keep thumbnails and dots in step.
+  const onGalleryScroll = () => {
+    const el = galleryRef.current;
+    if (!el || el.clientWidth === 0) return;
+    const i = Math.round(el.scrollLeft / el.clientWidth);
+    if (i !== activeImg && i >= 0 && i < images.length) setActiveImg(i);
+  };
+  const goToImage = (i: number) => {
+    setActiveImg(i);
+    const el = galleryRef.current;
+    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
   };
 
   const images = [item.product_image, ...(item.lifestyle_image ? [item.lifestyle_image] : [])];
@@ -86,67 +96,121 @@ export default function FeaturedPieceDetail({ item }: { item: FeaturedPieceDetai
     openCart();
   };
 
+  const accordionItems: AccordionItem[] = namedSections.map((section, i) => ({
+    id: `section-${i}`,
+    title: section.heading ?? "",
+    content: (
+      <>
+        {section.type === "bullets" && (
+          <ul className="space-y-2">
+            {section.lines.map((line, j) => (
+              <li key={j} className="flex items-start gap-2 text-stone">
+                <span aria-hidden="true" className="mt-0.5 shrink-0 text-burgundy">✦</span>
+                {line}
+              </li>
+            ))}
+          </ul>
+        )}
+        {section.type === "specs" && (
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 type-small">
+            {section.lines.map((line, j) => {
+              const [label, ...rest] = line.split(":");
+              return (
+                <Fragment key={j}>
+                  <dt className="whitespace-nowrap font-medium text-stone">{label.trim()}</dt>
+                  <dd className="text-brown">{rest.join(":").trim()}</dd>
+                </Fragment>
+              );
+            })}
+          </dl>
+        )}
+        {section.type === "paragraph" && <p className="text-stone">{section.lines.join(" ")}</p>}
+      </>
+    ),
+  }));
+
+  const addLabel = added ? "Added!" : isOutOfStock ? "Out of stock" : `Add to bag · ${formatAmount(displayPrice * quantity)}`;
+  const stepper = (
+    <QuantityStepper
+      value={quantity}
+      onChange={setQuantity}
+      min={1}
+      max={Math.max(1, maxQty)}
+      label="Quantity"
+      className={isOutOfStock ? "pointer-events-none opacity-50" : undefined}
+    />
+  );
+
   return (
-    <div className="min-h-screen bg-cream">
-      {/* Breadcrumb */}
-      <nav className="bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 lg:px-8 py-3">
-        <ol className="flex items-center gap-2 text-xs text-taupe-dark max-w-7xl mx-auto">
-          <li><Link href="/" className="active:text-gold transition-colors">Home</Link></li>
-          <li className="text-taupe">/</li>
-          <li><Link href="/featured-pieces" className="active:text-gold transition-colors">Featured Pieces</Link></li>
-          <li className="text-taupe">/</li>
-          <li className="text-brown font-medium truncate">{item.name}</li>
+    <div className="min-h-screen bg-cream pb-12 lg:pb-0">
+      <nav aria-label="Breadcrumb" className="page-container py-4">
+        <ol className="flex flex-wrap items-center gap-x-2 type-small text-stone">
+          <li><Link href="/" className="focus-ring rounded-small py-2 hover:text-burgundy">Home</Link></li>
+          <li aria-hidden="true">/</li>
+          <li><Link href="/featured-pieces" className="focus-ring rounded-small py-2 hover:text-burgundy">Featured Pieces</Link></li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" className="max-w-[12rem] truncate font-medium text-brown sm:max-w-none">{item.name}</li>
         </ol>
       </nav>
 
-      <div className="max-w-7xl mx-auto lg:px-8 lg:py-12">
-        <div className="lg:grid lg:grid-cols-2 lg:gap-14 lg:items-start">
-
-          {/* Image gallery */}
+      <div className="page-container lg:pb-12">
+        <div className="lg:grid lg:grid-cols-[3fr_2fr] lg:items-start lg:gap-14">
           <div className="lg:sticky lg:top-24">
-            <div className="relative bg-cream-dark aspect-square lg:rounded-3xl overflow-hidden">
-              <Image
-                src={images[activeImg]}
-                alt={item.name}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover transition-opacity duration-300"
-                priority
-              />
-              <span
-                className={`absolute top-4 left-4 text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full
-                           ${isOutOfStock ? "bg-black text-white" : "bg-white/95 text-deep-brown shadow-sm"}`}
+            <div className="relative overflow-hidden rounded-card bg-peach/40">
+              <div
+                ref={galleryRef}
+                onScroll={onGalleryScroll}
+                className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto"
+                role="group"
+                aria-roledescription="carousel"
+                aria-label={`${item.name} photos`}
               >
-                {isOutOfStock ? "Sold Out" : "Available"}
-              </span>
-              {item.is_handmade && (
-                <span className="absolute top-4 right-16 lg:right-4 bg-cream/90 backdrop-blur-sm
-                                 text-brown text-[10px] font-medium px-2.5 py-1 rounded-full
-                                 border border-taupe/20">
-                  ✦ Handmade
-                </span>
-              )}
+                {images.map((img, i) => (
+                  <div key={img + i} className="relative aspect-[4/5] w-full shrink-0 snap-center sm:aspect-square">
+                    <Image
+                      src={img}
+                      alt={i === 0 ? item.name : `${item.name}, photo ${i + 1}`}
+                      fill
+                      sizes="(max-width: 1023px) 100vw, 60vw"
+                      className="object-cover"
+                      priority={i === 0}
+                      loading={i === 0 ? "eager" : "lazy"}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="pointer-events-none absolute left-4 top-4 flex flex-col items-start gap-1.5">
+                {item.is_handmade && <Badge variant="handmade">✦ Handmade</Badge>}
+                {isOutOfStock && <Badge variant="soldOut">Sold out</Badge>}
+              </div>
               <Link
                 href="/featured-pieces"
-                className="lg:hidden absolute top-4 right-4 w-11 h-11 bg-cream/90 backdrop-blur-sm
-                           rounded-full flex items-center justify-center shadow-md
-                           active:scale-90 transition-transform duration-100"
+                aria-label="Back to featured pieces"
+                className="focus-ring absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-pill bg-cream text-brown shadow-soft transition-transform duration-100 active:scale-90 lg:hidden"
               >
-                <svg className="w-5 h-5 text-brown" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
               </Link>
+              {images.length > 1 && (
+                <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center gap-1.5">
+                  {images.map((_, i) => (
+                    <span key={i} className={`h-2 w-2 rounded-pill ${i === activeImg ? "bg-brown" : "bg-brown/25"}`} />
+                  ))}
+                </div>
+              )}
             </div>
-
             {images.length > 1 && (
-              <div className="flex gap-2.5 px-4 lg:px-0 py-3 overflow-x-auto">
+              <div className="no-scrollbar flex gap-3 overflow-x-auto py-4">
                 {images.map((img, i) => (
                   <button
-                    key={i}
-                    onClick={() => setActiveImg(i)}
-                    className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0
-                                border-2 transition-all duration-200 active:scale-[0.95]
-                                ${activeImg === i ? "border-gold" : "border-transparent"}`}
+                    key={img + i}
+                    type="button"
+                    onClick={() => goToImage(i)}
+                    aria-label={`Show photo ${i + 1}`}
+                    aria-current={activeImg === i ? "true" : undefined}
+                    className={`focus-ring relative h-16 w-16 shrink-0 overflow-hidden rounded-tile border-2 bg-peach/40 transition-colors duration-150 sm:h-20 sm:w-20
+                                ${activeImg === i ? "border-brown" : "border-transparent"}`}
                     style={{ touchAction: "manipulation" }}
                   >
                     <Image src={img} alt="" fill sizes="80px" loading="lazy" className="object-cover" />
@@ -156,216 +220,76 @@ export default function FeaturedPieceDetail({ item }: { item: FeaturedPieceDetai
             )}
           </div>
 
-          {/* Info */}
-          <div className="px-4 sm:px-6 lg:px-0 py-5 lg:py-0 pb-16 lg:pb-0">
-            <p className="text-gold text-[11px] uppercase tracking-[0.2em] font-body font-semibold mb-2">
-              ✦ Just Landed
-            </p>
-            <h1 className="font-ios text-xl sm:text-2xl lg:text-3xl font-700 text-deep-brown mb-3 leading-tight">
-              {item.name}
-            </h1>
+          <div className="pb-4 pt-2 lg:pt-0">
+            <p className="type-eyebrow text-burgundy">✦ Just Landed</p>
+            <h1 className="type-h1 mt-2 text-brown">{item.name}</h1>
 
-            <div className="flex items-baseline gap-3 mt-1 mb-5">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               {selectedSize && item.variant_price[selectedSize] !== undefined ? (
-                // A selected size/tier has its own price — show that alone,
-                // no strikethrough (tiers are configurations, not discounts).
-                <span className="font-ios text-xl font-700 text-brown">{formatAmount(displayPrice)}</span>
+                // A selected size/tier has its own price: show it alone, no
+                // strikethrough (tiers are configurations, not discounts).
+                <span className="font-body text-2xl font-semibold leading-8 text-brown">{formatAmount(displayPrice)}</span>
               ) : item.discount_price ? (
                 <>
-                  <span className="font-ios text-xl font-700 text-brown">{formatAmount(item.discount_price)}</span>
-                  <span className="font-ios text-sm text-taupe-dark line-through">{formatAmount(item.price)}</span>
+                  <span className="font-body text-2xl font-semibold leading-8 text-brown">{formatAmount(item.discount_price)}</span>
+                  <span className="font-body text-base text-stone line-through">
+                    <span className="sr-only">Was </span>{formatAmount(item.price)}
+                  </span>
                 </>
               ) : (
-                <span className="font-ios text-xl font-700 text-brown">{formatAmount(item.price)}</span>
+                <span className="font-body text-2xl font-semibold leading-8 text-brown">{formatAmount(item.price)}</span>
               )}
-              {isOutOfStock && (
-                <span className="text-xs font-semibold text-red-500 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
-                  Out of Stock
-                </span>
-              )}
-              {!isOutOfStock && maxQty <= 3 && (
-                <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                  Only {maxQty} left
-                </span>
-              )}
+              {isOutOfStock && <Badge variant="soldOut">Out of stock</Badge>}
+              {!isOutOfStock && maxQty <= 3 && <Badge variant="lowStock">Only {maxQty} left</Badge>}
             </div>
 
-            {/* Intro — the untitled first block of the description, same
-                string always, truncated with a Read more/less toggle. */}
             {introSection && (
-              <div className="mb-2">
-                <p className={`text-brown/75 leading-relaxed text-sm sm:text-base ${descExpanded ? "" : "line-clamp-3"}`}>
+              <div className="mt-4">
+                <p className={`type-body text-stone ${descExpanded ? "" : "line-clamp-4"}`}>
                   {introSection.lines.join(" ")}
                 </p>
                 <button
                   type="button"
                   onClick={() => setDescExpanded((o) => !o)}
-                  className="text-xs font-semibold text-gold hover:text-gold-dark mt-1.5 transition-colors"
+                  aria-expanded={descExpanded}
+                  className="focus-ring mt-1 min-h-11 rounded-small type-small font-semibold text-burgundy hover:text-burgundy-dark"
                 >
                   {descExpanded ? "Read less ▴" : "Read more ▾"}
                 </button>
               </div>
             )}
 
-            {/* Each named section — "Why You'll Love It", "Product Details",
-                "Production Time", "Care Instructions", "Please Note" — is its
-                own independent dropdown, closed by default. */}
-            {namedSections.length > 0 && (
-              <div className="mb-6">
-                {namedSections.map((section, i) => {
-                  const open = openSections.has(i);
-                  return (
-                    <div key={i} className="border-b border-taupe/20 first:border-t">
-                      <button
-                        type="button"
-                        onClick={() => toggleSection(i)}
-                        className="w-full flex items-center justify-between gap-3 py-3.5 text-left"
-                      >
-                        <span className="font-ios font-700 text-xs uppercase tracking-widest text-deep-brown">
-                          {section.heading}
-                        </span>
-                        <span
-                          className="w-6 h-6 flex items-center justify-center border border-taupe/40 text-gold text-base font-medium leading-none transition-transform duration-300 shrink-0"
-                          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
-                        >
-                          {open ? "−" : "+"}
-                        </span>
-                      </button>
-
-                      <div
-                        className="grid transition-all duration-300 ease-in-out"
-                        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
-                      >
-                        <div className="overflow-hidden">
-                          <div className="pb-4">
-                            {section.type === "bullets" && (
-                              <ul className="space-y-2">
-                                {section.lines.map((line, j) => (
-                                  <li key={j} className="flex items-start gap-2 text-sm text-brown/75 leading-relaxed animate-fade-up">
-                                    <span className="text-gold mt-0.5 shrink-0">✦</span>
-                                    {line}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                            {section.type === "specs" && (
-                              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-                                {section.lines.map((line, j) => {
-                                  const [label, ...rest] = line.split(":");
-                                  return (
-                                    <Fragment key={j}>
-                                      <dt className="text-taupe-dark font-medium whitespace-nowrap">{label.trim()}</dt>
-                                      <dd className="text-deep-brown">{rest.join(":").trim()}</dd>
-                                    </Fragment>
-                                  );
-                                })}
-                              </dl>
-                            )}
-                            {section.type === "paragraph" && (
-                              <p className="text-sm sm:text-base text-brown/75 leading-relaxed">
-                                {section.lines.join(" ")}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Color selector */}
             {item.colors.length > 0 && (
-              <div className="mb-5">
-                <p className="text-xs font-semibold text-deep-brown uppercase tracking-widest mb-2.5">
-                  Colour: <span className="font-normal normal-case text-taupe-dark">{selectedColor}</span>
-                </p>
-                <div className="flex flex-wrap gap-2.5">
-                  {item.colors.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setSelectedColor(c)}
-                      className={`flex items-center gap-1.5 pl-1.5 pr-3 py-1.5 text-xs font-medium border rounded-full transition-all duration-150
-                        ${selectedColor === c ? "border-deep-brown bg-deep-brown text-cream" : "border-taupe/40 text-brown hover:border-brown bg-white"}`}
-                    >
-                      <span
-                        className="w-4 h-4 rounded-full border border-black/10 shrink-0"
-                        style={{ backgroundColor: c.toLowerCase() }}
-                      />
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <SizeSelector
+                className="mt-5"
+                legend="Colour"
+                value={selectedColor}
+                onChange={setSelectedColor}
+                options={item.colors.map((c) => ({ value: c }))}
+              />
             )}
-
-            {/* Size selector */}
             {item.sizes.length > 0 && (
-              <div className="mb-5">
-                <p className="text-xs font-semibold text-deep-brown uppercase tracking-widest mb-2.5">
-                  Size: <span className="font-normal normal-case text-taupe-dark">{selectedSize}</span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {item.sizes.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setSelectedSize(s)}
-                      className={`min-w-[40px] px-3 py-1.5 text-xs font-semibold border transition-all duration-150
-                        ${selectedSize === s ? "border-deep-brown bg-deep-brown text-cream" : "border-taupe/40 text-brown hover:border-brown bg-white"}`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <SizeSelector
+                className="mt-5"
+                legend="Size"
+                value={selectedSize}
+                onChange={setSelectedSize}
+                options={item.sizes.map((sz) => ({ value: sz }))}
+              />
             )}
 
-            {/* Mobile quantity row */}
-            <div className="lg:hidden flex items-center gap-3 mb-4">
-              <span className="text-xs font-semibold text-deep-brown uppercase tracking-widest">Qty</span>
-              <div className="flex items-center border border-taupe/40 rounded overflow-hidden">
-                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        disabled={isOutOfStock}
-                        className="w-11 h-11 flex items-center justify-center text-brown active:bg-cream-dark active:scale-90 transition-transform duration-100 disabled:opacity-30"
-                        style={{ touchAction: "manipulation" }}>−</button>
-                <span className="w-8 text-center text-sm font-semibold text-deep-brown">{quantity}</span>
-                <button onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
-                        disabled={isOutOfStock || quantity >= maxQty}
-                        className="w-11 h-11 flex items-center justify-center text-brown active:bg-cream-dark active:scale-90 transition-transform duration-100 disabled:opacity-30"
-                        style={{ touchAction: "manipulation" }}>+</button>
-              </div>
+            <div className="mt-6 hidden items-center gap-4 lg:flex">
+              {stepper}
+              <Button onClick={handleAdd} disabled={isOutOfStock} className="flex-1">
+                {addLabel}
+              </Button>
             </div>
 
-            {/* Desktop quantity + add */}
-            <div className="hidden lg:flex items-center gap-3 mb-5">
-              <div className="flex items-center border border-taupe/40 overflow-hidden">
-                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        disabled={isOutOfStock}
-                        className="w-9 h-9 flex items-center justify-center text-brown text-base hover:bg-cream-dark transition-colors disabled:opacity-30">−</button>
-                <span className="w-8 text-center text-sm font-medium text-deep-brown">{quantity}</span>
-                <button onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
-                        disabled={isOutOfStock || quantity >= maxQty}
-                        className="w-9 h-9 flex items-center justify-center text-brown text-base hover:bg-cream-dark transition-colors disabled:opacity-30">+</button>
-              </div>
-              <button
-                onClick={handleAdd}
-                disabled={isOutOfStock}
-                className={`px-8 py-2.5 text-sm font-semibold rounded-none transition-all duration-200
-                            ${added ? "bg-green-600 text-white"
-                              : isOutOfStock ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-gold text-cream hover:bg-gold-dark hover:scale-[1.02] active:scale-[0.99] shadow-sm hover:shadow-lg hover:shadow-gold/25"
-                            }`}
-              >
-                {added ? "Added!" : isOutOfStock ? "Out of Stock" : "Add to Bag"}
-              </button>
-            </div>
+            {accordionItems.length > 0 && <Accordion className="mt-6" items={accordionItems} />}
 
-            <p className="text-xs text-taupe-dark leading-relaxed mt-5">
+            <p className="type-small mt-5 text-stone">
               Not sure which size or colour is right?{" "}
-              <a href="mailto:mahhir09@gmail.com" className="text-gold font-semibold hover:text-gold-dark underline">
+              <a href="mailto:mahhir09@gmail.com" className="focus-ring rounded-small font-semibold text-burgundy underline underline-offset-2 hover:text-burgundy-dark">
                 Email us
               </a>. Every piece is made to order, and we&apos;re happy to help you choose.
             </p>
@@ -373,23 +297,17 @@ export default function FeaturedPieceDetail({ item }: { item: FeaturedPieceDetai
         </div>
       </div>
 
-      {/* Mobile sticky add-to-bag bar */}
+      {/* Mobile sticky buy bar */}
       <div
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200 px-4 pt-3"
+        className="fixed bottom-0 left-0 right-0 z-50 border-t border-line bg-cream px-4 pt-3 lg:hidden"
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
       >
-        <button
-          onClick={handleAdd}
-          disabled={isOutOfStock}
-          className={`w-full h-12 rounded font-bold text-sm tracking-widest uppercase transition-all active:scale-[0.99]
-                      ${added ? "bg-green-600 text-white"
-                        : isOutOfStock ? "bg-gray-200 text-gray-400"
-                        : "bg-deep-brown text-cream"
-                      } disabled:cursor-not-allowed`}
-          style={{ touchAction: "manipulation" }}
-        >
-          {added ? "Added to Bag!" : isOutOfStock ? "Out of Stock" : "Add to Bag"}
-        </button>
+        <div className="mx-auto flex max-w-xl items-center gap-3">
+          {stepper}
+          <Button onClick={handleAdd} disabled={isOutOfStock} className="min-w-0 flex-1 px-4">
+            {addLabel}
+          </Button>
+        </div>
       </div>
     </div>
   );

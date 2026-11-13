@@ -189,7 +189,7 @@ export default function AdminCategoryForm({ category }: { category?: DbCategory 
             )}
             {uploading && (
               <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-1">
-                <span className="text-[11px] font-medium text-gray-700">{progress}%</span>
+                <span className="text-xs font-medium text-gray-700">{progress}%</span>
               </div>
             )}
           </div>

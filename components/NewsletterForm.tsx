@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 type Status = "idle" | "sending" | "done" | "error";
 
@@ -17,7 +19,7 @@ export default function NewsletterForm() {
 
   if (status === "done") {
     return (
-      <p className="text-gold font-medium text-sm" role="status">
+      <p className="type-body font-semibold text-success" role="status">
         You&apos;re subscribed. Welcome to the community! Our next letter will reach {email}.
       </p>
     );
@@ -49,41 +51,23 @@ export default function NewsletterForm() {
 
   return (
     <div>
-      <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" onSubmit={handleSubmit}>
-        <label htmlFor="newsletter-email" className="sr-only">
-          Email address
-        </label>
-        <input
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate={false}>
+        <Input
           id="newsletter-email"
+          label="Email address"
           type="email"
-          placeholder="Your email address"
+          placeholder="you@example.com"
           required
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          aria-invalid={status === "error"}
-          aria-describedby={status === "error" ? "newsletter-error" : undefined}
-          className="flex-1 px-5 py-3.5 rounded-xl bg-cream-dark/60 text-deep-brown placeholder:text-taupe-dark/70
-                     border border-taupe/25 focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20
-                     text-sm transition-all duration-200"
+          error={status === "error" ? error : undefined}
         />
-        <button
-          type="submit"
-          disabled={status === "sending"}
-          className="px-7 py-3.5 rounded-xl bg-gold text-cream font-medium text-sm
-                     hover:bg-gold-dark hover:scale-[1.02] active:scale-[0.99]
-                     disabled:opacity-60 disabled:hover:scale-100
-                     transition-all duration-200 focus-visible:outline-none
-                     focus-visible:ring-2 focus-visible:ring-gold whitespace-nowrap"
-        >
+        <Button type="submit" fullWidth disabled={status === "sending"}>
           {status === "sending" ? "Subscribing…" : "Subscribe"}
-        </button>
+        </Button>
       </form>
-      {status === "error" && (
-        <p id="newsletter-error" role="alert" className="mt-3 text-xs text-red-700">
-          {error}
-        </p>
-      )}
-      <p className="mt-3 text-[11px] text-taupe-dark leading-relaxed">
+      <p className="type-caption mt-3 text-stone">
         By subscribing you agree to receive emails from Cozi Handmade.
       </p>
     </div>

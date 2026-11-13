@@ -52,7 +52,7 @@ export default async function AdminProductsPage() {
           </svg>
           {missingWeightCount} product{missingWeightCount === 1 ? "" : "s"} {missingWeightCount === 1 ? "has" : "have"} no shipping
           weight set. Those orders fall back to the default (high) weight and may be mispriced. Look for the
-          <span className="mx-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800">⚠ weight</span>
+          <span className="mx-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">⚠ weight</span>
           badge below.
         </div>
       )}
@@ -94,7 +94,7 @@ export default async function AdminProductsPage() {
                           {product.shipping_weight_grams == null && (
                             <span
                               title="No shipping weight set. This product's orders fall back to the default (high) weight and may be mispriced."
-                              className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800"
+                              className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
                             >
                               ⚠ weight
                             </span>

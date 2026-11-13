@@ -45,19 +45,19 @@ export default async function FeaturedPiecesGridPage({
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-cream">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
         <div className="text-center mb-10 lg:mb-14">
-          <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
+          <p className="type-eyebrow text-burgundy mb-3">
             ✦ Just Landed
           </p>
-          <h1 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown">
+          <h1 className="type-h1 text-brown">
             Featured Pieces
           </h1>
         </div>
 
         {!items || items.length === 0 ? (
-          <p className="text-center text-taupe-dark py-20">Nothing here yet. Check back soon.</p>
+          <p className="text-center text-stone py-20">Nothing here yet. Check back soon.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
             {items.map((item) => (
@@ -71,17 +71,17 @@ export default async function FeaturedPiecesGridPage({
             <Link
               href={`/featured-pieces?page=${page - 1}`}
               aria-disabled={page <= 1}
-              className={`px-5 py-2.5 rounded-full text-sm font-medium border border-taupe/30
-                         ${page <= 1 ? "pointer-events-none opacity-40" : "hover:bg-cream-dark transition-colors"}`}
+              className={`px-5 py-2.5 rounded-full text-sm font-medium border border-stone
+                         ${page <= 1 ? "pointer-events-none opacity-40" : "hover:bg-peach transition-colors"}`}
             >
               ← Previous
             </Link>
-            <span className="text-sm text-taupe-dark">Page {page} of {totalPages}</span>
+            <span className="text-sm text-stone">Page {page} of {totalPages}</span>
             <Link
               href={`/featured-pieces?page=${page + 1}`}
               aria-disabled={page >= totalPages}
-              className={`px-5 py-2.5 rounded-full text-sm font-medium border border-taupe/30
-                         ${page >= totalPages ? "pointer-events-none opacity-40" : "hover:bg-cream-dark transition-colors"}`}
+              className={`px-5 py-2.5 rounded-full text-sm font-medium border border-stone
+                         ${page >= totalPages ? "pointer-events-none opacity-40" : "hover:bg-peach transition-colors"}`}
             >
               Next →
             </Link>

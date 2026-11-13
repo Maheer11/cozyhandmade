@@ -64,17 +64,17 @@ function FilterOption({
     <button
       onClick={onToggle}
       className={`flex items-center justify-between w-full px-4 py-3.5
-                  rounded-xl text-sm font-medium border transition-colors duration-150
+                  rounded-tile text-sm font-medium border transition-colors duration-150
                   active:scale-[0.98]
                   ${active
-                    ? "bg-gold text-cream border-gold"
-                    : "bg-cream text-brown border-taupe/30 active:bg-cream-dark"
+                    ? "bg-burgundy text-white border-burgundy"
+                    : "bg-cream text-brown border-stone active:bg-peach"
                   }`}
       style={{ touchAction: "manipulation" }}
     >
       <span>{label}</span>
       {count !== undefined && (
-        <span className={`text-xs ${active ? "text-cream/70" : "text-taupe-dark"}`}>
+        <span className={`text-xs ${active ? "text-cream/70" : "text-stone"}`}>
           {count}
         </span>
       )}
@@ -97,8 +97,8 @@ function FilterPill({
       className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wide
                   border transition-colors duration-150 whitespace-nowrap
                   ${active
-                    ? "bg-gold text-cream border-gold"
-                    : "bg-transparent text-brown border-taupe/40 hover:border-gold hover:text-gold"
+                    ? "bg-burgundy text-white border-burgundy"
+                    : "bg-transparent text-brown border-line/40 hover:border-burgundy hover:text-burgundy"
                   }`}
       style={{ touchAction: "manipulation" }}
     >
@@ -196,22 +196,22 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
       {/* ══════════════════════════════════════════════
           CURATED CATEGORIES
       ══════════════════════════════════════════════ */}
-      <section className="bg-cream-dark border-b border-taupe/20 px-4 sm:px-6 lg:px-8 py-6 lg:py-16">
+      <section className="bg-cream border-b border-line px-4 sm:px-6 lg:px-8 py-6 lg:py-16">
         <div className="max-w-7xl mx-auto">
           <ScrollReveal className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5 lg:mb-12">
             <div>
-              <p className="text-gold text-[11px] uppercase tracking-[0.28em] font-body font-semibold mb-2">
+              <p className="type-eyebrow text-burgundy mb-2">
                 ✦ Handcrafted goods
               </p>
-              <h1 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown mb-5">
+              <h1 className="type-h1 text-brown mb-5">
                 Curated Categories
               </h1>
               <Link
                 href="/products"
                 onClick={clearFilters}
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-none
-                           bg-gold text-cream font-semibold text-xs uppercase tracking-widest
-                           hover:bg-gold-dark hover:-translate-y-0.5 hover:shadow-lg hover:shadow-gold/25
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button
+                           bg-burgundy text-white font-semibold text-sm
+                           hover:bg-burgundy-dark hover:-translate-y-0.5 hover:shadow-lg hover:shadow-burgundy/25
                            transition-all duration-300"
               >
                 View All Products
@@ -220,7 +220,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
                 </svg>
               </Link>
             </div>
-            <p className="font-heading italic text-lg sm:text-xl text-taupe-dark leading-snug lg:text-right lg:max-w-xs">
+            <p className="font-heading italic text-lg sm:text-xl text-stone leading-snug lg:text-right lg:max-w-xs">
               From Cozi throws to hand-stitched keepsakes. Every piece, one place.
             </p>
           </ScrollReveal>
@@ -241,12 +241,12 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
       {/* Not sticky: the search + filter row belongs at the top of the list and
           scrolls away with it, rather than following the customer down the
           page and eating a band of the product grid on every screen. */}
-      <div className="relative z-30 bg-cream/95 backdrop-blur-md border-b border-taupe/20">
+      <div className="relative z-30 bg-cream/95 backdrop-blur-md border-b border-line">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
           <div className="flex items-center gap-3 mb-2">
             <div className="relative flex-1">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-taupe-dark pointer-events-none"
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone pointer-events-none"
                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round"
                       d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z" />
@@ -257,16 +257,16 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
                 placeholder="Search products…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full h-11 pl-9 pr-3 rounded-xl bg-cream-dark border border-taupe/30 text-sm
-                           text-deep-brown placeholder:text-taupe-dark
-                           focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30
+                className="w-full h-11 pl-9 pr-3 rounded-tile bg-white border border-stone text-base
+                           text-brown placeholder:text-stone
+                           focus:outline-none focus:border-brown focus:ring-1 focus:ring-brown
                            transition-all duration-200"
               />
               {query && (
                 <button
                   onClick={() => setQuery("")}
                   className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center
-                             text-taupe-dark active:text-brown active:scale-90 transition-transform duration-100"
+                             text-stone active:text-brown active:scale-90 transition-transform duration-100"
                   style={{ touchAction: "manipulation" }}
                   aria-label="Clear search"
                 >
@@ -279,11 +279,11 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
 
             <button
               onClick={() => setFiltersOpen(true)}
-              className={`lg:hidden relative flex items-center gap-1.5 h-11 px-3 rounded-xl border
+              className={`lg:hidden relative flex items-center gap-1.5 h-11 px-3 rounded-tile border
                           text-sm font-medium transition-colors duration-150 shrink-0 active:scale-95
                           ${activeFilterCount > 0
-                            ? "bg-gold text-cream border-gold"
-                            : "bg-cream-dark text-brown border-taupe/30 active:bg-cream-darker"
+                            ? "bg-burgundy text-white border-burgundy"
+                            : "bg-white text-brown border-stone active:bg-peach"
                           }`}
               style={{ touchAction: "manipulation" }}
             >
@@ -293,7 +293,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               </svg>
               Filters
               {activeFilterCount > 0 && (
-                <span className="w-4 h-4 bg-cream text-gold text-[9px] font-bold
+                <span className="w-4 h-4 bg-cream text-burgundy text-xs font-bold
                                  rounded-full flex items-center justify-center">
                   {activeFilterCount}
                 </span>
@@ -304,7 +304,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
           {/* Desktop pill row + item count + sort */}
           <div className="hidden lg:flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span className="text-[11px] uppercase tracking-[0.2em] text-taupe-dark font-semibold shrink-0">
+              <span className="text-xs uppercase tracking-[0.2em] text-stone font-semibold shrink-0">
                 Filter
               </span>
               <div className="flex items-center gap-2 overflow-x-auto">
@@ -325,14 +325,14 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
             </div>
 
             <div className="flex items-center gap-4 shrink-0">
-              <span className="text-[11px] uppercase tracking-[0.2em] text-taupe-dark font-semibold">
+              <span className="text-xs uppercase tracking-[0.2em] text-stone font-semibold">
                 {filtered.length} {filtered.length === 1 ? "Item" : "Items"}
               </span>
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="h-9 px-2 rounded-xl bg-cream-dark border border-taupe/30 text-sm text-brown
-                           focus:outline-none focus:border-gold transition-all duration-200
+                className="h-9 px-2 rounded-tile bg-white border border-stone text-base text-brown
+                           focus:outline-none focus:border-burgundy transition-all duration-200
                            cursor-pointer"
               >
                 {sortOptions.map((o) => (
@@ -347,7 +347,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               {selectedCategory !== "all" && (
                 <button
                   onClick={() => setSelectedCategory("all")}
-                  className="flex items-center gap-1.5 pl-3 pr-2 h-10 bg-gold/10 text-gold
+                  className="flex items-center gap-1.5 pl-3 pr-2 h-10 bg-burgundy/10 text-burgundy
                              rounded-full text-xs font-medium whitespace-nowrap
                              active:scale-95 transition-transform duration-100"
                   style={{ touchAction: "manipulation" }}
@@ -361,7 +361,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               {selectedPrice !== null && (
                 <button
                   onClick={() => setSelectedPrice(null)}
-                  className="flex items-center gap-1.5 pl-3 pr-2 h-10 bg-gold/10 text-gold
+                  className="flex items-center gap-1.5 pl-3 pr-2 h-10 bg-burgundy/10 text-burgundy
                              rounded-full text-xs font-medium whitespace-nowrap
                              active:scale-95 transition-transform duration-100"
                   style={{ touchAction: "manipulation" }}
@@ -374,7 +374,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               )}
               <button
                 onClick={clearFilters}
-                className="px-3 h-10 text-xs text-taupe-dark whitespace-nowrap active:text-brown"
+                className="px-3 h-10 text-xs text-stone whitespace-nowrap active:text-brown"
                 style={{ touchAction: "manipulation" }}
               >
                 Clear all
@@ -396,8 +396,8 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
         <ScrollReveal className="flex justify-end mb-2 lg:mb-3">
           <button
             onClick={clearFilters}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold
-                       hover:text-gold-dark transition-colors duration-200 shrink-0"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-burgundy
+                       hover:text-burgundy-dark transition-colors duration-200 shrink-0"
           >
             View all products
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -410,8 +410,8 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
 
           {/* Desktop sidebar */}
           <aside className="hidden lg:block w-56 shrink-0 sticky top-24">
-            <div className="bg-white rounded-2xl border border-cream-darker border-l-[3px] border-l-gold/40 p-5 shadow-sm">
-              <h3 className="font-heading font-600 text-deep-brown text-base mb-4">Category</h3>
+            <div className="bg-white rounded-card border border-peach border-l-[3px] border-l-burgundy/40 p-5 shadow-sm">
+              <h3 className="font-heading font-600 text-brown text-base mb-4">Category</h3>
               <div className="space-y-1.5 mb-6">
                 <FilterOption
                   label="All Products"
@@ -430,7 +430,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
                 ))}
               </div>
 
-              <h3 className="font-heading font-600 text-deep-brown text-base mb-4">Price</h3>
+              <h3 className="font-heading font-600 text-brown text-base mb-4">Price</h3>
               <div className="space-y-1.5">
                 {priceRanges.map((r, i) => (
                   <FilterOption
@@ -445,7 +445,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearFilters}
-                  className="mt-4 w-full text-center text-xs text-gold underline"
+                  className="mt-4 w-full text-center text-xs text-burgundy underline"
                 >
                   Clear all filters
                 </button>
@@ -457,9 +457,9 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
           <div className="flex-1 min-w-0">
             {filtered.length === 0 ? (
               <div className="text-center py-20">
-                <p className="font-heading text-2xl text-deep-brown mb-2">Nothing found</p>
-                <p className="text-taupe-dark text-sm mb-4">Try a different search or filter.</p>
-                <button onClick={clearFilters} className="text-sm text-gold underline">
+                <p className="font-heading text-2xl text-brown mb-2">Nothing found</p>
+                <p className="text-stone text-sm mb-4">Try a different search or filter.</p>
+                <button onClick={clearFilters} className="text-sm text-burgundy underline">
                   Clear filters
                 </button>
               </div>
@@ -477,19 +477,19 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
       {/* ══════════════════════════════════════════════
           WHY US
       ══════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden py-14 lg:py-28" style={{ backgroundColor: "#FBF0E4" }}>
+      <section className="relative overflow-hidden py-14 lg:py-28" style={{ backgroundColor: "var(--color-cream)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center gap-10">
 
             {/* Text */}
             <ScrollReveal>
-              <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
+              <p className="type-eyebrow text-burgundy mb-3">
                 04 · Why Cozi Handmade
               </p>
-              <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown mb-5 leading-tight">
+              <h2 className="type-h1 text-brown mb-5 leading-tight">
                 The Cozi Standard
               </h2>
-              <p className="text-deep-brown/75 leading-relaxed mb-8 text-sm sm:text-base font-medium max-w-md">
+              <p className="text-stone leading-relaxed mb-8 text-sm sm:text-base font-medium max-w-md">
                 We&apos;re a creative lifestyle company, designing handmade pieces, teaching
                 creative workshops, and helping people slow down through making. Every piece
                 in this collection is made slowly, by hand, chosen for warmth, softness, and
@@ -499,15 +499,15 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
               <div className="space-y-6">
                 {whyUsFeatures.map(({ label, description, icon }) => (
                   <div key={label} className="flex gap-4">
-                    <span className="shrink-0 w-11 h-11 rounded-full bg-gold/10 text-gold
+                    <span className="shrink-0 w-11 h-11 rounded-full bg-burgundy/10 text-burgundy
                                      flex items-center justify-center">
                       {icon}
                     </span>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wide text-deep-brown mb-1">
+                      <p className="text-xs font-bold uppercase tracking-wide text-brown mb-1">
                         {label}
                       </p>
-                      <p className="text-sm text-deep-brown/70 leading-relaxed max-w-sm">
+                      <p className="text-sm text-stone leading-relaxed max-w-sm">
                         {description}
                       </p>
                     </div>
@@ -518,7 +518,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
 
             {/* Paired images */}
             <ScrollReveal className="grid grid-cols-2 gap-4">
-              <div className="relative rounded-2xl lg:rounded-3xl overflow-hidden aspect-[3/4] shadow-2xl">
+              <div className="relative rounded-card lg:rounded-card overflow-hidden aspect-[3/4] shadow-2xl">
                 <Image
                   src="/images/our-story.jpg"
                   alt="Handmade Cozi Handmade piece styled in a warm, lived-in home"
@@ -529,7 +529,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
                 />
               </div>
               <div className="relative mt-8">
-                <div className="relative rounded-2xl lg:rounded-3xl overflow-hidden aspect-[3/4] shadow-2xl">
+                <div className="relative rounded-card lg:rounded-card overflow-hidden aspect-[3/4] shadow-2xl">
                   <Image
                     src="/images/backgroundpic.jpg"
                     alt="Close-up of hand-knitted chunky wool texture"
@@ -539,8 +539,8 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
                     className="object-cover"
                   />
                 </div>
-                <div className="absolute -bottom-4 left-3 bg-cream rounded-lg px-3 py-1.5 shadow-lg border border-taupe/20">
-                  <p className="text-[10px] uppercase tracking-[0.15em] text-deep-brown font-semibold">
+                <div className="absolute -bottom-4 left-3 bg-cream rounded-lg px-3 py-1.5 shadow-lg border border-line">
+                  <p className="text-xs uppercase tracking-[0.15em] text-brown font-semibold">
                     Fig. 02 · Texture
                   </p>
                 </div>
@@ -560,7 +560,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
       <BottomSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filter Products">
         <div className="space-y-6 pb-2">
           <div>
-            <h3 className="text-xs uppercase tracking-[0.15em] text-taupe-dark font-medium mb-3">Category</h3>
+            <h3 className="text-xs uppercase tracking-[0.15em] text-stone font-medium mb-3">Category</h3>
             <div className="grid grid-cols-2 gap-2">
               <FilterOption label="All" active={selectedCategory === "all"} onToggle={() => setSelectedCategory("all")} count={products.length} />
               {categories.map((c) => (
@@ -575,7 +575,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
             </div>
           </div>
           <div>
-            <h3 className="text-xs uppercase tracking-[0.15em] text-taupe-dark font-medium mb-3">Price Range</h3>
+            <h3 className="text-xs uppercase tracking-[0.15em] text-stone font-medium mb-3">Price Range</h3>
             <div className="grid grid-cols-2 gap-2">
               {priceRanges.map((r, i) => (
                 <FilterOption
@@ -588,7 +588,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
             </div>
           </div>
           <div>
-            <h3 className="text-xs uppercase tracking-[0.15em] text-taupe-dark font-medium mb-3">Sort By</h3>
+            <h3 className="text-xs uppercase tracking-[0.15em] text-stone font-medium mb-3">Sort By</h3>
             <div className="space-y-2">
               {sortOptions.map((o) => (
                 <FilterOption key={o.value} label={o.label} active={sort === o.value} onToggle={() => setSort(o.value)} />
@@ -597,13 +597,13 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
           </div>
           <button
             onClick={() => setFiltersOpen(false)}
-            className="w-full h-14 rounded-2xl bg-gold text-cream font-semibold text-base active:scale-[0.98]"
+            className="w-full h-14 rounded-card bg-burgundy text-white font-semibold text-base active:scale-[0.98]"
             style={{ touchAction: "manipulation" }}
           >
             Show {filtered.length} Results
           </button>
           {activeFilterCount > 0 && (
-            <button onClick={() => { clearFilters(); setFiltersOpen(false); }} className="w-full text-center text-sm text-taupe-dark underline">
+            <button onClick={() => { clearFilters(); setFiltersOpen(false); }} className="w-full text-center text-sm text-stone underline">
               Clear all filters
             </button>
           )}

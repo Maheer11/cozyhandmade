@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import QuickAddButton from "@/components/home/QuickAddButton";
+import Badge from "@/components/ui/Badge";
+import ProductCard from "@/components/ui/ProductCard";
+import SectionHeader from "@/components/ui/SectionHeader";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 
 export interface RailProduct {
@@ -16,17 +16,23 @@ export interface RailProduct {
   stockQuantity: number;
   shippingWeightGrams: number | null;
   /**
-   * True only for products with no size or colour to choose. Anything with
-   * options goes to its product page instead: adding it from here would put
-   * an item in the cart with no size/colour chosen (the known quick-add gap).
+   * Kept on the type for the data mapper in app/page.tsx. The cards no longer
+   * have an add-to-bag button, so nothing here reads it.
    */
   quickAdd: boolean;
 }
 
+/** How many cards show per breakpoint: 4 (2×2) → 6 (3×2) → 8 (4×2). */
+function visibilityClass(i: number): string {
+  if (i < 4) return "";
+  if (i < 6) return "hidden md:block";
+  return "hidden lg:block";
+}
+
 /**
- * "In stock now" row: swipe sideways on phones (four across from lg) through
- * what can be bought today, and add a simple item to the bag without leaving
- * the homepage. Stock comes from the admin-managed products table.
+ * "In stock now": what can be bought today, straight from the admin's stock
+ * numbers. Each card is one big link to the product page, with no add-to-bag
+ * button on it.
  */
 export default function InStockRail({ products }: { products: RailProduct[] }) {
   const { formatAmount } = useCurrency();
@@ -34,77 +40,32 @@ export default function InStockRail({ products }: { products: RailProduct[] }) {
   if (products.length === 0) return null;
 
   return (
-    <section aria-labelledby="instock-heading" className="bg-ui-bg">
-      <div className="page-container pt-10 pb-2 lg:pt-20">
-        <div className="mb-4 flex items-baseline justify-between">
-          <h2 id="instock-heading" className="font-heading text-2xl font-medium text-ui-text lg:text-[2.5rem] lg:leading-tight">
-            In stock now
-          </h2>
-          <Link href="/products" className="focus-ring rounded-button font-body text-sm font-medium text-ui-accent">
-            See all
-          </Link>
-        </div>
-
-        <ul className="no-scrollbar -mx-6 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto px-6 pb-2 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:px-0">
-          {products.map((product) => {
-            return (
-              <li key={product.id} className="w-[44vw] max-w-[220px] shrink-0 snap-start lg:w-auto lg:max-w-none lg:nth-[n+5]:hidden">
-                <div className="overflow-hidden rounded-card border border-ui-border bg-ui-surface">
-                  <Link
-                    href={`/products/${product.id}`}
-                    className="focus-ring block transition-transform duration-150 active:scale-[0.98]"
-                    style={{ touchAction: "manipulation" }}
-                  >
-                    <div className="relative aspect-[4/5] bg-cream-dark">
-                      <Image src={product.image} alt={product.name} fill sizes="(max-width: 1023px) 44vw, 23vw"
-                             className="object-cover" />
-                      {product.stockQuantity <= 2 && (
-                        <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5
-                                         font-body text-[11px] font-semibold text-ui-accent">
-                          Only {product.stockQuantity} left
-                        </span>
-                      )}
-                    </div>
-                    <div className="px-3 pt-2.5">
-                      <p className="line-clamp-1 font-heading text-base leading-snug text-ui-text">{product.name}</p>
-                      <p className="mt-0.5 flex items-baseline gap-1.5 font-body text-sm">
-                        <span className="font-semibold text-ui-text">{formatAmount(product.price)}</span>
-                        {product.wasPrice && (
-                          <span className="text-xs text-ui-muted line-through">
-                            <span className="sr-only">Was </span>{formatAmount(product.wasPrice)}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </Link>
-                  <div className="p-3 pt-2">
-                    {product.quickAdd ? (
-                      <QuickAddButton
-                        item={{
-                          id: product.id,
-                          name: product.name,
-                          price: product.price,
-                          image: product.image,
-                          source: "product",
-                          maxQuantity: product.stockQuantity,
-                          shippingWeightGrams: product.shippingWeightGrams,
-                        }}
-                      />
-                    ) : (
-                      <Link
-                        href={`/products/${product.id}`}
-                        className="focus-ring flex h-10 w-full items-center justify-center rounded-full border border-ui-accent
-                                   font-body text-sm font-semibold text-ui-accent transition-transform duration-150 active:scale-95"
-                        style={{ touchAction: "manipulation" }}
-                      >
-                        Choose options
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </li>
-            );
-          })}
+    <section aria-labelledby="instock-heading" className="bg-cream">
+      <div className="page-container pt-12 lg:pt-20">
+        <SectionHeader
+          eyebrow="Ready to ship"
+          title="In stock now"
+          id="instock-heading"
+          seeAllHref="/products"
+          className="mb-6"
+        />
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">
+          {products.slice(0, 8).map((product, i) => (
+            <li key={product.id} className={visibilityClass(i)}>
+              <ProductCard
+                href={`/products/${product.id}`}
+                name={product.name}
+                image={product.image}
+                price={formatAmount(product.price)}
+                wasPrice={product.wasPrice ? formatAmount(product.wasPrice) : undefined}
+                badges={
+                  product.stockQuantity <= 2 ? (
+                    <Badge variant="lowStock">Only {product.stockQuantity} left</Badge>
+                  ) : undefined
+                }
+              />
+            </li>
+          ))}
         </ul>
       </div>
     </section>

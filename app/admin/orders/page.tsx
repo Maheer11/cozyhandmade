@@ -63,7 +63,7 @@ export default async function AdminOrdersPage() {
                         <p className="text-gray-400 text-xs truncate max-w-[130px]">{addr.email}</p>
                       )}
                       {addr?.city && (
-                        <p className="text-gray-400 text-[10px]">{addr.city}{addr.country ? `, ${addr.country}` : ""}</p>
+                        <p className="text-gray-400 text-xs">{addr.city}{addr.country ? `, ${addr.country}` : ""}</p>
                       )}
                     </td>
 

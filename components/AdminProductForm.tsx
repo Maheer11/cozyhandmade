@@ -491,7 +491,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
                 </tbody>
               </table>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1.5">
+            <p className="text-xs text-gray-400 mt-1.5">
               Total stock: {Object.values(form.variant_stock).reduce((s, v) => s + v, 0)} units
             </p>
 
@@ -847,7 +847,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-                    className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium text-white opacity-0 group-hover/main:opacity-100 transition-opacity shadow-md whitespace-nowrap"
+                    className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white opacity-0 group-hover/main:opacity-100 transition-opacity shadow-md whitespace-nowrap"
                     style={{ backgroundColor: "rgba(26,8,16,0.75)" }}
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -871,7 +871,7 @@ export default function AdminProductForm({ product, prefill, fromFeaturedPieceId
                       style={{ width: `${mainProgress}%`, backgroundColor: "#8B2035" }}
                     />
                   </div>
-                  <span className="text-white/60 text-[10px] tracking-widest uppercase">uploading</span>
+                  <span className="text-white/60 text-xs tracking-widest uppercase">uploading</span>
                 </div>
               )}
               </div>

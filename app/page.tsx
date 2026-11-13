@@ -1,4 +1,3 @@
-import Link from "next/link";
 import Image from "next/image";
 import NewsletterForm from "@/components/NewsletterForm";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -10,11 +9,11 @@ import HeroProductCarousel from "@/components/HeroProductCarousel";
 import { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { getStockedCategories } from "@/lib/db-categories";
-import MobileShopShortcuts from "@/components/home/MobileShopShortcuts";
 import type { SearchItem } from "@/components/home/MobileProductSearch";
 import CategoryTiles from "@/components/home/CategoryTiles";
 import InStockRail, { type RailProduct } from "@/components/home/InStockRail";
-import { MobileTrustStrip, MobileCustomOrderCard } from "@/components/home/MobileExtras";
+import { MobileCustomOrderCard } from "@/components/home/MobileExtras";
+import Button from "@/components/ui/Button";
 import { mapCustomProduct, type DbCustomProduct } from "@/lib/db-custom-products";
 import {
   FEATURED_PIECE_STOCK_SELECT,
@@ -110,7 +109,7 @@ function toCard(row: DbHeroFeaturedPiece): FeaturedPieceCardData {
  *  shortcuts above it on the first screen), 3:2 on tablets, a clamped height
  *  beside the copy from lg. */
 const HERO_FRAME =
-  "aspect-[5/4] sm:aspect-[3/2] lg:aspect-auto lg:h-[clamp(30rem,calc(100svh-14rem),40rem)]";
+  "aspect-[6/5] sm:aspect-[3/2] lg:aspect-auto lg:h-[clamp(30rem,calc(100svh-14rem),40rem)]";
 
 /** The products columns a card needs, before normalisation. */
 const PRODUCT_CARD_COLUMNS =
@@ -410,97 +409,62 @@ export default async function HomePage() {
   return (
     <>
       {/* ══════════════════════════════════════════════
-          ANNOUNCEMENT BAR — the three promises, above the header's content.
-          Hidden on phones, which get the same facts as pills under the hero.
-      ══════════════════════════════════════════════ */}
-      <div className="hidden sm:block bg-deep-brown text-white">
-        <ul className="page-container flex flex-wrap justify-center gap-x-8 gap-y-1 py-2.5 font-body text-[13px] tracking-wide">
-          {trustPoints.filter((t) => t.label !== "Premium materials").map(({ label }) => (
-            <li key={label}>{label}</li>
-          ))}
-        </ul>
-      </div>
+          HERO — orange brand block with rounded bottom corners (the dark
+          trust strip sits above the header, see components/home/TrustBar).
 
-      {/* ══════════════════════════════════════════════
-          HERO — one message, one photo
-
-          Two columns from lg, stacked (text first) below it. The copy sits on
-          the plain cream ground, never on the photo, so contrast is a single
-          measurable number rather than "whatever patch of image is behind
-          each glyph". One primary action (maroon), and a plain text link that scrolls to the grid.
+          Phone order is text → photo → buttons; from lg it is two columns
+          (text and buttons left, photo right). The copy sits on flat orange,
+          never on the photo, so contrast is one measurable number (milk on
+          orange 5.5:1). Buttons on orange are milk, never burgundy.
           The photo is the in-stock showcase carousel (products with stock > 0
-          in the admin dashboard), with its name-and-price card over the photo.
+          in the admin dashboard), with its name-and-price pill over the photo.
       ══════════════════════════════════════════════ */}
-      <section className="bg-ui-bg">
-        {/* grid-cols-1 (minmax(0,1fr)) and min-w-0: without them the phone
-            column grows to the full width of the swipeable chip row and pushes
-            the search bar, button and photo off the right edge. */}
-        <div className="page-container grid grid-cols-1 gap-8 py-8 sm:py-12 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-12">
-          <div className="min-w-0 max-w-xl">
-            <p className="mb-4 font-body text-sm font-medium text-ui-accent">
-              Handcrafted in Ireland
-            </p>
-            {/* Phones show no headline (owner's call): the search bar and category
-                chips come straight after "Handcrafted in Ireland". The h1 stays
-                for screen readers and search engines (sr-only), shown from lg. */}
-            <h1 className="sr-only lg:not-sr-only font-heading font-medium text-ui-text text-balance
-                           lg:text-[clamp(2.5rem,1.6rem+3.2vw,4.25rem)] lg:leading-[1.05]">
+      <section className="rounded-b-block bg-orange text-milk">
+        <div className="page-container grid grid-cols-1 gap-x-16 gap-y-8 pb-8 pt-8 sm:py-12 lg:grid-cols-2 lg:items-center lg:py-14">
+          <div className="min-w-0 max-w-xl lg:col-start-1 lg:row-start-1 lg:self-end">
+            <p className="type-eyebrow text-milk">Handcrafted in Ireland</p>
+            <h1 className="type-display mt-4 text-balance text-milk">
               Handmade blankets, bags &amp; baby keepsakes
             </h1>
-            {/* Phones: a search bar and category chips instead of the paragraph. */}
-            <MobileShopShortcuts categories={categories} searchItems={searchItems} />
-            <p className="hidden lg:block mt-5 max-w-md font-body text-base leading-relaxed text-ui-muted lg:text-lg">
+            <p className="type-body mt-5 max-w-md text-milk lg:text-lg lg:leading-8">
               Helping people create, connect and find comfort, every piece
               handcrafted in Ireland from premium materials.
             </p>
-            {/* Stacked on phones on purpose, not left to flex-wrap: whether the
-                two fit on one line depended on which font had loaded, so the
-                link jumped to a second line when Jost arrived and pushed the
-                photo down (CLS 0.09 at 375px). */}
-            <div className="mt-4 flex flex-col items-stretch gap-5 lg:mt-8 lg:flex-row lg:items-center lg:gap-8">
-              <Link
-                href="/products"
-                className="cta-sheen focus-ring inline-flex h-12 items-center justify-center rounded-full bg-ui-accent px-7
-                           font-body text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(139,32,53,0.8)]
-                           transition-[background-color,transform] duration-150 hover:bg-ui-accent-hover active:scale-[0.98]
-                           lg:rounded-button lg:shadow-none"
-                style={{ touchAction: "manipulation" }}
-              >
-                Shop the Collection
-              </Link>
-              <a
-                href="#featured-pieces"
-                className="hidden lg:inline focus-ring rounded-button font-body text-sm font-medium text-ui-text
-                           underline decoration-ui-border decoration-2 underline-offset-[6px]
-                           transition-colors duration-150 hover:decoration-ui-accent"
-              >
-                See featured pieces
-              </a>
-            </div>
           </div>
 
           {/* The frame's size comes from CSS alone (aspect ratio, or a clamped
-              height from lg), so nothing shifts when the photo or its name card
+              height from lg), so nothing shifts when the photo or its name pill
               arrives. The photo cycles through the collections, always linking
               to the product on screen; if nothing is in stock, the original
               basket photo stands in, unlinked, rather than a link to nowhere. */}
-          {showcaseProducts.length > 0 ? (
-            <HeroProductCarousel items={showcaseProducts} frameClassName={HERO_FRAME} />
-          ) : (
-            <div className={`relative overflow-hidden rounded-card bg-ui-surface ${HERO_FRAME}`}>
-              <Image
-                src={heroImage}
-                alt="Three handmade crochet baskets stacked on a table, each with a leather Handmade tag"
-                fill
-                loading="eager"
-                fetchPriority="high"
-                placeholder="blur"
-                sizes="(min-width: 1280px) 560px, (min-width: 1024px) 44vw, 100vw"
-                className="object-cover"
-                style={{ objectPosition: "58% 65%" }}
-              />
-            </div>
-          )}
+          <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+            {showcaseProducts.length > 0 ? (
+              <HeroProductCarousel items={showcaseProducts} frameClassName={HERO_FRAME} />
+            ) : (
+              <div className={`relative overflow-hidden rounded-block bg-brown/30 ${HERO_FRAME}`}>
+                <Image
+                  src={heroImage}
+                  alt="Three handmade crochet baskets stacked on a table, each with a leather Handmade tag"
+                  fill
+                  loading="eager"
+                  fetchPriority="high"
+                  placeholder="blur"
+                  sizes="(min-width: 1280px) 560px, (min-width: 1024px) 44vw, 100vw"
+                  className="object-cover"
+                  style={{ objectPosition: "58% 65%" }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row lg:col-start-1 lg:row-start-2 lg:self-start">
+            <Button href="/products" variant="onOrange" className="sm:min-w-52">
+              Shop the Collection
+            </Button>
+            <Button href="#featured-pieces" variant="onOrangeOutline" className="sm:min-w-52">
+              See featured pieces
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -508,9 +472,9 @@ export default async function HomePage() {
           TRUST STRIP — four statements from lg; phones and tablets get the
           pill row (which adds free Dublin pickup and secure checkout).
       ══════════════════════════════════════════════ */}
-      <section aria-label="Why Cozi Handmade" className="hidden lg:block bg-ui-bg">
+      <section aria-label="Why Cozi Handmade" className="hidden lg:block bg-cream">
         <div className="page-container">
-          <ul className="grid grid-cols-4 divide-x divide-ui-border border-y border-ui-border">
+          <ul className="grid grid-cols-4 divide-x divide-line border-y border-line">
             {trustPoints.map(({ label, sub, icon }) => (
               <li key={label} className="flex items-center gap-3.5 px-6 py-7 first:pl-0 last:pr-0">
                 <svg
@@ -522,23 +486,22 @@ export default async function HomePage() {
                   strokeWidth={1.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="h-6 w-6 shrink-0 text-ui-accent"
+                  className="h-6 w-6 shrink-0 text-burgundy"
                 >
                   <path d={icon} />
                 </svg>
                 <span className="flex flex-col gap-0.5">
-                  <span className="font-body text-[15px] font-semibold text-ui-text">{label}</span>
-                  <span className="font-body text-sm text-ui-muted">{sub}</span>
+                  <span className="font-body text-[15px] font-semibold text-brown">{label}</span>
+                  <span className="font-body text-sm text-stone">{sub}</span>
                 </span>
               </li>
             ))}
           </ul>
         </div>
       </section>
-      <MobileTrustStrip />
 
-      {/* SHOP BY CATEGORY — real categories that hold products */}
-      <CategoryTiles categories={categories} />
+      {/* SHOP BY CATEGORY — real categories that hold products (chips on phones, photo tiles from lg) */}
+      <CategoryTiles categories={categories} searchItems={searchItems} />
 
       {/* IN STOCK NOW — buyable today, straight from the admin's stock numbers */}
       <InStockRail products={railProducts} />
@@ -558,40 +521,35 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           OUR STORY — the company's four promises, beside a studio photo
       ══════════════════════════════════════════════ */}
-      <div className="bg-ui-bg pt-16 lg:pt-24">
-      <section aria-labelledby="story-heading" className="bg-cream-darker">
-        <div className="page-container grid grid-cols-1 items-center gap-8 py-12 lg:grid-cols-2 lg:gap-16 lg:py-24">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-card bg-ui-surface lg:aspect-auto lg:h-[32rem]">
-            <Image
-              src="/images/our-story.jpg"
-              alt="Hands at work on a handmade Cozi piece"
-              fill
-              sizes="(min-width: 1024px) 44vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-          <div className="min-w-0">
-            <p className="font-body text-[13px] font-semibold uppercase tracking-[0.14em] text-ui-accent">
-              {trustItems[0].title}
-            </p>
-            <h2
-              id="story-heading"
-              className="mt-3 font-heading font-medium text-ui-text text-balance text-[clamp(2rem,1.5rem+2vw,2.875rem)] leading-[1.1]"
-            >
-              {trustItems[0].subtitle}
-            </h2>
-            <ul className="mt-8 border-b border-ui-border">
-              {trustItems.slice(1).map(({ title, subtitle }) => (
-                <li key={title} className="border-t border-ui-border py-5">
-                  <h3 className="font-heading text-[1.375rem] font-medium text-ui-text">{title}</h3>
-                  <p className="mt-1 font-body text-[15px] text-ui-muted">{subtitle}</p>
-                </li>
-              ))}
-            </ul>
+      <section aria-labelledby="story-heading" className="bg-cream pt-12 lg:pt-24">
+        <div className="page-container">
+          <div className="grid grid-cols-1 items-center gap-8 rounded-block bg-peach p-6 sm:p-8 lg:grid-cols-2 lg:gap-16 lg:p-14">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-card bg-white/50 lg:aspect-auto lg:h-[30rem]">
+              <Image
+                src="/images/our-story.jpg"
+                alt="Hands at work on a handmade Cozi piece"
+                fill
+                sizes="(min-width: 1024px) 44vw, 100vw"
+                className="object-cover"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="type-eyebrow text-burgundy">{trustItems[0].title}</p>
+              <h2 id="story-heading" className="type-h1 mt-3 text-balance text-brown">
+                {trustItems[0].subtitle}
+              </h2>
+              <ul className="mt-6 space-y-5">
+                {trustItems.slice(1).map(({ title, subtitle }) => (
+                  <li key={title}>
+                    <h3 className="type-h3 text-brown">{title}</h3>
+                    <p className="type-small mt-1 text-brown">{subtitle}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
-      </div>
 
       {/* ══════════════════════════════════════════════
           REVIEWS — real customer screenshots
@@ -603,20 +561,15 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           NEWSLETTER — "Join the Circle"
       ══════════════════════════════════════════════ */}
-      <section
-        id="newsletter"
-        className="relative overflow-hidden py-6 lg:py-24 bg-cream-dark"
-      >
-        <ScrollReveal className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="lg:grid lg:grid-cols-[1fr_1.1fr] lg:gap-10 lg:items-center">
+      <section id="newsletter" className="relative overflow-hidden bg-cream py-12 lg:py-24">
+        <ScrollReveal className="page-container">
+          <div className="lg:grid lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-10">
             {/* Scattered postcard collage — desktop only. Three photos at
-                staggered rotations/sizes instead of one flat static box,
-                like photos pinned to a corkboard. */}
-            {/* Hovering the collage plays a quick zoom-and-brighten "flash",
-                twice, across the three photos in turn (studio-collage in
-                globals.css). */}
-            <div className="studio-collage hidden lg:block relative h-[420px]">
-              <div className="absolute left-2 top-2 w-[62%] h-[70%] rotate-[-6deg] rounded-2xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(26,8,16,0.35)] border-4 border-white z-10">
+                staggered rotations/sizes, like photos pinned to a corkboard.
+                Hovering plays a quick zoom-and-brighten "flash" across the
+                three photos in turn (studio-collage in globals.css). */}
+            <div className="studio-collage relative hidden h-[420px] lg:block">
+              <div className="absolute left-2 top-2 z-10 h-[70%] w-[62%] rotate-[-6deg] overflow-hidden rounded-card border-4 border-white shadow-soft">
                 <Image
                   src="/images/blanket-room2.jpg"
                   alt="A handmade Cozi piece styled in a cozy room"
@@ -626,7 +579,7 @@ export default async function HomePage() {
                   style={{ animationDelay: "0ms" }}
                 />
               </div>
-              <div className="absolute right-4 top-0 w-[46%] h-[52%] rotate-[5deg] rounded-2xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(26,8,16,0.3)] border-4 border-white z-20">
+              <div className="absolute right-4 top-0 z-20 h-[52%] w-[46%] rotate-[5deg] overflow-hidden rounded-card border-4 border-white shadow-soft">
                 <Image
                   src="/images/newhome2.jpg"
                   alt="Cozi handmade detail"
@@ -636,7 +589,7 @@ export default async function HomePage() {
                   style={{ animationDelay: "120ms" }}
                 />
               </div>
-              <div className="absolute right-10 bottom-2 w-[42%] h-[42%] rotate-[-3deg] rounded-2xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(26,8,16,0.3)] border-4 border-white z-30">
+              <div className="absolute bottom-2 right-10 z-30 h-[42%] w-[42%] rotate-[-3deg] overflow-hidden rounded-card border-4 border-white shadow-soft">
                 <Image
                   src="/images/baby-blanket.jpg"
                   alt="A cozy handmade baby blanket"
@@ -648,32 +601,19 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Postcard/letter card — the photo collage carries the studio feel
-                on its own, so the card stays a clean white panel. */}
-            <div className="relative bg-white rounded-3xl shadow-[0_20px_50px_-15px_rgba(26,8,16,0.25)] overflow-hidden lg:flex lg:flex-col lg:justify-center">
-              <div className="text-center lg:text-left px-5 lg:px-14 py-7 lg:py-14">
-                {/* Wax-seal style mark */}
-                <span className="hidden lg:inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold/10 text-gold text-lg mb-5">
-                  ✦
-                </span>
-
-                <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
-                  Join the Circle
-                </p>
-                <h2 className="font-heading italic text-2xl lg:text-4xl font-400 mb-4 text-deep-brown">
-                  Letters from our Studio
-                </h2>
-                <p className="hidden lg:block text-brown/70 text-base leading-relaxed mb-9 font-body max-w-md mx-auto lg:mx-0">
-                  New pieces, knitting stories, and seasonal inspiration,
-                  delivered gently to your inbox.
-                </p>
-                <div className="lg:mx-0 mx-auto max-w-md">
-                  <NewsletterForm />
-                </div>
-                <p className="text-taupe-dark text-xs mt-5 font-body">
-                  No spam, ever. Unsubscribe anytime.
-                </p>
+            <div className="max-w-md lg:max-w-lg lg:py-8 lg:pl-6">
+              <p className="type-eyebrow text-burgundy">Join the Circle</p>
+              <h2 className="type-h2 mt-3 text-brown">Letters from our Studio</h2>
+              <p className="type-body mt-3 text-stone">
+                New pieces, knitting stories, and seasonal inspiration,
+                delivered gently to your inbox.
+              </p>
+              <div className="mt-6">
+                <NewsletterForm />
               </div>
+              <p className="type-caption mt-4 text-stone">
+                No spam, ever. Unsubscribe anytime.
+              </p>
             </div>
           </div>
         </ScrollReveal>
@@ -682,7 +622,7 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           MARQUEE STRIP — just above the footer (desktop)
       ══════════════════════════════════════════════ */}
-      <section className="hidden lg:block bg-gold overflow-hidden py-3.5">
+      <section className="hidden lg:block bg-burgundy overflow-hidden py-3.5">
         <div className="flex whitespace-nowrap">
           <div className="flex gap-10 animate-marquee shrink-0">
             {marqueeDouble.map((item, i) => (

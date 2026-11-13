@@ -28,7 +28,7 @@ const BATCH = 3;
 function PlatformStamp({ platform }: { platform: Review["platform"] }) {
   if (platform === "whatsapp") {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#128C7E]">
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#128C7E]">
         <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.06L2 22l5.06-1.36C8.5 21.5 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/>
         </svg>
@@ -37,7 +37,7 @@ function PlatformStamp({ platform }: { platform: Review["platform"] }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: "#C03D8A" }}>
+    <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: "#C03D8A" }}>
       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
       </svg>
@@ -56,12 +56,12 @@ function ScreenshotCard({ review, tilt, onOpen }: { review: Review; tilt: number
   return (
     <button
       onClick={onOpen}
-      className="group relative h-full w-full text-left rounded-[26px] bg-cream border border-taupe/15
+      className="group relative h-full w-full text-left rounded-[26px] bg-cream border border-line/15
                  shadow-[0_8px_30px_rgba(61,43,31,0.10)]
                  hover:shadow-[0_16px_40px_rgba(139,32,53,0.16)]
                  hover:-translate-y-1.5
                  transition-all duration-300 ease-out overflow-hidden flex flex-col
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-burgundy"
       style={{ transform: `rotate(${tilt}deg)` }}
     >
       {/* Washi-tape corner accent */}
@@ -85,7 +85,7 @@ function ScreenshotCard({ review, tilt, onOpen }: { review: Review; tilt: number
 
       <div className="p-4 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[11px] text-taupe-dark mt-0.5 truncate">
+          <p className="type-caption text-stone mt-0.5 truncate">
             {[review.customerLabel, review.location, review.date].filter(Boolean).join(" · ")}
           </p>
         </div>
@@ -102,7 +102,7 @@ function ScreenshotCard({ review, tilt, onOpen }: { review: Review; tilt: number
 function Lightbox({ review, onClose }: { review: Review; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-[100] bg-deep-brown/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
+      className="fixed inset-0 z-[100] bg-brown/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -113,8 +113,8 @@ function Lightbox({ review, onClose }: { review: Review; onClose: () => void }) 
       >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-deep-brown/50 backdrop-blur-sm
-                     text-cream flex items-center justify-center hover:bg-deep-brown/70 transition-colors"
+          className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-brown/50 backdrop-blur-sm
+                     text-cream flex items-center justify-center hover:bg-brown/70 transition-colors"
           aria-label="Close"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -132,7 +132,7 @@ function Lightbox({ review, onClose }: { review: Review; onClose: () => void }) 
         </div>
         <div className="p-4 flex items-center justify-between gap-2">
           <div>
-            <p className="text-[11px] text-taupe-dark mt-0.5">
+            <p className="type-caption text-stone mt-0.5">
               {[review.customerLabel, review.location, review.date].filter(Boolean).join(" · ")}
             </p>
           </div>
@@ -168,27 +168,19 @@ export default function SocialProofSection({ reviews }: { reviews: Review[] }) {
   return (
     <section
       className="relative overflow-hidden py-14 lg:py-28"
-      style={{ backgroundColor: "#FBF0E4" }}
+      style={{ backgroundColor: "var(--color-cream)" }}
     >
-      {/* Background glows */}
-      <div className="absolute inset-0 pointer-events-none select-none" aria-hidden="true">
-        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full opacity-[0.07]"
-             style={{ background: "radial-gradient(circle,#D4A76A,transparent)" }} />
-        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full opacity-[0.06]"
-             style={{ background: "radial-gradient(circle,#8B2035,transparent)" }} />
-      </div>
-
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* ── Section header ── */}
         <div className="text-center mb-12 lg:mb-16">
-          <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-body font-semibold mb-3">
+          <p className="type-eyebrow text-burgundy mb-3">
             ✦ Real Reviews
           </p>
-          <h2 className="font-heading italic text-3xl sm:text-4xl lg:text-5xl font-400 text-deep-brown mb-4">
+          <h2 className="type-h1 text-brown mb-4">
             Words from Our Community
           </h2>
-          <p className="text-deep-brown/55 text-sm max-w-md mx-auto leading-relaxed font-medium">
+          <p className="type-body text-stone max-w-md mx-auto">
             Real screenshots from real customers, shared via WhatsApp &amp; Instagram DMs
           </p>
         </div>
@@ -225,7 +217,7 @@ export default function SocialProofSection({ reviews }: { reviews: Review[] }) {
         </div>
 
         {/* Mobile scroll hint */}
-        <p className="lg:hidden text-center text-[11px] mt-3 mb-1 text-deep-brown/40">
+        <p className="lg:hidden text-center type-caption mt-3 mb-1 text-stone">
           ← swipe to see more →
         </p>
 
@@ -235,16 +227,13 @@ export default function SocialProofSection({ reviews }: { reviews: Review[] }) {
           {hasMore && (
             <button
               onClick={() => setVisibleRows(v => v + 1)}
-              className="group flex items-center gap-3 px-8 py-3.5 rounded-none
-                         bg-gold text-cream
-                         hover:bg-gold-dark hover:-translate-y-0.5
-                         transition-all duration-300
-                         shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30"
+              className="focus-ring group flex min-h-12 items-center gap-3 rounded-button bg-burgundy px-8 py-3
+                         text-white transition-colors duration-150 hover:bg-burgundy-dark"
             >
               <span className="text-xl tracking-[0.4em] leading-none group-hover:tracking-[0.5em] transition-all duration-300">
                 ···
               </span>
-              <span className="text-xs font-medium opacity-80">
+              <span className="type-small font-semibold">
                 {remaining} more {remaining === 1 ? "review" : "reviews"}
               </span>
             </button>
@@ -253,20 +242,20 @@ export default function SocialProofSection({ reviews }: { reviews: Review[] }) {
           {visibleRows > 1 && (
             <button
               onClick={() => setVisibleRows(1)}
-              className="text-[11px] text-deep-brown/40 hover:text-deep-brown/70 transition-colors duration-200 tracking-wide"
+              className="focus-ring min-h-11 rounded-pill px-4 type-small font-semibold text-burgundy hover:text-burgundy-dark"
             >
               ↑ Show less
             </button>
           )}
 
           {/* Review counter */}
-          <p className="text-[11px] text-deep-brown/35 tracking-wide">
+          <p className="type-caption text-stone">
             Showing {shownCount} of {reviews.length} reviews
           </p>
         </div>
 
         {/* ── Trust note ── */}
-        <p className="text-center text-[11px] text-deep-brown/35 mt-6 tracking-wide">
+        <p className="text-center type-caption text-stone mt-6">
           ✦ All reviews are real screenshots shared with customer permission &nbsp;·&nbsp; Usernames blurred for privacy
         </p>
 
