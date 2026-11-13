@@ -149,9 +149,9 @@ function ResetPasswordForm() {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md text-center">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-emerald-100">
+          <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-emerald-100">
             <svg
-              className="w-9 h-9 text-emerald-500"
+              className="w-9 h-9 text-success"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -164,7 +164,7 @@ function ResetPasswordForm() {
               />
             </svg>
           </div>
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-600 font-body mb-1">
+          <p className="text-xs uppercase tracking-[0.2em] text-success font-body mb-1">
             Success
           </p>
           <h1 className="type-h1 text-brown mb-3">
@@ -192,7 +192,7 @@ function ResetPasswordForm() {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md text-center">
-          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-red-100">
+          <div className="w-20 h-20 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-red-100">
             <svg
               className="w-9 h-9 text-error"
               fill="none"
@@ -295,7 +295,7 @@ function ResetPasswordForm() {
             <div className="pt-2 text-xs text-stone font-body">
               <p className="mb-2">Password requirements:</p>
               <ul className="space-y-1 text-stone/70">
-                <li className={password.length >= 8 ? "text-emerald-600" : ""}>
+                <li className={password.length >= 8 ? "text-success" : ""}>
                   ✓ At least 8 characters
                 </li>
               </ul>

@@ -1,6 +1,6 @@
 // Official WhatsApp glyph — path data from Simple Icons (simpleicons.org),
 // used unmodified per their brand guidelines. Colour is controlled by the
-// caller via `currentColor` (e.g. text-stone-400 hover:text-[#25D366]);
+// caller via `currentColor` (e.g. text-stone hover:text-[#25D366]);
 // never recolour, distort, or rotate the mark itself.
 export default function WhatsAppIcon({ className }: { className?: string }) {
   return (

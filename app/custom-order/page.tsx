@@ -10,7 +10,8 @@ export default async function CustomOrderPage() {
     <div className="min-h-screen bg-cream">
       {/* Header */}
       <div className="bg-cream border-b border-line px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="max-w-xl mx-auto">
+        {/* Same inner padding as the form box below, so the edges line up. */}
+        <div className="max-w-xl mx-auto sm:px-6 lg:px-8">
           <p className="type-eyebrow text-burgundy mb-2">
             ✦ Made just for you
           </p>

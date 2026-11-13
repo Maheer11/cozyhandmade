@@ -9,8 +9,7 @@ import HeroProductCarousel from "@/components/HeroProductCarousel";
 import { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { getStockedCategories } from "@/lib/db-categories";
-import type { SearchItem } from "@/components/home/MobileProductSearch";
-import CategoryTiles from "@/components/home/CategoryTiles";
+import MobileProductSearch, { type SearchItem } from "@/components/home/MobileProductSearch";import CategoryTiles from "@/components/home/CategoryTiles";
 import InStockRail, { type RailProduct } from "@/components/home/InStockRail";
 import { MobileCustomOrderCard } from "@/components/home/MobileExtras";
 import Button from "@/components/ui/Button";
@@ -412,8 +411,10 @@ export default async function HomePage() {
           HERO — orange brand block with rounded bottom corners (the dark
           trust strip sits above the header, see components/home/TrustBar).
 
-          Phone order is text → photo → buttons; from lg it is two columns
-          (text and buttons left, photo right). The copy sits on flat orange,
+          Phones (owner's call): no written copy — the product search comes
+          first, then photo → buttons. The h1 stays for screen readers and
+          search engines (sr-only below lg). From lg it is two columns (eyebrow,
+          heading, intro and buttons left, photo right). The copy sits on flat orange,
           never on the photo, so contrast is one measurable number (milk on
           orange 5.5:1). Buttons on orange are milk, never burgundy.
           The photo is the in-stock showcase carousel (products with stock > 0
@@ -421,12 +422,15 @@ export default async function HomePage() {
       ══════════════════════════════════════════════ */}
       <section className="rounded-b-block bg-orange text-milk">
         <div className="page-container grid grid-cols-1 gap-x-16 gap-y-8 pb-8 pt-8 sm:py-12 lg:grid-cols-2 lg:items-center lg:py-14">
-          <div className="min-w-0 max-w-xl lg:col-start-1 lg:row-start-1 lg:self-end">
-            <p className="type-eyebrow text-milk">Handcrafted in Ireland</p>
-            <h1 className="type-display mt-4 text-balance text-milk">
+          <div className="min-w-0 lg:max-w-xl lg:col-start-1 lg:row-start-1 lg:self-end">
+            <div className="lg:hidden">
+              <MobileProductSearch items={searchItems} />
+            </div>
+            <p className="hidden type-eyebrow text-milk lg:block">Handcrafted in Ireland</p>
+            <h1 className="sr-only type-display mt-4 text-balance text-milk lg:not-sr-only lg:block">
               Handmade blankets, bags &amp; baby keepsakes
             </h1>
-            <p className="type-body mt-5 max-w-md text-milk lg:text-lg lg:leading-8">
+            <p className="hidden type-body mt-5 max-w-md text-milk lg:block lg:text-lg lg:leading-8">
               Helping people create, connect and find comfort, every piece
               handcrafted in Ireland from premium materials.
             </p>
@@ -501,7 +505,7 @@ export default async function HomePage() {
       </section>
 
       {/* SHOP BY CATEGORY — real categories that hold products (chips on phones, photo tiles from lg) */}
-      <CategoryTiles categories={categories} searchItems={searchItems} />
+      <CategoryTiles categories={categories} />
 
       {/* IN STOCK NOW — buyable today, straight from the admin's stock numbers */}
       <InStockRail products={railProducts} />

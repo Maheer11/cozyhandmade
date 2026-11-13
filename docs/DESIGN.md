@@ -81,6 +81,11 @@ now → featured pieces → story → custom order → newsletter → footer.
 - Hero: orange block, rounded bottom corners (32), eyebrow, Display heading,
   intro copy, product image with price pill, milk primary button + milk outline
   button. Desktop: two columns (text left, image right).
+- Hero on mobile (owner's decision, overrides the line above below lg): NO
+  written copy — no eyebrow, heading or intro paragraph. The product search bar
+  sits at the top of the hero, then the image, then the buttons. The H1 stays in
+  the markup as sr-only for screen readers and SEO. Desktop keeps the full hero
+  copy.
 - Product grids: 2 columns mobile, 3 at md, 4 at lg.
 - Story section: peach card. Custom order: brown card.
 
@@ -123,6 +128,19 @@ Colourways: (a) brown #4D1808 on cream, (b) rust #88290B on cream,
 - Header uses the brown-on-cream horizontal lockup, static (no animation).
 
 ### 5b. Animated hero logo (propose first, build only after approval)
+
+Approved and built (2026-11-13): `components/brand/AnimatedCoziLogo.tsx`. The
+stacked "co / zi." + HANDMADE artwork, with a letter-by-letter colour wave
+through four site colourways per surface (cream: brown → orange → milk with
+rust outline → rust; orange: milk → peach → orange with milk outline → cream).
+HANDMADE stays solid.
+
+Placement (owner's decision, overrides "no animation in the header" below):
+the colour wave runs on the site header logo, which is the stacked "co / zi."
+mark (letters only, no HANDMADE) on every screen size — 48px tall on phones,
+64px from lg. This overrides the "horizontal lockup in the header" line above. It is NOT placed in the homepage hero. Checkout keeps the
+static logo (the site header is not rendered there); reduced motion shows the
+static brown logo.
 
 Non-negotiable for whichever concept is chosen:
 - Respect `prefers-reduced-motion` (show the static primary logo instead).

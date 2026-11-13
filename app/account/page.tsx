@@ -57,12 +57,12 @@ const TIER_BENEFITS: Record<TierKey, string[]> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  pending:    "bg-amber-50 text-amber-700",
+  pending:    "bg-peach text-orange",
   paid:       "bg-blue-50 text-blue-700",
   processing: "bg-purple-50 text-purple-700",
   shipped:    "bg-sky-50 text-sky-700",
-  delivered:  "bg-emerald-50 text-emerald-700",
-  cancelled:  "bg-red-50 text-error",
+  delivered:  "bg-success/10 text-success",
+  cancelled:  "bg-error/10 text-error",
 };
 
 function getProgress(tierKey: TierKey, totalSpent: number) {

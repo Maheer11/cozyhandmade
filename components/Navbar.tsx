@@ -7,6 +7,7 @@ import { useCart } from "./CartContext";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import CoziLogo from "./CoziLogo";
+import AnimatedCoziLogo from "@/components/brand/AnimatedCoziLogo";
 import Button from "@/components/ui/Button";
 import CurrencyPicker from "./CurrencyPicker";
 import { socialLinks, whatsappLink } from "@/lib/social-links";
@@ -38,6 +39,15 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Collections" },
   { href: "/featured-pieces", label: "Featured Pieces" },
+  { href: "/#newsletter", label: "Journal" },
+];
+
+// Desktop header nav (DESIGN.md §4: Shop, Featured, Custom order). The mobile
+// drawer keeps navLinks above; Journal stays on desktop as existing content.
+const desktopNavLinks = [
+  { href: "/products", label: "Shop" },
+  { href: "/featured-pieces", label: "Featured Pieces" },
+  { href: "/custom-order", label: "Custom order" },
   { href: "/#newsletter", label: "Journal" },
 ];
 
@@ -167,7 +177,14 @@ export default function Navbar({ categories }: { categories: { id: string; name:
           {/* ── Logo ── */}
           <Link href="/" aria-label="Cozi Handmade home" className="focus-ring flex items-center group shrink-0 rounded-button">
             {/* Slightly smaller on mobile, full size from sm up. */}
-            <CoziLogo className="h-9 w-auto sm:h-10 lg:h-11 transition-opacity duration-200 group-hover:opacity-75" />
+            {/* Colour-wave logo (owner's call). The Link above carries the
+                accessible name; the static colour shows until load and with
+                reduced motion. The site header never renders on checkout. */}
+            <AnimatedCoziLogo
+              variant="mark"
+              surface="cream"
+              className="h-12 w-auto lg:h-16 transition-opacity duration-200 group-hover:opacity-75"
+            />
           </Link>
 
           {/* ── Desktop nav links ── */}
@@ -176,8 +193,8 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               without competing with the primary button for weight. Home is
               left out on desktop because the logo beside it is the home link;
               the mobile drawer keeps it, where the logo habit is weaker. */}
-          <nav className="hidden lg:flex items-center gap-8">
-            {navLinks.filter(({ href }) => href !== "/").map(({ href, label }) => {
+          <nav className="hidden lg:flex items-center gap-7">
+            {desktopNavLinks.map(({ href, label }) => {
               // Compare paths only: "/#newsletter" and "/" share a pathname, so the
               // hash has to be stripped before deciding what's current.
               const linkPath = href.split("#")[0] || "/";
@@ -214,6 +231,35 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               the note above the hamburger for why that matters. Reverts to
               a normal (non-growing) box at lg, matching the old desktop layout. */}
           <div className="flex-1 lg:flex-none flex items-center justify-end gap-3">
+            {/* Search field — desktop only. A plain GET to the shop's existing
+                ?q= search (ProductsContent reads it), so no new logic. */}
+            <form action="/products" method="get" role="search" className="hidden xl:block">
+              <label htmlFor="header-search" className="sr-only">Search products</label>
+              <div className="flex h-11 w-56 items-center gap-2 rounded-pill border border-line bg-white px-4
+                              focus-within:border-brown focus-within:ring-1 focus-within:ring-brown">
+                <svg className="h-4.5 w-4.5 shrink-0 text-stone" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+                </svg>
+                <input
+                  id="header-search"
+                  name="q"
+                  type="search"
+                  placeholder="Search pieces"
+                  className="min-w-0 flex-1 bg-transparent font-body text-sm text-brown placeholder:text-stone outline-none"
+                />
+              </div>
+            </form>
+            {/* lg–xl: not enough room for the field, so an icon to the shop search. */}
+            <Link
+              href="/products?focusSearch=1"
+              aria-label="Search the shop"
+              className="focus-ring hidden h-11 w-11 items-center justify-center rounded-pill text-brown
+                         transition-colors duration-150 hover:text-burgundy lg:flex xl:hidden"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+              </svg>
+            </Link>
             {/* Currency picker — desktop only */}
             <div className="hidden lg:block">
               <CurrencyPicker />
@@ -271,8 +317,8 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                       </Link>
                       <button
                         onClick={handleSignOut}
-                        className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-red-600
-                                   hover:bg-red-50 transition-colors border-t border-line/10"
+                        className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-error
+                                   hover:bg-error/10 transition-colors border-t border-line/10"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
@@ -285,9 +331,9 @@ export default function Navbar({ categories }: { categories: { id: string; name:
               ) : (
                 <Link
                   href="/auth/login"
-                  className="focus-ring hidden lg:inline-flex items-center gap-1.5 px-4 py-2 rounded-none
-                             border border-brown/30 text-sm font-medium text-brown font-body
-                             hover:border-brown/70 transition-colors duration-200"
+                  className="focus-ring hidden lg:inline-flex min-h-11 items-center gap-1.5 px-5 rounded-pill
+                             border border-brown text-sm font-semibold text-brown font-body
+                             hover:bg-brown hover:text-cream transition-colors duration-200"
                 >
                   Sign In
                 </Link>

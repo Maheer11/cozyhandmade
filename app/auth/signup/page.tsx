@@ -55,12 +55,12 @@ export default function SignupPage() {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md text-center">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-emerald-100">
-            <svg className="w-9 h-9 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-emerald-100">
+            <svg className="w-9 h-9 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V8.844a2.25 2.25 0 011.183-1.98l7.5-4.04a2.25 2.25 0 012.134 0l7.5 4.04a2.25 2.25 0 011.183 1.98V19.5z" />
             </svg>
           </div>
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-600 font-body mb-1">Almost there</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-success font-body mb-1">Almost there</p>
           <h1 className="type-h1 text-brown mb-3">Check your inbox</h1>
           <p className="text-sm text-stone font-body leading-relaxed max-w-sm mx-auto">
             We sent a confirmation link to <strong className="text-brown">{email}</strong>.

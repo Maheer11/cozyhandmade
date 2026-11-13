@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import StyleguideDemos from "./StyleguideDemos";
+import AnimatedCoziLogo from "@/components/brand/AnimatedCoziLogo";
 
 // TEMPORARY design-system specimen (Phase 2). Not linked from anywhere, hidden
 // from search, and 404s on the production deployment. Remove only when the
@@ -57,6 +58,18 @@ export default function StyleguidePage() {
       <p className="type-body mt-4 max-w-xl text-stone">
         Phase 2 specimen: colours, type, buttons, badges, inputs and cards. See docs/DESIGN.md.
       </p>
+
+      {/* Phase 7 preview: animated stacked logo. Approve before it goes live. */}
+      <Section title="Animated logo (preview)">
+        <div id="logo-preview" className="grid gap-6 md:grid-cols-2">
+          <div className="flex items-center justify-center rounded-block bg-cream p-8 ring-1 ring-line">
+            <AnimatedCoziLogo surface="cream" className="h-auto w-[clamp(6.5rem,26vw,12rem)]" />
+          </div>
+          <div className="flex items-center justify-center rounded-block bg-orange p-8">
+            <AnimatedCoziLogo surface="orange" className="h-auto w-[clamp(6.5rem,26vw,12rem)]" />
+          </div>
+        </div>
+      </Section>
 
       <Section title="Colour">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">

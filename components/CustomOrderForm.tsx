@@ -68,10 +68,11 @@ export default function CustomOrderForm({ categories }: { categories: { id: stri
         </div>
 
         <div>
-          <label className="block type-small font-semibold text-brown mb-2">
+          <label htmlFor="custom-order-category" className="block type-small font-semibold text-brown mb-2">
             What kind of piece?
           </label>
           <select
+            id="custom-order-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full h-12 px-4 rounded-tile bg-white border border-stone text-sm text-brown

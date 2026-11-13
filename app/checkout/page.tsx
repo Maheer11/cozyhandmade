@@ -175,9 +175,9 @@ function TermsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-5 py-5 text-xs text-stone-700 leading-relaxed space-y-4 font-body">
+        <div className="overflow-y-auto flex-1 px-5 py-5 text-xs text-brown leading-relaxed space-y-4 font-body">
 
-          <p className="text-xs text-stone-400 uppercase tracking-widest">
+          <p className="text-xs text-stone uppercase tracking-widest">
             Last updated: {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
           </p>
 
@@ -228,14 +228,14 @@ function TermsModal({ onClose }: { onClose: () => void }) {
             },
           ].map(({ title, body }) => (
             <div key={title}>
-              <p className="font-semibold text-stone-900 mb-1" style={{ color: "#4D1808" }}>{title}</p>
+              <p className="font-semibold text-brown mb-1" style={{ color: "#4D1808" }}>{title}</p>
               <p>{body}</p>
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 shrink-0 border-t border-stone-100">
+        <div className="px-5 py-4 shrink-0 border-t border-line">
           <button onClick={onClose}
             className="w-full py-3 rounded-tile text-sm font-semibold text-white tracking-wide
                        transition-all duration-200 hover:opacity-90"
@@ -383,7 +383,7 @@ function LogoStripe() {
 }
 function LogoBadge({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-3 py-1.5 bg-white rounded-lg border border-stone-200 shadow-sm h-8 flex items-center justify-center">
+    <div className="px-3 py-1.5 bg-white rounded-lg border border-line shadow-sm h-8 flex items-center justify-center">
       {children}
     </div>
   );
@@ -640,18 +640,18 @@ function TrustBadges() {
     { ico: <IcoReturn />, label: "Easy Returns",    sub: "30-day guarantee",                          green: false },
   ];
   return (
+    // Peach trust tiles, same as the cart's (DESIGN.md §4). `green` only picks
+    // the icon tint now; all text is brown for one consistent, AA-safe look.
     <div className="grid grid-cols-2 gap-2 mt-4">
       {badges.map((b) => (
-        <div key={b.label}
-             className={`flex items-start gap-2.5 rounded-lg border-0 sm:border p-3
-                         `}>
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0
-                           ${b.green ? "bg-peach text-success" : "bg-stone-100 text-stone-500"}`}>
+        <div key={b.label} className="flex items-start gap-2.5 rounded-tile bg-peach p-3">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-cream
+                           ${b.green ? "text-success" : "text-burgundy"}`}>
             {b.ico}
           </div>
           <div className="min-w-0">
-            <p className={`text-xs font-semibold leading-tight ${b.green ? "text-success" : "text-stone-800"}`}>{b.label}</p>
-            <p className={`text-xs leading-tight mt-0.5 ${b.green ? "text-success" : "text-stone-500"}`}>{b.sub}</p>
+            <p className="text-xs font-semibold leading-tight text-brown">{b.label}</p>
+            <p className="text-xs leading-tight mt-0.5 text-brown">{b.sub}</p>
           </div>
         </div>
       ))}
@@ -664,8 +664,8 @@ function TrustBadges() {
 ───────────────────────────────────────────────────────── */
 function PaymentLogos() {
   return (
-    <div className="pt-4 border-t border-stone-100 mt-4">
-      <p className="text-xs text-stone-400 uppercase tracking-[0.15em] font-medium mb-3 text-center">
+    <div className="pt-4 border-t border-line mt-4">
+      <p className="text-xs text-stone uppercase tracking-[0.15em] font-medium mb-3 text-center">
         We accept
       </p>
       <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -774,7 +774,7 @@ function OrderSummary({ items, totals, orderRef, estimatedDays, customsApplies }
           </p>
 
           {customsApplies && (
-            <p className="mt-3 text-xs leading-relaxed text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            <p className="mt-3 text-xs leading-relaxed text-orange bg-peach border border-peach rounded-lg px-3 py-2">
               Customers outside the EU may be charged import duties or taxes on delivery.
               These are set by your country and are not included in this price.
             </p>
@@ -918,7 +918,7 @@ function ShippingStep({
           : ship.country === "IE" ? "Shipping within Ireland" : "International shipping"} · Estimated: <strong>{estimatedDays}</strong>
       </div>
       {customsApplies && (
-        <div className="mt-2 flex items-start gap-2 p-3 bg-amber-50/70 rounded-tile border-0 sm:border sm:border-amber-100 text-xs text-amber-800 font-body">
+        <div className="mt-2 flex items-start gap-2 p-3 bg-peach/70 rounded-tile border-0 sm:border sm:border-peach text-xs text-orange font-body">
           <div className="w-4 h-4 shrink-0 text-orange mt-0.5"><IcoWarning /></div>
           Customers outside the EU may be charged import duties or taxes on delivery. These are set
           by your country and are not included in this price.
@@ -1078,7 +1078,7 @@ function StripeCardForm({ amountCents, formattedTotal, orderRef, requestIntent, 
       </div>
 
       {error && (
-        <p className="mt-3 text-xs text-error bg-red-50 border border-red-100 rounded-tile px-4 py-2.5">
+        <p className="mt-3 text-xs text-error bg-error/10 border border-error/20 rounded-tile px-4 py-2.5">
           {error}
         </p>
       )}
@@ -1158,7 +1158,7 @@ function PaymentStep({
             </div>
           </div>
 
-          <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl p-5 mb-5">
+          <div className="bg-white border border-t-0 border-line rounded-b-xl p-5 mb-5">
             <Elements stripe={getStripePromise()} options={elementsOptions}>
               <StripeCardForm
                 amountCents={amountCents}
@@ -1176,8 +1176,8 @@ function PaymentStep({
 
       <div className="hidden lg:flex mt-6">
         <button type="button" onClick={onBack}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-button border-2 border-stone-200
-                     text-stone-500 font-medium text-sm hover:border-stone-400 hover:text-stone-700 transition-all">
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-button border-2 border-line
+                     text-stone font-medium text-sm hover:border-stone hover:text-brown transition-all">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
@@ -1274,13 +1274,13 @@ function ConfirmationScreen({ orderRef, firstName, summary, estimatedDays }: {
           <div className="flex items-center justify-center gap-4">
             <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer"
                aria-label="Follow Cozi Handmade on Instagram"
-               className="w-9 h-9 rounded-full flex items-center justify-center text-stone-400
+               className="w-9 h-9 rounded-full flex items-center justify-center text-stone
                           hover:text-[#E4405F] transition-colors duration-200">
               <InstagramIcon className="w-5 h-5" />
             </a>
             <a href={whatsappLink()} target="_blank" rel="noopener noreferrer"
                aria-label="Chat with Cozi Handmade on WhatsApp"
-               className="w-9 h-9 rounded-full flex items-center justify-center text-stone-400
+               className="w-9 h-9 rounded-full flex items-center justify-center text-stone
                           hover:text-[#25D366] transition-colors duration-200">
               <WhatsAppIcon className="w-5 h-5" />
             </a>
@@ -1720,8 +1720,8 @@ export default function CheckoutPage() {
           <div className="flex gap-3">
             <button type="button"
               onClick={() => { setStep("shipping"); setTermsAccepted(false); }}
-              className="h-12 px-5 rounded-button border-2 border-stone-200 text-stone-500
-                         font-medium text-sm active:bg-stone-100 transition-all duration-150 shrink-0">
+              className="h-12 px-5 rounded-button border-2 border-line text-stone
+                         font-medium text-sm active:bg-peach transition-all duration-150 shrink-0">
               ← Back
             </button>
             {/* The real Stripe submit button lives inline next to the card
@@ -1736,7 +1736,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-stone-500">
+        <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-stone">
           <span className="text-success"><IcoShield /></span>
           PCI-DSS Level 1 · Stripe secured
         </div>

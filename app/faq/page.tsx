@@ -86,8 +86,8 @@ export default function FaqPage() {
       <div className="bg-cream border-b border-line px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
         {/* max-w-xl is a phone measure; on a desktop screen it left the header
             as a narrow ribbon adrift in the middle of the page. The list below
-            uses the same width so the two stay in one column. */}
-        <div className="max-w-xl lg:max-w-3xl mx-auto">
+            uses the same width and inner padding so the two share one edge. */}
+        <div className="max-w-xl lg:max-w-3xl mx-auto sm:px-6 lg:px-8">
           <p className="type-eyebrow text-burgundy mb-2">
             ✦ Help
           </p>

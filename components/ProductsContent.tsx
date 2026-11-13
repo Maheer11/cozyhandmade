@@ -329,6 +329,7 @@ function ProductsContentInner({ products, categories, reviews }: { products: Pro
                 {filtered.length} {filtered.length === 1 ? "Item" : "Items"}
               </span>
               <select
+                aria-label="Sort products"
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
                 className="h-9 px-2 rounded-tile bg-white border border-stone text-base text-brown

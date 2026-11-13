@@ -2,16 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Category } from "@/lib/products";
 import MobileShopShortcuts from "@/components/home/MobileShopShortcuts";
-import type { SearchItem } from "@/components/home/MobileProductSearch";
 import SectionHeader from "@/components/ui/SectionHeader";
 
 /**
- * "Shop by category" / "Find your piece". Phones get a search box and wrapping
- * category chips (MobileShopShortcuts); from lg, a grid of photo tiles, one
+ * "Shop by category" / "Find your piece". Phones get wrapping category chips
+ * (MobileShopShortcuts); from lg, a grid of photo tiles, one
  * tap to that category. Only categories that hold products are passed in
  * (getStockedCategories), so nothing here leads to an empty page.
  */
-export default function CategoryTiles({ categories, searchItems }: { categories: Category[]; searchItems: SearchItem[] }) {
+export default function CategoryTiles({ categories }: { categories: Category[] }) {
   if (categories.length === 0) return null;
 
   return (
@@ -24,7 +23,7 @@ export default function CategoryTiles({ categories, searchItems }: { categories:
           seeAllHref="/products"
         />
 
-        <MobileShopShortcuts categories={categories} searchItems={searchItems} />
+        <MobileShopShortcuts categories={categories} />
 
         <ul className="mt-8 hidden grid-cols-3 gap-5 lg:grid">
           {categories.map((category) => (

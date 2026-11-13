@@ -209,7 +209,8 @@ export default function ProductDetail({
               <div
                 ref={galleryRef}
                 onScroll={onGalleryScroll}
-                className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto"
+                tabIndex={0}
+                className="focus-ring no-scrollbar flex snap-x snap-mandatory overflow-x-auto"
                 role="group"
                 aria-roledescription="carousel"
                 aria-label={`${product.name} photos`}

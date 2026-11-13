@@ -179,7 +179,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="pt-5 border-t border-cream/15 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs font-body text-cream/45">
+          <p className="text-xs font-body text-cream/75">
             &copy; {new Date().getFullYear()} Cozi Handmade. All rights reserved.
           </p>
           <div className="flex gap-6">
@@ -187,7 +187,7 @@ export default function Footer() {
               <a
                 key={t}
                 href="#"
-                className="text-xs font-body text-cream/45 hover:text-cream transition-colors duration-200"
+                className="text-xs font-body text-cream/75 hover:text-cream transition-colors duration-200"
               >
                 {t}
               </a>
@@ -214,7 +214,7 @@ export default function Footer() {
             <span className="credit-link credit-idle text-sm font-body tracking-wide">
               Built by Maheer
             </span>
-            <span className="text-xs font-body text-cream/40 group-hover:text-cream/70 transition-colors duration-300">
+            <span className="text-xs font-body text-cream/75 group-hover:text-cream/70 transition-colors duration-300">
               buildwithmaheer.com
             </span>
           </a>

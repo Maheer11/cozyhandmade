@@ -319,6 +319,59 @@ html[data-keyboard-open] body {
   opacity: 1;
   transform: translateY(0);
 }
+/* ─── Animated stacked logo (components/brand/AnimatedCoziLogo) ──────
+   Four colourways per surface; stop 3 is the milk-with-outline look.
+   Fill and stroke change only, so nothing ever moves or shifts. */
+.cozi-wave--cream {
+  --cw-f1: var(--color-brown);  --cw-s1: var(--color-brown);
+  --cw-f2: var(--color-orange); --cw-s2: var(--color-orange);
+  --cw-f3: var(--color-milk);   --cw-s3: var(--color-rust);
+  --cw-f4: var(--color-rust);   --cw-s4: var(--color-rust);
+}
+.cozi-wave--orange {
+  --cw-f1: var(--color-milk);   --cw-s1: var(--color-milk);
+  --cw-f2: var(--color-peach);  --cw-s2: var(--color-peach);
+  --cw-f3: var(--color-orange); --cw-s3: var(--color-milk);
+  --cw-f4: var(--color-cream);  --cw-s4: var(--color-cream);
+}
+.cozi-wave__part {
+  fill: var(--cw-f1);
+  stroke: var(--cw-s1);
+}
+/* HANDMADE is too small to read as an outline: it stays solid (owner's
+   reference artwork shows it solid next to the outlined letters). */
+.cozi-wave__part--small {
+  --cw-f3: var(--cw-s3);
+}
+@keyframes cozi-colour-wave {
+  0%, 18%   { fill: var(--cw-f1); stroke: var(--cw-s1); }
+  25%, 43%  { fill: var(--cw-f2); stroke: var(--cw-s2); }
+  50%, 68%  { fill: var(--cw-f3); stroke: var(--cw-s3); }
+  75%, 93%  { fill: var(--cw-f4); stroke: var(--cw-s4); }
+  100%      { fill: var(--cw-f1); stroke: var(--cw-s1); }
+}
+/* Starts only after the load event (data-ready), pauses off-screen. */
+.cozi-wave[data-ready="true"] .cozi-wave__part {
+  animation: cozi-colour-wave 16s ease-in-out infinite;
+  animation-delay: calc(var(--step, 0) * 0.18s);
+  animation-play-state: paused;
+}
+.cozi-wave[data-ready="true"][data-playing="true"] .cozi-wave__part {
+  animation-play-state: running;
+}
+
+/* Reduced motion: content is simply there, no fade or slide. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-hidden {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .cozi-wave .cozi-wave__part,
+  .cozi-wave[data-ready="true"] .cozi-wave__part {
+    animation: none;
+  }
+}
 
 /* Extended stagger delays */
 .delay-600 { animation-delay: 0.6s; }
