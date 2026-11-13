@@ -6,6 +6,7 @@ import heroImage from "@/public/images/newhome1.jpg";
 import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
 import HomeFeaturedGrid from "@/components/HomeFeaturedGrid";
 import HeroProductCarousel from "@/components/HeroProductCarousel";
+import HeroPhotoStrip from "@/components/home/HeroPhotoStrip";
 import { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { getStockedCategories } from "@/lib/db-categories";
@@ -443,7 +444,16 @@ export default async function HomePage() {
               basket photo stands in, unlinked, rather than a link to nowhere. */}
           <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
             {showcaseProducts.length > 0 ? (
-              <HeroProductCarousel items={showcaseProducts} frameClassName={HERO_FRAME} />
+              <>
+                {/* Phones/tablets: slow-drifting strip of small photos (owner's
+                    pick). Desktop keeps the one-big-photo carousel. */}
+                <div className="lg:hidden">
+                  <HeroPhotoStrip items={showcaseProducts} />
+                </div>
+                <div className="hidden lg:block">
+                  <HeroProductCarousel items={showcaseProducts} frameClassName={HERO_FRAME} />
+                </div>
+              </>
             ) : (
               <div className={`relative overflow-hidden rounded-block bg-brown/30 ${HERO_FRAME}`}>
                 <Image

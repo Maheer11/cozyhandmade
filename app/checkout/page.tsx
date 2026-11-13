@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import CoziLogo from "@/components/CoziLogo";
+import AnimatedCoziLogo from "@/components/brand/AnimatedCoziLogo";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import type { StripeElementsOptionsMode } from "@stripe/stripe-js";
 import { useAuth } from "@/lib/supabase/auth-context";
@@ -1584,7 +1584,7 @@ export default function CheckoutPage() {
             <span aria-hidden="true">←</span> Bag
           </Link>
           <Link href="/" aria-label="Cozi Handmade home" className="focus-ring rounded-small">
-            <CoziLogo className="h-8 w-auto" />
+            <AnimatedCoziLogo variant="mark" surface="cream" className="h-12 w-auto" />
           </Link>
           <p className="inline-flex items-center gap-1.5 justify-self-end type-small font-semibold text-brown">
             <svg className="h-4 w-4 shrink-0 text-burgundy" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -45,9 +45,14 @@ Rules:
 
 - Headings: Fredoka (SemiBold/Medium). Body, prices, UI: DM Sans. Load with
   `next/font` with fallbacks.
-- Type scale (mobile → desktop): Display 40/44 → 64/68; H1 32/38 → 44/50;
-  H2 24/30 → 32/38; H3 18/24; Body 16/24; Small 14/20; Caption 12/16;
-  Eyebrow 12/16 uppercase, letter-spacing 0.3em, DM Sans SemiBold.
+- Type scale (mobile → desktop), stepped down ~7% on the owner's request:
+  Display 36/40 → 58/62; H1 30/36 → 40/46; H2 22/28 → 30/36; H3 17/22;
+  Body 15/22; Small 13/20; Caption 12/16; Eyebrow 12/16 uppercase,
+  letter-spacing 0.3em, DM Sans SemiBold. Tailwind text-sm/base/lg/xl/2xl are
+  overridden to match (13/15/17/19/22px); text-xs stays 12px. Form fields stay
+  16px below lg so iOS never zooms.
+- Out-of-stock size/colour pills: faded, NEVER struck through. "Sold out"
+  label only when some options are still available.
 - Spacing: 4px base, steps 4 8 12 16 20 24 32 48 64 96.
 - Radius: 8 (small), 16 (inputs, tiles), 24 (cards, images), 32 (feature blocks),
   pill (buttons, chips, badges).
@@ -83,7 +88,11 @@ now → featured pieces → story → custom order → newsletter → footer.
   button. Desktop: two columns (text left, image right).
 - Hero on mobile (owner's decision, overrides the line above below lg): NO
   written copy — no eyebrow, heading or intro paragraph. The product search bar
-  sits at the top of the hero, then the image, then the buttons. The H1 stays in
+  sits at the top of the hero, then a row of small square product photos
+  (components/home/HeroPhotoStrip): it NEVER moves on its own — swipe or the
+  prev/next arrow buttons only — and NO name or price under the photos (screen
+  readers still get both via the link's accessible name). Then the buttons. Desktop keeps the single-photo
+  carousel. The H1 stays in
   the markup as sr-only for screen readers and SEO. Desktop keeps the full hero
   copy.
 - Product grids: 2 columns mobile, 3 at md, 4 at lg.
@@ -136,9 +145,12 @@ rust outline → rust; orange: milk → peach → orange with milk outline → c
 HANDMADE stays solid.
 
 Placement (owner's decision, overrides "no animation in the header" below):
-the colour wave runs on the site header logo, which is the stacked "co / zi."
-mark (letters only, no HANDMADE) on every screen size — 48px tall on phones,
-64px from lg. This overrides the "horizontal lockup in the header" line above. It is NOT placed in the homepage hero. Checkout keeps the
+EVERY logo on the site is the stacked "co / zi." mark (letters only, no
+HANDMADE) with the colour wave, on every screen size: site header (48px tall
+on phones, 64px from lg), mobile drawer, footer (brown colour set: cream →
+peach → brown with cream outline → orange) and the checkout header. This
+overrides the "horizontal lockup in the header" line above and the "no
+animation in header/checkout" rule. It is NOT placed in the homepage hero. Checkout keeps the
 static logo (the site header is not rendered there); reduced motion shows the
 static brown logo.
 
