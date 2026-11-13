@@ -12,9 +12,10 @@ import { itemHref, type FeaturedPieceCardData } from "@/components/FeaturedPiece
  * (HeroProductCarousel).
  *
  * Owner's rules: it never moves on its own — the visitor swipes, or taps the
- * arrow buttons — and no name or price is printed under the photos. Each link
- * still carries the product's name and price as its accessible name, so
- * screen readers announce what the photo is.
+ * arrow buttons — and only the product NAME is printed under each photo, never
+ * the price. Each link carries the name and price as its accessible name, so
+ * screen readers announce both (the visible name is aria-hidden to avoid
+ * hearing it twice).
  */
 export default function HeroPhotoStrip({ items }: { items: FeaturedPieceCardData[] }) {
   const { formatAmount } = useCurrency();
@@ -54,7 +55,8 @@ export default function HeroPhotoStrip({ items }: { items: FeaturedPieceCardData
   };
 
   const arrow =
-    "focus-ring absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-pill " +
+    // Centred on the photos (144px tiles, 176px from sm), not on photo + name.
+    "focus-ring absolute top-[72px] z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-pill sm:top-[88px] " +
     "bg-milk text-brown shadow-soft transition-opacity duration-150 active:scale-95 disabled:pointer-events-none disabled:opacity-0";
 
   return (
@@ -85,6 +87,11 @@ export default function HeroPhotoStrip({ items }: { items: FeaturedPieceCardData
                       fetchPriority={i === 0 ? "high" : "auto"}
                       className="object-cover"
                     />
+                  </span>
+                  {/* Name only, no price (owner's call). Two lines max, then
+                      "…" — same rule as the product cards. */}
+                  <span aria-hidden="true" className="mt-2 line-clamp-2 font-body text-sm font-medium text-milk">
+                    {item.name}
                   </span>
                 </Link>
               </li>

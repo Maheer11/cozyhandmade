@@ -90,8 +90,9 @@ now → featured pieces → story → custom order → newsletter → footer.
   written copy — no eyebrow, heading or intro paragraph. The product search bar
   sits at the top of the hero, then a row of small square product photos
   (components/home/HeroPhotoStrip): it NEVER moves on its own — swipe or the
-  prev/next arrow buttons only — and NO name or price under the photos (screen
-  readers still get both via the link's accessible name). Then the buttons. Desktop keeps the single-photo
+  prev/next arrow buttons only — and only the product NAME under each photo
+  (max 2 lines), never the price (screen readers get name + price via the
+  link's accessible name). Then the buttons. Desktop keeps the single-photo
   carousel. The H1 stays in
   the markup as sr-only for screen readers and SEO. Desktop keeps the full hero
   copy.
