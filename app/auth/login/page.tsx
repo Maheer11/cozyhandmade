@@ -119,7 +119,7 @@ function LoginForm() {
           </form>
 
           <div className="mt-5 pt-5 border-t border-line/15 text-center">
-            <p className="text-xs text-stone font-body">
+            <p className="type-small text-stone">
               Don&apos;t have an account?{" "}
               <Link href="/auth/signup" className="font-semibold underline underline-offset-2"
                     style={{ color: "#8B2035" }}>

@@ -588,11 +588,11 @@ export default function Navbar({ categories }: { categories: { id: string; name:
                 <p className="mb-2 text-center type-small font-semibold text-brown">
                   Join the Cozi family
                 </p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <Button href="/auth/login" onClick={() => setMenuOpen(false)} className="px-2! text-[13px]">
+                <div className="grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2">
+                  <Button href="/auth/login" onClick={() => setMenuOpen(false)} className="px-2! text-[13px] whitespace-nowrap">
                     Sign In
                   </Button>
-                  <Button href="/auth/signup" onClick={() => setMenuOpen(false)} variant="secondary" className="px-2! text-[13px]">
+                  <Button href="/auth/signup" onClick={() => setMenuOpen(false)} variant="secondary" className="px-2! text-[13px] whitespace-nowrap">
                     Create Account
                   </Button>
                 </div>

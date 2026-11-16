@@ -4,25 +4,25 @@
   /* ── Cozi design system tokens — see docs/DESIGN.md ──
      These are the source of truth. Utilities: bg-cream, text-brown,
      bg-burgundy, bg-orange, bg-milk, bg-peach, text-stone, border-line … */
-  --color-cream:         #FBF0E4;  /* page background, header, drawer      */
-  --color-brown:         #4D1808;  /* primary text, footer, dark blocks    */
-  --color-burgundy:      #8B2035;  /* PRIMARY BUTTONS, active tab, links   */
+  --color-cream:         #FBF0E4;  /* page background, header, drawer (~60%) */
+  --color-brown:         #4D1808;  /* text, logo on cream, footer, selected chips, dark blocks (~30%) */
+  --color-burgundy:      #8B2035;  /* PRIMARY BUTTONS on cream/white, active tab, links */
   --color-burgundy-dark: #6E1829;  /* button hover / pressed               */
-  --color-orange:        #A74508;  /* hero block, low-stock badge. NEVER a button */
+  --color-orange:        #A74508;  /* hero, intro panel, low-stock badge. NEVER a button */
   --color-rust:          #88290B;  /* logo colourway only                  */
-  --color-milk:          #F5F4F0;  /* logo off-white; text/buttons on orange */
-  --color-peach:         #F7D9C0;  /* soft cards, trust tiles, gift wrap   */
+  --color-milk:          #F5F4F0;  /* logo off-white; text/buttons on orange or brown */
+  --color-peach:         #F7D9C0;  /* soft cards; eyebrow text on brown. Not text on orange (4.47:1 < AA) */
   --color-stone:         #7A6A62;  /* secondary text                       */
   --color-line:          #E2DCD3;  /* borders, dividers                    */
   --color-success:       #2F6B3A;
   --color-error:         #B3261E;
   /* white (#FFFFFF) is Tailwind's built-in bg-white / text-white. */
 
-  /* 1376px: the first width where page-container's side gutter reaches 96px
-     (1280px content + 48px padding + 48px margin), wide enough for the full
+  /* 1392px: the first width where page-container's side gutter reaches 96px
+     ((1392 − 1296) / 2 margin + 48px padding), wide enough for the full
      floating chat bubble. See FloatingWhatsApp. Standard Tailwind breakpoints
      (sm 640, md 768, lg 1024, xl 1280) already match the design system. */
-  --breakpoint-wide: 86rem;
+  --breakpoint-wide: 87rem;
 
   /* Radius: 8 small · 16 inputs/tiles · 24 cards/images · 32 feature blocks ·
      pill buttons/chips/badges. Named, so Tailwind's own rounded-sm/md/lg/xl
@@ -37,15 +37,6 @@
   /* Warm, soft shadow only — never grey or hard. */
   --shadow-soft: 0 4px 16px rgba(77, 24, 8, 0.08);
 
-  /* Text a little smaller site-wide (owner's request, 2026-11-13). Tailwind's
-     own sizes step down ~1px; text-xs stays 12px for legibility. Form fields
-     on phones/tablets stay 16px (rule below) so iOS never zooms. */
-  --text-sm:   0.8125rem;  /* 13px (was 14) */
-  --text-base: 0.9375rem;  /* 15px (was 16) */
-  --text-lg:   1.0625rem;  /* 17px (was 18) */
-  --text-xl:   1.1875rem;  /* 19px (was 20) */
-  --text-2xl:  1.375rem;   /* 22px (was 24) */
-
   /* Fonts: Fredoka headings, DM Sans everything else. */
   --font-heading: var(--font-fredoka), "Fredoka", ui-rounded, "Nunito", system-ui, sans-serif;
   --font-body: var(--font-dm-sans), "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -57,32 +48,32 @@
 /* ── Type scale (mobile → desktop at lg) ──
    Display 40/44→64/68 · H1 32/38→44/50 · H2 24/30→32/38 · H3 18/24 ·
    Body 16/24 · Small 14/20 · Caption 12/16 · Eyebrow 12/16 caps, 0.3em.
-   Headings are Fredoka SemiBold; everything else DM Sans. */
-/* Stepped down ~7% from the original scale (owner's request, 2026-11-13). */
+   Headings are Fredoka SemiBold (H3 Medium); everything else DM Sans.
+   Tailwind's own text-xs…2xl keep their defaults (12/14/16/18/20/24). */
 @utility type-display {
   font-family: var(--font-heading); font-weight: 600;
-  font-size: 2.25rem; line-height: 2.5rem;
-  @variant lg { font-size: 3.625rem; line-height: 3.875rem; }
+  font-size: 2.5rem; line-height: 2.75rem;
+  @variant lg { font-size: 4rem; line-height: 4.25rem; }
 }
 @utility type-h1 {
   font-family: var(--font-heading); font-weight: 600;
-  font-size: 1.875rem; line-height: 2.25rem;
-  @variant lg { font-size: 2.5rem; line-height: 2.875rem; }
+  font-size: 2rem; line-height: 2.375rem;
+  @variant lg { font-size: 2.75rem; line-height: 3.125rem; }
 }
 @utility type-h2 {
   font-family: var(--font-heading); font-weight: 600;
-  font-size: 1.375rem; line-height: 1.75rem;
-  @variant lg { font-size: 1.875rem; line-height: 2.25rem; }
+  font-size: 1.5rem; line-height: 1.875rem;
+  @variant lg { font-size: 2rem; line-height: 2.375rem; }
 }
 @utility type-h3 {
   font-family: var(--font-heading); font-weight: 500;
-  font-size: 1.0625rem; line-height: 1.375rem;
+  font-size: 1.125rem; line-height: 1.5rem;
 }
 @utility type-body {
-  font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.375rem;
+  font-family: var(--font-body); font-size: 1rem; line-height: 1.5rem;
 }
 @utility type-small {
-  font-family: var(--font-body); font-size: 0.8125rem; line-height: 1.25rem;
+  font-family: var(--font-body); font-size: 0.875rem; line-height: 1.25rem;
 }
 @utility type-caption {
   font-family: var(--font-body); font-size: 0.75rem; line-height: 1rem;
@@ -93,13 +84,15 @@
   text-transform: uppercase; letter-spacing: 0.3em;
 }
 
-/* One content width for header, hero and grid, so their left edges line up:
-   1280px max, 24px gutters on mobile, 48px from lg. */
+/* One content width for header, hero and grid, so their left edges line up
+   (docs/DESIGN.md §5): content max 1200px; 16px side padding on phones and
+   tablets, 48px from lg (the spec's 32px minimum, plus room for the floating
+   chat bubble between lg and the `wide` breakpoint). */
 @utility page-container {
   width: 100%;
-  max-width: 80rem;
+  max-width: 81rem; /* 1200px content + 2 × 48px padding */
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 1rem;
   @variant lg {
     padding-inline: 3rem;
   }
@@ -143,7 +136,7 @@ body {
 /* Phones and tablets: form fields at 16px. iOS Safari zooms the whole page
    when a field under 16px gets focus, which left the page zoomed in and half
    covered by the keyboard. Unlayered, so it wins over text-sm/text-xs
-   utilities on the fields; desktop keeps their smaller sizes. */
+   utilities on the fields; desktop keeps their own sizes. */
 @media (max-width: 1023px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   textarea,
@@ -226,10 +219,6 @@ html[data-keyboard-open] body {
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-10px); }
 }
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
-}
 @keyframes drawLine {
   from { width: 0; }
   to   { width: 100%; }
@@ -255,7 +244,6 @@ html[data-keyboard-open] body {
 .animate-fade-up    { animation: fadeUp 0.6s ease both; }
 .animate-fade-in    { animation: fadeIn 0.5s ease both; }
 .animate-float      { animation: floatY 3s ease-in-out infinite; }
-.animate-shimmer    { animation: shimmer 2.5s linear infinite; }
 .animate-pulse-soft { animation: pulse-soft 2.5s ease-in-out infinite; }
 .animate-spin-slow  { animation: spin-slow 12s linear infinite; }
 .animate-marquee    { animation: marquee 25s linear infinite; }
@@ -291,22 +279,6 @@ html[data-keyboard-open] body {
 .delay-500 { animation-delay: 0.5s; }
 .delay-700 { animation-delay: 0.7s; }
 .delay-900 { animation-delay: 0.9s; }
-
-/* Shimmer gradient text — wine/burgundy luxury shimmer */
-.text-shimmer {
-  background: linear-gradient(
-    90deg,
-    #6B1828 0%,
-    #8B2035 28%,
-    #C06878 50%,
-    #8B2035 72%,
-    #6B1828 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
 
 /* Elegant thread/stitch decorative line */
 .stitch-border {
@@ -584,6 +556,143 @@ html[data-keyboard-open] body {
   display: none;
 }
 
+/* ─── "Private access" intro (components/intro, docs/DESIGN.md §7) ──────
+   Server-rendered but hidden; the <head> script sets html[data-intro="show"]
+   before first paint on a first visit to "/". Sizes come from CSS alone, so
+   nothing shifts when the photo (image mode) arrives. */
+.cozi-intro { display: none; }
+html[data-intro="show"] .cozi-intro { display: flex; }
+/* Page underneath doesn't scroll while the intro is up. */
+html[data-intro="show"],
+html[data-intro="show"] body { overflow: hidden; }
+
+.cozi-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  height: 100vh;
+  height: 100dvh;
+  flex-direction: column;
+  background: var(--color-orange);
+  /* Phones/tablets: the whole dialog scrolls, so the field and buttons can
+     always be reached above the on-screen keyboard. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.cozi-intro__media {
+  position: relative;
+  flex: none;
+  /* ≤ 767px: ~40% of the height, 220–360px. */
+  height: clamp(220px, 40vh, 360px);
+  height: clamp(220px, 40dvh, 360px);
+  overflow: hidden;
+}
+.cozi-intro__panel {
+  position: relative;
+  flex: 1 0 auto;
+  display: flex;
+  margin-top: -28px; /* overlaps the media by its corner radius */
+  border-radius: 28px 28px 0 0;
+  background: var(--color-orange);
+  padding: 24px max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+.cozi-intro__inner {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+}
+.cozi-intro__body { padding-top: 28px; }
+.cozi-intro__title {
+  /* Display 40/44 on phones, capped so two lines fit the panel. */
+  font-size: 2.5rem;
+  line-height: 2.75rem;
+}
+.cozi-intro__title--success { font-size: 2rem; line-height: 2.375rem; }
+/* Underline field: milk 1.5px bottom border on orange. */
+.cozi-intro__field {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-bottom: 1.5px solid var(--color-milk);
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 0;
+  color: var(--color-milk);
+  font-family: var(--font-body);
+  font-size: 16px; /* never below 16px: iOS would zoom */
+  outline: none;
+}
+.cozi-intro__field::placeholder { color: var(--color-milk); opacity: 0.85; }
+.cozi-intro__field:focus-visible { border-bottom-width: 2.5px; padding-bottom: 9px; }
+.cozi-intro__field[aria-invalid="true"] { border-bottom-width: 2.5px; border-bottom-style: dashed; padding-bottom: 9px; }
+@media (hover: hover) {
+  .cozi-intro__link:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
+
+/* ≤ 374px: heading drops to H1 size. */
+@media (max-width: 374px) {
+  .cozi-intro__title { font-size: 2rem; line-height: 2.375rem; }
+  .cozi-intro__title--success { font-size: 1.75rem; line-height: 2.125rem; }
+}
+
+/* 768–1023px: media ~50% on top, panel overlapping by 32px. */
+@media (min-width: 768px) {
+  .cozi-intro__media { height: 50vh; height: 50dvh; }
+  .cozi-intro__panel {
+    margin-top: -32px;
+    border-radius: 32px 32px 0 0;
+    padding: 40px max(32px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left));
+  }
+}
+
+/* ≥ 1024px: orange panel left (~43%, max 620px), media fills the right. */
+@media (min-width: 1024px) {
+  .cozi-intro { flex-direction: row; overflow: hidden; }
+  .cozi-intro__panel {
+    order: 0;
+    flex: 0 0 min(43%, 620px);
+    margin-top: 0;
+    border-radius: 0;
+    padding: clamp(48px, 4.5vw, 72px);
+    overflow-y: auto;
+  }
+  .cozi-intro__inner { margin-inline: 0; min-height: 100%; }
+  /* Form centred vertically between logo (top) and "Enter the shop" (bottom). */
+  .cozi-intro__body { margin-block: auto; padding-top: 32px; }
+  .cozi-intro__media { order: 1; flex: 1 1 auto; height: auto; }
+  /* Scales with the panel so "Seen first by you." always fits one line:
+     46px at 1280, ~52px at 1440, capped at 60px from ~1670. */
+  .cozi-intro__title { font-size: clamp(2.5rem, 3.6vw, 3.75rem); line-height: 1.08; }
+  .cozi-intro__title--success { font-size: clamp(2rem, 2.8vw, 2.75rem); line-height: 1.12; }
+}
+
+/* Short screens (landscape phones): no media; the panel scrolls inside the
+   dialog so the button and "Enter the shop" stay reachable. */
+@media (max-height: 499px) {
+  .cozi-intro__media { display: none; }
+  .cozi-intro__panel { margin-top: 0; border-radius: 0; flex: 1 0 auto; }
+  .cozi-intro__body { padding-top: 16px; }
+  .cozi-intro__title { font-size: 2rem; line-height: 2.375rem; }
+}
+@media (max-height: 499px) and (min-width: 1024px) {
+  .cozi-intro__panel { flex: 1 1 auto; }
+  .cozi-intro__inner { margin-inline: auto; }
+}
+
+/* Entrance: fade/rise ≤ 400ms; none for reduced motion. */
+@keyframes cozi-intro-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[data-intro="show"] .cozi-intro__inner { animation: cozi-intro-rise 360ms ease-out both; }
+}
+
 /* ─── Respect reduced-motion preference ──────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -609,30 +718,7 @@ html[data-keyboard-open] body {
   &::-webkit-scrollbar { display: none; }
 }
 
-/* Primary call to action: a soft light sweep every few seconds draws the eye
-   without anything on the page moving on its own. Off for reduced motion. */
-@keyframes cta-sheen {
-  0%, 70% { transform: translateX(-120%) skewX(-20deg); }
-  100%    { transform: translateX(220%)  skewX(-20deg); }
-}
-.cta-sheen { position: relative; overflow: hidden; isolation: isolate; }
-.cta-sheen::after {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 40%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-  animation: cta-sheen 4.5s ease-in-out infinite;
-  pointer-events: none;
-  z-index: -1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .cta-sheen::after { animation: none; display: none; }
-}
-/* Phones and tablets only: the desktop hero keeps its plain button. */
-@media (min-width: 64rem) {
-  .cta-sheen::after { display: none; }
-}
+/* No gradients or shimmer on buttons (docs/DESIGN.md §2). */
 
 /* "Letters from our Studio" collage (desktop): hovering it plays a quick
    zoom-and-brighten flash, twice, on each photo in turn (delays set inline).

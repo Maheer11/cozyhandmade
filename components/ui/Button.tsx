@@ -2,12 +2,14 @@ import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "./cn";
 
-// primary          burgundy, the only call-to-action colour on cream/white
-// secondary        brown outline
-// onOrange         milk fill, brown text — use on orange OR brown blocks
-// onOrangeOutline  milk outline — second action on orange/brown blocks
-// Never put a burgundy button on orange (docs/DESIGN.md). No gradients/shimmer.
-export type ButtonVariant = "primary" | "secondary" | "onOrange" | "onOrangeOutline";
+// primary        burgundy, the only call-to-action colour on cream/white
+// secondary      brown outline
+// onDark         milk fill, brown text — on orange OR brown blocks
+// onDarkOutline  milk outline — second action on orange/brown blocks
+// Never put a burgundy button on orange or brown (docs/DESIGN.md §2).
+// No gradients/shimmer. Tailwind v4's hover: only applies on devices that can
+// hover, so tapping on a phone never leaves a button stuck in its hover colour.
+export type ButtonVariant = "primary" | "secondary" | "onDark" | "onDarkOutline";
 
 const base =
   "focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-button px-7 " +
@@ -21,9 +23,9 @@ const variants: Record<ButtonVariant, string> = {
   secondary:
     "border-2 border-brown text-brown hover:bg-brown hover:text-cream " +
     "disabled:border-line disabled:text-stone disabled:hover:bg-transparent disabled:hover:text-stone",
-  onOrange:
+  onDark:
     "bg-milk text-brown hover:bg-white disabled:bg-milk/60 disabled:text-stone",
-  onOrangeOutline:
+  onDarkOutline:
     "border-2 border-milk text-milk hover:bg-milk hover:text-brown",
 };
 

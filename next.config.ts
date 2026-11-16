@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // 75 is Next's default; 60 is used by the mobile hero carousel
+    // (components/home/HeroMobileCarousel) to keep its LCP photo light.
+    qualities: [60, 75],
     remotePatterns: [
       { protocol: "https", hostname: "picsum.photos" },
       { protocol: "https", hostname: "*.supabase.co" },

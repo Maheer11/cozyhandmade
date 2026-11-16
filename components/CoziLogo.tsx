@@ -8,9 +8,13 @@ interface CoziLogoProps {
    * horizontal — one-line "cozi." for the header/footer (default)
    * stacked    — "co / zi." mark with HANDMADE, for hero and about
    * monogram   — "c." for small square spots
+   * mark       — stacked "co / zi." letters only, no HANDMADE (same crop as
+   *              AnimatedCoziLogo's mark), for when HANDMADE is set as text
    */
-  variant?: "horizontal" | "stacked" | "monogram";
+  variant?: "horizontal" | "stacked" | "monogram" | "mark";
 }
+
+const MARK_IDS = new Set(["c", "o", "i-dot", "z", "i-stem", "period"]);
 
 // The approved traced artwork (see docs/DESIGN.md §5). Every letter is its own
 // path and fills with currentColor, so the three colourways are just a
@@ -21,7 +25,9 @@ export default function CoziLogo({
   color = "var(--color-brown)",
   variant = "horizontal",
 }: CoziLogoProps) {
-  const art = LOGO_ART[variant];
+  const art = variant === "mark"
+    ? { viewBox: "455 81 1103 1703", paths: LOGO_ART.stacked.paths.filter((p) => MARK_IDS.has(p.id)) }
+    : LOGO_ART[variant];
   return (
     <svg
       viewBox={art.viewBox}

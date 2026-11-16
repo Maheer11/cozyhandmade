@@ -50,6 +50,9 @@ next-env.d.ts
 # Optional: specific env patterns
 *.env
 
+# Design reference screenshots (reference only, never imported into the app)
+/design/reference/
+
 # Playwright output (snapshots can contain form values, including the test password)
 /test-results/
 /playwright-report/

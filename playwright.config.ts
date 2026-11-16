@@ -76,7 +76,24 @@ export default defineConfig({
     baseURL,
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    // Checkout: one desktop browser, as before.
+    { name: "chromium", testIgnore: /intro\.spec\.ts/, use: { ...devices["Desktop Chrome"] } },
+    // "Private access" intro: every size in docs/DESIGN.md §9, incl. WebKit.
+    // Screenshots land in test-results/intro-screens/.
+    ...[
+      // Presets give the engine/touch/UA; viewports pinned to the spec's sizes.
+      { name: "intro-iphone-se", use: { ...devices["iPhone SE"], viewport: { width: 375, height: 667 } } },
+      { name: "intro-iphone-15-pro-max", use: { ...devices["iPhone 15 Pro Max"], viewport: { width: 430, height: 932 } } },
+      { name: "intro-pixel-7", use: { ...devices["Pixel 7"] } },
+      { name: "intro-iphone-landscape", use: { ...devices["iPhone 13 landscape"], viewport: { width: 844, height: 390 } } },
+      { name: "intro-ipad-mini", use: { ...devices["iPad Mini"] } },
+      { name: "intro-ipad-pro-landscape", use: { ...devices["iPad Pro 11 landscape"], viewport: { width: 1366, height: 1024 } } },
+      { name: "intro-laptop-1280", use: { ...devices["Desktop Safari"], viewport: { width: 1280, height: 800 } } },
+      { name: "intro-desktop-1440", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+      { name: "intro-desktop-1920", use: { ...devices["Desktop Firefox"], viewport: { width: 1920, height: 1080 } } },
+    ].map((p) => ({ ...p, testMatch: /intro\.spec\.ts/ })),
+  ],
 
   // Starts the dev server with .env.test taking precedence over .env.local.
   // Set PLAYWRIGHT_BASE_URL to skip this and drive a server you started

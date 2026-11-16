@@ -13,10 +13,11 @@ import { isBottomNavHidden } from "@/components/BottomNav";
  * two-column grid as the page scrolled. It then sits docked just above where
  * the bar would be. From lg it always floats in the corner.
  *
- * From lg to 1375px the page's side gutter is only 48px (see page-container),
+ * From lg to 1391px the page's side gutter is only 48px (see page-container),
  * so the bubble shrinks to 40px, 4px in from the edge, to sit entirely inside
  * that gutter instead of passing over "View all" or the last grid card. From
- * 1376px the gutter is at least 96px and the full 56px bubble fits.
+ * 1392px (the `wide` breakpoint) the gutter is at least 96px and the full
+ * 56px bubble fits.
  */
 export default function FloatingWhatsApp() {
   const pathname = usePathname();
