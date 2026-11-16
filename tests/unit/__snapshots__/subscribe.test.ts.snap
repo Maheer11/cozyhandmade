@@ -1,0 +1,47 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`emails > confirmation: renders the shell (snapshot) and has a plain-text version with the link 1`] = `
+"<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>One tap and you're in.</title>
+</head>
+<body style="margin:0;padding:0;background:#FBF0E4;-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FBF0E4;opacity:0;">One tap and you'll hear about new pieces and restocks first.&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#FBF0E4" style="background:#FBF0E4;">
+<tr><td align="center" style="padding:24px 12px;">
+  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+    <tr><td align="center" bgcolor="#A74508" style="background:#A74508;border-radius:24px 24px 0 0;padding:28px 24px;">
+      <img src="https://cozihandmade.com/brand/email-logo.png" width="120" height="146" alt="Cozi Handmade" style="display:block;width:120px;height:auto;border:0;outline:none;text-decoration:none;color:#F5F4F0;font-family:'Fredoka', 'Arial Rounded MT Bold', Arial, Helvetica, sans-serif;font-size:24px;font-weight:bold;">
+    </td></tr>
+    <tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border-radius:0 0 24px 24px;padding:36px 32px 32px 32px;">
+      <p style="margin:0 0 10px 0;font-family:'DM Sans', Arial, Helvetica, sans-serif;font-size:12px;line-height:16px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;color:#A74508;">Private access</p>
+      <h1 style="margin:0 0 18px 0;font-family:'Fredoka', 'Arial Rounded MT Bold', Arial, Helvetica, sans-serif;font-size:28px;line-height:34px;font-weight:bold;color:#4D1808;">One tap and you're in.</h1>
+      <p style="margin:0 0 16px 0;font-family:'DM Sans', Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#4D1808;">Thanks for joining the Cozi circle. Confirm your email and you'll hear about new collections and restocks before anyone else.</p>
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:8px 0 0 0;">
+        <tr><td align="center" bgcolor="#8B2035" style="border-radius:999px;background:#8B2035;">
+          <a href="https://cozihandmade.com/subscribe/confirm?token=ttttttttttttttttttttttttttttttttttttttttttt" target="_blank" style="display:inline-block;padding:15px 32px;font-family:'DM Sans', Arial, Helvetica, sans-serif;font-size:16px;line-height:20px;font-weight:bold;color:#F5F4F0;text-decoration:none;border-radius:999px;">Confirm my place</a>
+        </td></tr>
+      </table>
+      <p style="margin:14px 0 0 0;font-family:'DM Sans', Arial, Helvetica, sans-serif;font-size:13px;line-height:20px;color:#7A6A62;">This link expires in 48 hours.</p>
+      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:28px 0 20px 0;"><tr><td style="border-top:1px solid #E2DCD3;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+      <p style="margin:0 0 6px 0;font-family:'DM Sans', Arial, Helvetica, sans-serif;font-size:13px;line-height:20px;color:#7A6A62;">Button not working? Paste this link into your browser:</p>
+      <p style="margin:0 0 20px 0;font-family:'DM Sans', Arial, Helvetica, sans-serif;font-size:13px;line-height:20px;word-break:break-all;"><a href="https://cozihandmade.com/subscribe/confirm?token=ttttttttttttttttttttttttttttttttttttttttttt" style="color:#8B2035;text-decoration:underline;">https://cozihandmade.com/subscribe/confirm?token=ttttttttttttttttttttttttttttttttttttttttttt</a></p>
+      <p style="margin:0;font-family:'DM Sans', Arial, Helvetica, sans-serif;font-size:13px;line-height:20px;color:#7A6A62;">Didn't sign up? Ignore this email. You won't be added to anything.</p>
+    </td></tr>
+    <tr><td align="center" style="padding:24px 16px 8px 16px;font-family:'DM Sans', Arial, Helvetica, sans-serif;font-size:12px;line-height:18px;color:#7A6A62;">
+      Handmade in Ireland &middot; <a href="https://cozihandmade.com" style="color:#7A6A62;text-decoration:underline;">cozihandmade.com</a> &middot; <a href="https://www.instagram.com/cozi_handmade.ie?igsh=NTRzZjVtd2QyNW8y&amp;utm_source=qr" style="color:#7A6A62;text-decoration:underline;">Instagram</a><br>
+      5B Belmayne Avenue, Parkside, Dublin 13, D13 E6TW, Ireland<br>
+      You&rsquo;re getting this because this email was entered at cozihandmade.com.
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>"
+`;

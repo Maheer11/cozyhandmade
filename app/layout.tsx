@@ -15,6 +15,7 @@ import TrustBar from "@/components/home/TrustBar";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import CartDrawer from "@/components/CartDrawer";
 import KeyboardAware from "@/components/KeyboardAware";
+import { introPreflightScript } from "@/lib/intro";
 
 // Headings: Fredoka (variable, weights 300-700). Body/UI/prices: DM Sans
 // (variable). Both self-hosted by next/font; the CSS variables feed
@@ -59,7 +60,15 @@ export default async function RootLayout({
   const categories = await getStockedCategories(supabase);
 
   return (
-    <html lang="en" className={`${fredoka.variable} ${dmSans.variable}`}>
+    // suppressHydrationWarning: the <head> script below may add data-intro to
+    // <html> before React hydrates; that attribute is intentional.
+    <html lang="en" className={`${fredoka.variable} ${dmSans.variable}`} suppressHydrationWarning>
+      <head>
+        {/* "Private access" intro: decide before first paint whether to show
+            it (first visit to "/" only), so the store never flashes first.
+            Tiny, synchronous, and wrapped in try/catch. See lib/intro.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: introPreflightScript() }} />
+      </head>
       <body className="min-h-screen flex flex-col bg-cream text-brown antialiased">
         <AuthProvider>
         <CurrencyProvider>

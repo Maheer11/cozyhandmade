@@ -126,7 +126,11 @@ export default function HeroProductCarousel({
               fill
               loading={i === 0 ? "eager" : "lazy"}
               fetchPriority={i === 0 ? "high" : "auto"}
-              sizes="(min-width: 1280px) 560px, (min-width: 1024px) 44vw, 100vw"
+              // Desktop only: below lg this carousel is hidden (the phone hero
+              // has HeroMobileCarousel), but an eager image still downloads
+              // inside display:none. "16px" makes phones fetch a ~1 KB file
+              // instead of the ~200 KB photo (phase 10 measurement).
+              sizes="(min-width: 1280px) 560px, (min-width: 1024px) 44vw, 16px"
               onLoad={() => markLoaded(i)}
               onError={() => markLoaded(i)}
               className={`object-cover ease-out group-hover:scale-[1.02] motion-reduce:group-hover:scale-100

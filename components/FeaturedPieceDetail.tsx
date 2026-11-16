@@ -290,7 +290,7 @@ export default function FeaturedPieceDetail({ item }: { item: FeaturedPieceDetai
 
             <p className="type-small mt-5 text-stone">
               Not sure which size or colour is right?{" "}
-              <a href="mailto:mahhir09@gmail.com" className="focus-ring rounded-small font-semibold text-burgundy underline underline-offset-2 hover:text-burgundy-dark">
+              <a href="mailto:mahhir09@gmail.com,mahmudmaryam70@gmail.com" className="focus-ring rounded-small font-semibold text-burgundy underline underline-offset-2 hover:text-burgundy-dark">
                 Email us
               </a>. Every piece is made to order, and we&apos;re happy to help you choose.
             </p>

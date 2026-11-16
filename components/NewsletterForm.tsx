@@ -7,10 +7,10 @@ import Input from "@/components/ui/Input";
 type Status = "idle" | "sending" | "done" | "error";
 
 /**
- * "Letters from our Studio" sign-up. Posts to /api/newsletter, which adds the
- * email to Resend Contacts (lib/newsletter.ts). The thank-you message only
- * shows once the sign-up has actually been saved; a failure says so and
- * keeps the email in the box to try again.
+ * "Letters from our Studio" sign-up. Posts to /api/subscribe, the same double
+ * opt-in as the "Private access" intro (lib/subscribe/service.ts): one list,
+ * and nobody is added until they click the link in the confirmation email.
+ * A failure says so and keeps the email in the box to try again.
  */
 export default function NewsletterForm() {
   const [email, setEmail] = useState("");
@@ -20,7 +20,7 @@ export default function NewsletterForm() {
   if (status === "done") {
     return (
       <p className="type-body font-semibold text-success" role="status">
-        You&apos;re subscribed. Welcome to the community! Our next letter will reach {email}.
+        Almost there: check your inbox. We sent a link to {email.trim().toLowerCase()} to confirm your place.
       </p>
     );
   }
@@ -31,10 +31,10 @@ export default function NewsletterForm() {
     setStatus("sending");
     setError("");
     try {
-      const res = await fetch("/api/newsletter", {
+      const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, source: "newsletter" }),
       });
       if (res.ok) {
         setStatus("done");

@@ -20,14 +20,14 @@ export function MobileCustomOrderCard() {
             </h2>
           </div>
           <div className="mt-6 flex flex-col gap-3 lg:mt-0 lg:shrink-0 lg:flex-row">
-            <Button href="/custom-order" variant="onOrange" fullWidth className="lg:w-auto lg:min-w-56">
+            <Button href="/custom-order" variant="onDark" fullWidth className="lg:w-auto lg:min-w-56">
               Start a custom order →
             </Button>
             <Button
               href={whatsappLink("Hi! I'd like to ask about a custom piece from Cozi Handmade ✦")}
               target="_blank"
               rel="noopener noreferrer"
-              variant="onOrangeOutline"
+              variant="onDarkOutline"
               fullWidth
               className="lg:w-auto lg:min-w-56"
             >

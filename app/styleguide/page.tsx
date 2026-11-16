@@ -13,14 +13,14 @@ export const metadata: Metadata = {
 };
 
 const COLORS: { name: string; hex: string; role: string; light?: boolean }[] = [
-  { name: "cream", hex: "#FBF0E4", role: "Page background, header, drawer" },
-  { name: "brown", hex: "#4D1808", role: "Text, footer, selected chips, dark blocks" },
-  { name: "burgundy", hex: "#8B2035", role: "Primary buttons, active nav, links" },
+  { name: "cream", hex: "#FBF0E4", role: "Page background, header, drawer (~60%)" },
+  { name: "brown", hex: "#4D1808", role: "Text, logo on cream, footer, selected chips, dark blocks (~30%)" },
+  { name: "burgundy", hex: "#8B2035", role: "Primary buttons on cream/white, active nav, links" },
   { name: "burgundy-dark", hex: "#6E1829", role: "Button hover / pressed" },
-  { name: "orange", hex: "#A74508", role: "Hero, low-stock badge. Never a button" },
+  { name: "orange", hex: "#A74508", role: "Hero, intro panel, low-stock badge. Never a button" },
   { name: "rust", hex: "#88290B", role: "Logo colourway only" },
-  { name: "milk", hex: "#F5F4F0", role: "Logo off-white; text/buttons on orange" },
-  { name: "peach", hex: "#F7D9C0", role: "Soft cards, trust tiles, gift wrap" },
+  { name: "milk", hex: "#F5F4F0", role: "Logo off-white; text/buttons on orange or brown" },
+  { name: "peach", hex: "#F7D9C0", role: "Soft cards; eyebrow text on brown (never text on orange)" },
   { name: "stone", hex: "#7A6A62", role: "Secondary text" },
   { name: "line", hex: "#E2DCD3", role: "Borders, dividers" },
   { name: "white", hex: "#FFFFFF", role: "Cards, inputs" },
@@ -56,11 +56,13 @@ export default function StyleguidePage() {
       <p className="type-eyebrow text-burgundy">Cozi Handmade</p>
       <h1 className="type-display mt-2">Design system</h1>
       <p className="type-body mt-4 max-w-xl text-stone">
-        Phase 2 specimen: colours, type, buttons, badges, inputs and cards. See docs/DESIGN.md.
+        Phase 2 specimen: colours, type, spacing, radius, shadow, buttons, badges, inputs and
+        cards. See docs/DESIGN.md.
       </p>
 
-      {/* Phase 7 preview: animated stacked logo. Approve before it goes live. */}
-      <Section title="Animated logo (preview)">
+      {/* The site logo: header, drawer, footer and checkout (owner's
+          decision, docs/DESIGN.md §6). */}
+      <Section title="Site logo (animated stacked mark)">
         <div id="logo-preview" className="grid gap-6 md:grid-cols-2">
           <div className="flex items-center justify-center rounded-block bg-cream p-8 ring-1 ring-line">
             <AnimatedCoziLogo surface="cream" className="h-auto w-[clamp(6.5rem,26vw,12rem)]" />
@@ -102,6 +104,43 @@ export default function StyleguidePage() {
         </div>
       </Section>
 
+      <Section title="Spacing, radius & shadow">
+        <div className="space-y-8 rounded-card bg-white p-6 shadow-soft">
+          <div>
+            <p className="type-caption mb-3 text-stone">Spacing · 4px base</p>
+            <div className="flex flex-wrap items-end gap-4">
+              {[4, 8, 12, 16, 20, 24, 32, 48, 64, 96].map((s) => (
+                <div key={s} className="text-center">
+                  <div className="bg-burgundy" style={{ width: s, height: s }} />
+                  <p className="type-caption mt-1 text-stone">{s}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="type-caption mb-3 text-stone">Radius</p>
+            <div className="flex flex-wrap gap-4">
+              {[
+                ["rounded-small", "8 small"],
+                ["rounded-tile", "16 inputs/tiles"],
+                ["rounded-card", "24 cards/images"],
+                ["rounded-block", "32 feature blocks"],
+                ["rounded-pill", "pill"],
+              ].map(([cls, label]) => (
+                <div key={cls} className="text-center">
+                  <div className={`h-16 w-24 bg-peach ${cls}`} />
+                  <p className="type-caption mt-1 text-stone">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="type-caption mb-3 text-stone">Shadow · rgba(77,24,8,0.08) 0 4px 16px</p>
+            <div className="h-16 w-40 rounded-card bg-white shadow-soft ring-1 ring-line/40" />
+          </div>
+        </div>
+      </Section>
+
       <Section title="Buttons">
         <div className="space-y-6">
           <div className="flex flex-wrap items-center gap-4 rounded-card bg-cream p-6 ring-1 ring-line">
@@ -111,9 +150,21 @@ export default function StyleguidePage() {
             <button className={`${btn} bg-burgundy-dark text-white`}>Pressed</button>
           </div>
           <div className="flex flex-wrap items-center gap-4 rounded-block bg-orange p-6">
+            <p className="type-eyebrow w-full text-milk">Eyebrow on orange · milk (peach fails AA here)</p>
             <button className={`${btn} bg-milk text-brown hover:bg-white`}>Shop the Collection</button>
             <button className={`${btn} border-2 border-milk text-milk hover:bg-milk hover:text-brown`}>See featured pieces</button>
             <p className="type-caption text-milk">On orange: milk buttons only, never burgundy.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 rounded-block bg-brown p-6">
+            <p className="type-eyebrow w-full text-peach">Eyebrow on brown · peach</p>
+            <button className={`${btn} bg-milk text-brown hover:bg-white`}>Start a custom order</button>
+            <p className="type-caption text-milk">On brown: milk buttons only, never burgundy.</p>
+          </div>
+          <div className="max-w-sm rounded-block bg-orange p-6">
+            <button className="inline-flex min-h-12 w-full items-center justify-center rounded-small bg-milk px-7 type-small font-semibold uppercase tracking-[0.12em] text-brown">
+              Join private access
+            </button>
+            <p className="type-caption mt-2 text-milk">Intro JOIN button: the one radius-8 exception.</p>
           </div>
         </div>
       </Section>

@@ -6,11 +6,15 @@ import heroImage from "@/public/images/newhome1.jpg";
 import BelovedPiecesShowcase from "@/components/BelovedPiecesShowcase";
 import HomeFeaturedGrid from "@/components/HomeFeaturedGrid";
 import HeroProductCarousel from "@/components/HeroProductCarousel";
-import HeroPhotoStrip from "@/components/home/HeroPhotoStrip";
 import { type FeaturedPieceCardData } from "@/components/FeaturedPiecesSection";
 import { createClient } from "@/lib/supabase/server";
 import { getStockedCategories } from "@/lib/db-categories";
-import MobileProductSearch, { type SearchItem } from "@/components/home/MobileProductSearch";import CategoryTiles from "@/components/home/CategoryTiles";
+import MobileProductSearch, { type SearchItem } from "@/components/home/MobileProductSearch";
+import HeroMobileCarousel, { type HeroCarouselItem } from "@/components/home/HeroMobileCarousel";
+import { getLikeCounts } from "@/lib/likes-server";
+import PrivateAccessIntro from "@/components/intro/PrivateAccessIntro";
+import PebbleLogo from "@/components/brand/PebbleLogo";
+import CategoryTiles from "@/components/home/CategoryTiles";
 import InStockRail, { type RailProduct } from "@/components/home/InStockRail";
 import { MobileCustomOrderCard } from "@/components/home/MobileExtras";
 import Button from "@/components/ui/Button";
@@ -350,14 +354,18 @@ export default async function HomePage() {
   // The hero photo cycles through every product in the collections that can
   // be bought right now, newest first, the same order /products lists them.
   // Sold-out pieces are left out so the hero never advertises one.
+  // `category` feeds the phone carousel's category tabs.
   const { data: dbShowcase } = await db
     .from("products")
-    .select(PRODUCT_CARD_COLUMNS)
+    .select(`${PRODUCT_CARD_COLUMNS}, category`)
     .gt("stock_quantity", 0)
     .order("created_at", { ascending: false });
-  const showcaseProducts = ((dbShowcase ?? []) as DbHeroProduct[])
-    .filter((p) => !pulledProductIds.has(p.id))
-    .map(toProductCard);
+  const showcaseRows = ((dbShowcase ?? []) as (DbHeroProduct & { category: string })[])
+    .filter((p) => !pulledProductIds.has(p.id));
+  const showcaseProducts = showcaseRows.map(toProductCard);
+  // Like totals for the phone carousel: started now, awaited later, so this
+  // extra round trip overlaps the queries below instead of adding to them.
+  const heroLikesPromise = getLikeCounts(showcaseRows.map((p) => ({ source: "product" as const, id: p.id })));
 
   // Featured Pieces first (by display_order), then products (by created_at).
   const heroItems = [...heroPieces, ...heroProducts];
@@ -396,6 +404,15 @@ export default async function HomePage() {
     }))
     .sort((a, b) => Number(a.soldOut) - Number(b.soldOut));
 
+  // Phone hero carousel: the in-stock showcase plus each piece's category (for
+  // the tabs) and its like total (empty until migration 017 is applied).
+  const heroCarouselItems: HeroCarouselItem[] = showcaseRows.map((p, i) => ({
+    card: showcaseProducts[i],
+    categoryId: p.category,
+    categoryName: categoryNameById.get(p.category) ?? p.category,
+  }));
+  const heroLikes = await heroLikesPromise;
+
   // Sold-out pieces keep their place in the owner's order but move behind
   // everything buyable (the sort is stable), so the first row a visitor sees
   // is all things they can add to the cart. If nothing is toggled on for the
@@ -408,12 +425,17 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* "Private access" intro: homepage only, first visit only, an overlay
+          over the store (which still renders below). docs/DESIGN.md §7. */}
+      <PrivateAccessIntro />
+
       {/* ══════════════════════════════════════════════
           HERO — orange brand block with rounded bottom corners (the dark
           trust strip sits above the header, see components/home/TrustBar).
 
-          Phones (owner's call): no written copy — the product search comes
-          first, then photo → buttons. The h1 stays for screen readers and
+          Phones/tablets (owner's decision, docs/DESIGN.md §5): NO written
+          copy. The product search comes first, then the swipeable photo
+          carousel, then the buttons. The h1 stays for screen readers and
           search engines (sr-only below lg). From lg it is two columns (eyebrow,
           heading, intro and buttons left, photo right). The copy sits on flat orange,
           never on the photo, so contrast is one measurable number (milk on
@@ -424,14 +446,16 @@ export default async function HomePage() {
       <section className="rounded-b-block bg-orange text-milk">
         <div className="page-container grid grid-cols-1 gap-x-16 gap-y-8 pb-8 pt-8 sm:py-12 lg:grid-cols-2 lg:items-center lg:py-14">
           <div className="min-w-0 lg:max-w-xl lg:col-start-1 lg:row-start-1 lg:self-end">
+            {/* Phones/tablets: the product search, no written copy (owner). */}
             <div className="lg:hidden">
               <MobileProductSearch items={searchItems} />
             </div>
             <p className="hidden type-eyebrow text-milk lg:block">Handcrafted in Ireland</p>
-            <h1 className="sr-only type-display mt-4 text-balance text-milk lg:not-sr-only lg:block">
+            {/* sr-only below lg: still there for screen readers and search engines. */}
+            <h1 className="sr-only type-display text-balance text-milk lg:not-sr-only lg:mt-4 lg:block">
               Handmade blankets, bags &amp; baby keepsakes
             </h1>
-            <p className="hidden type-body mt-5 max-w-md text-milk lg:block lg:text-lg lg:leading-8">
+            <p className="hidden type-body max-w-md text-milk lg:mt-5 lg:block lg:text-lg lg:leading-8">
               Helping people create, connect and find comfort, every piece
               handcrafted in Ireland from premium materials.
             </p>
@@ -445,10 +469,16 @@ export default async function HomePage() {
           <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
             {showcaseProducts.length > 0 ? (
               <>
-                {/* Phones/tablets: slow-drifting strip of small photos (owner's
-                    pick). Desktop keeps the one-big-photo carousel. */}
+                {/* Phones/tablets: big swipeable photos that never move on
+                    their own. Desktop keeps the one-big-photo carousel. */}
                 <div className="lg:hidden">
-                  <HeroPhotoStrip items={showcaseProducts} />
+                  {/* "N pieces ready to ship" + category tabs + cards with
+                      price and likes (owner's reference). */}
+                  <HeroMobileCarousel
+                    items={heroCarouselItems}
+                    categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+                    initialLikes={heroLikes}
+                  />
                 </div>
                 <div className="hidden lg:block">
                   <HeroProductCarousel items={showcaseProducts} frameClassName={HERO_FRAME} />
@@ -472,10 +502,10 @@ export default async function HomePage() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row lg:col-start-1 lg:row-start-2 lg:self-start">
-            <Button href="/products" variant="onOrange" className="sm:min-w-52">
+            <Button href="/products" variant="onDark" className="sm:min-w-52">
               Shop the Collection
             </Button>
-            <Button href="#featured-pieces" variant="onOrangeOutline" className="sm:min-w-52">
+            <Button href="#featured-pieces" variant="onDarkOutline" className="sm:min-w-52">
               See featured pieces
             </Button>
           </div>
@@ -616,6 +646,14 @@ export default async function HomePage() {
             </div>
 
             <div className="max-w-md lg:max-w-lg lg:py-8 lg:pl-6">
+              {/* Animated pebble logo (Phase 9) on cream, with the faint
+                  scattered-logo pattern behind it. */}
+              <PebbleLogo
+                surface="cream"
+                className="mb-6 h-40 w-full max-w-xs rounded-card lg:h-44"
+                pebbleClassName="h-[82%]"
+                patternScale={0.7}
+              />
               <p className="type-eyebrow text-burgundy">Join the Circle</p>
               <h2 className="type-h2 mt-3 text-brown">Letters from our Studio</h2>
               <p className="type-body mt-3 text-stone">

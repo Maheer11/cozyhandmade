@@ -12,7 +12,7 @@ import QuantityStepper from "@/components/ui/QuantityStepper";
 import SectionHeader from "@/components/ui/SectionHeader";
 import SizeSelector from "@/components/ui/SizeSelector";
 
-// TEMPORARY specimen of the shared components (docs/DESIGN.md §3). Lives only
+// TEMPORARY specimen of the shared components (docs/DESIGN.md §4). Lives only
 // under /styleguide, which 404s in production.
 const IMG = "/images/placeholder.jpg";
 
@@ -34,11 +34,11 @@ export default function StyleguideDemos() {
           <Button href="/products">As a link</Button>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-4 rounded-block bg-orange p-6">
-          <Button variant="onOrange">Shop the Collection</Button>
-          <Button variant="onOrangeOutline">See featured pieces</Button>
+          <Button variant="onDark">Shop the Collection</Button>
+          <Button variant="onDarkOutline">See featured pieces</Button>
         </div>
         <div className="mt-4 rounded-block bg-brown p-6">
-          <Button variant="onOrange" fullWidth>Start a custom order →</Button>
+          <Button variant="onDark" fullWidth>Start a custom order →</Button>
         </div>
       </section>
 

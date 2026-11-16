@@ -28,6 +28,13 @@ interface SendEmailParams {
   subject: string;
   text: string;
   replyTo?: string;
+  /** Optional HTML part (signup emails). Order emails stay text-only. */
+  html?: string;
+  /** Optional sender override, e.g. the newsletter sender (EMAIL_FROM).
+   *  Defaults to RESEND_FROM_EMAIL, so existing callers are unchanged. */
+  from?: string;
+  /** Optional extra headers, e.g. List-Unsubscribe. */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -53,7 +60,7 @@ export function parseRecipients(raw: string | undefined | null): string[] {
  */
 export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const from = params.from || process.env.RESEND_FROM_EMAIL;
 
   if (!apiKey || !from) {
     console.warn("RESEND_API_KEY / RESEND_FROM_EMAIL not configured — skipping email send");
@@ -72,6 +79,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
         to: params.to,
         subject: params.subject,
         text: params.text,
+        ...(params.html ? { html: params.html } : {}),
+        ...(params.headers ? { headers: params.headers } : {}),
         ...(params.replyTo ? { reply_to: params.replyTo } : {}),
       }),
       signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
@@ -99,7 +108,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
    Supplied by the business owner. Do not invent or amend
    these — they are legal identifiers, not copy.
 ───────────────────────────────────────────────────────── */
-const BUSINESS = {
+export const BUSINESS = {
   name: "Cozihandmade",
   addressLines: ["5B Belmayne Avenue, Parkside", "Dublin 13, D13 E6TW, Ireland"],
   registrationNumber: "790221",

@@ -172,7 +172,7 @@ export default function SignupPage() {
           </form>
 
           <div className="mt-5 pt-5 border-t border-line/15 text-center">
-            <p className="text-xs text-stone font-body">
+            <p className="type-small text-stone">
               Already have an account?{" "}
               <Link href="/auth/login" className="font-semibold underline underline-offset-2"
                     style={{ color: "#8B2035" }}>
